@@ -52,9 +52,9 @@ El reproche no cae en un hueco libre: **sustituye justo a la línea donde el jue
 te invita a jugar a *Alehop***, el siguiente título de la casa. Al tramposo le
 quitan la invitación.
 
-![Final legítimo](mapas/FINAL_limpio.png)
+![Final legítimo](../mapas/FINAL_limpio.png)
 
-![Final con la trampa activada](mapas/FINAL_con_trampa.png)
+![Final con la trampa activada](../mapas/FINAL_con_trampa.png)
 
 ### Y nunca llega a saltar
 
@@ -200,7 +200,7 @@ Se verificó de dos maneras. Primero comparando memoria: con el juego parado en 
 pantalla 0, los 512 bytes de `0x9000` coinciden **byte a byte** con lo que hay en
 la memoria de vídeo. Y segundo dibujándolos: si el formato estuviera mal saldría
 ruido, y salen pantallas de juego perfectamente reconocibles. Están en
-[pantallas.html](pantallas.html).
+[pantallas.html](../pantallas.html).
 
 ---
 

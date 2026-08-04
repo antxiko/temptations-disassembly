@@ -1,0 +1,170 @@
+<title>Findings — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html" style=color:var(--tinta)>Findings</a><a href="BUGS.html">Bugs</a><a href="TOOLS.html">Tools</a><a href="pantallas.html">Screens</a><a href="es/HALLAZGOS.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1>Findings</h1>
+<p>Things that turned up while taking the game apart and that, as far as we have been able to check, were not documented anywhere. Each one comes with the evidence behind it, so that anyone can verify it.</p>
+<hr>
+<h2>The cheater&#x27;s punishment</h2>
+<p>In the binary, at address <code>0x7F94</code>, there is this sentence:</p>
+<blockquote>POR QUE NO PRUEBAS SIN POKES</blockquote>
+<p>(«Why don&#x27;t you try it without pokes».) It is not a stray message or a debug string. The routine that uses it sits at <code>0x8B80</code>, and it is part of the <b>end-of-game</b> sequence:</p>
+<pre><code>FINAL_JUEGO:
+    ld a,(08f0dh)       ; avanza a la pantalla 28, la de victoria
+    inc a
+    ld (08f0dh),a
+    call CARGA_MAPA     ; la carga como cualquier otra pantalla
+    call VUELCA_BUFFER
+    call INIT_PANTALLA  ; y la enciende
+
+CASTIGO_TRAMPAS:
+    ld a,(08f1eh)       ; bandera de tramposo
+    cp 000h
+    jp z,BUCLE_FINAL    ; si esta limpia, final normal
+    ld hl,07f94h        ; si no: el reproche...
+    ld de,019e0h        ; ...encima de la ultima linea del area de juego
+    ld bc,00020h
+    call 0005ch</code></pre>
+<p>In other words: you have cleared all 28 screens, you reach the victory screen with its <em>«Aleluya, oh fray Arnulfo»</em>, and instead of letting you enjoy it the game writes the telling-off right on top of it. A punishment saved for the very end.</p>
+<h3>Which line it wipes out, exactly</h3>
+<p>We forced the end of the game in the emulator, once with the flag clear and once with it set by hand, and compared the last line of the play area:</p>
+<pre><code>legitimate ending:  ¿TE ATREVERAS CON &quot;ALEHOP!&quot;?
+with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
+<p>The telling-off does not land in free space: **it replaces exactly the line where the game invites you to play *Alehop***, the company&#x27;s next title. The cheater has the invitation taken away.</p>
+<p><img src="mapas/FINAL_limpio.png" alt="Legitimate ending"></p>
+<p><img src="mapas/FINAL_con_trampa.png" alt="Ending with the cheat flag set"></p>
+<h3>And it never fires</h3>
+<p>We searched all four of the game&#x27;s binaries for any instruction that writes to <code>0x8F1E</code>, in every form: <code>ld (0x8F1E),a</code>, <code>ld hl,0x8F1E</code>, <code>ld de,…</code>, <code>ld bc,…</code>. <b>The only reference in the whole game is the read at 0x8B80.</b> No write, anywhere.</p>
+<p>The flag is zero on a clean tape and stays zero with the game running, so the punishment never triggers.</p>
+<h3>And now the good part: they forgot to initialise it</h3>
+<p>At first we assumed Topo had left the trap «armed and waiting». Looking at the data more carefully, the explanation is different, and quite a bit better.</p>
+<p>The game&#x27;s start-up initialises fifteen variables, one after another:</p>
+<pre><code>8F09 8F0A 8F0B 8F0C 8F0D 8F0E 8F11 8F12 8F13 8F14 8F17 8F18 8F19 8F1C 8F1D</code></pre>
+<p>One is missing. <b>0x8F1E is the only variable the game reads and never initialises</b>, and it sits right next to 0x8F1C and 0x8F1D, which are initialised. That is precisely the one they skipped.</p>
+<p>So why is it zero, then? Because the tape loads something there, and that something happens to be a zero. But it is not an initialisation: it is <b>padding</b>. The area 0x8F00-0x8FA0 comes filled with leftover bytes from the animation tables — you can recognise them because they alternate pattern values with colour bytes of the <code>0x04</code>, <code>0x14</code>, <code>0x34</code> kind — and out of those 160 bytes <b>only three are zero</b>. One of them, by pure chance, falls exactly on 0x8F1E.</p>
+<p>That is: <b>the punishment fails to fire by sheer luck</b>. If the padding had left any other value there — and there was a 98% chance of that — the check would have come out non-zero and <em>everybody</em> who finished the game would see the telling-off, without having cheated at all.</p>
+<p>So what we have here is not a clever trap but a <b>lucky bug</b>: they wrote the check, forgot to zero the variable, and the randomness of the padding saved them from having their own game insult every honest player.</p>
+<hr>
+<h2>A 1988 misprint</h2>
+<p>The only published cheat for <em>Temptations</em> appeared in <b>MSX Book II</b> (Paulisoft, Brazil, 1988), page 62, in a loader signed <code>BY MBCF/88</code>. It says:</p>
+<pre><code>POKE &amp;HB4CC,0</code></pre>
+<p><b>It does nothing.</b> In the game&#x27;s binary, address <code>0xB4CC</code> already holds a zero: the poke writes a zero over a zero.</p>
+<p>The correct address is <code>0x84CC</code>, which holds <code>0x3D</code> — the <code>DEC A</code> instruction inside the routine that takes a life away:</p>
+<pre><code>QUITA_VIDA:
+    ld a,(08f12h)   ; A = vidas actuales
+    dec a           ; &lt;-- 0x84CC. Poniendo 0x00 aqui (NOP), A no cambia
+    cp 0ffh
+    jp z,GAME_OVER
+    ld (08f12h),a</code></pre>
+<p>In the dot-matrix type used in those books, <code>8</code> and <code>B</code> are almost the same glyph. We compared the printed character with the <code>8</code> in &quot;88&quot; and the <code>B</code> in &quot;BLOAD&quot; on the same page: it is an <code>8</code> that was badly scanned or badly typeset.</p>
+<p><b>Verified in the emulator.</b> We forced the routine to run with and without the patch:</p>
+<table><tr><th></th><th>Lives before</th><th>Lives after</th></tr><tr><td>Without the patch</td><td>9</td><td>8</td></tr><tr><td>With <code>0x84CC = 0x00</code></td><td>9</td><td><b>9</b></td></tr></table>
+<p>So the cheat published in 1988 had one digit wrong, and the good one is <code>POKE &amp;H84CC,0</code>.</p>
+<hr>
+<h2>Why the water in level 4 is green</h2>
+<p>Level 4 is underwater: Fray Arnulfo turns into a fish, gravity disappears and you can swim freely. The interesting bit is how the background is done.</p>
+<p>On the MSX video chip, the TMS9918, <b>colour 0 is not black: it is transparent</b>. Wherever a tile uses colour 0, what shows through is the backdrop colour, which is a single VDP register.</p>
+<p>The game takes advantage of that. On entering level 4:</p>
+<pre><code>ENTRA_NIVEL4:
+    call EMPIEZA_NIVEL
+    ld a,00ch           ; color 12 = verde
+    ld (0f3ebh),a       ; en el registro de color de fondo
+    call 00062h         ; BIOS CHGCLR: aplicalo
+    ld a,001h
+    ld (08f11h),a       ; y enciende el modo flotar</code></pre>
+<p>One byte. With that, every transparent area of every tile goes from black to green all at once, and the whole level turns into the bottom of the sea without a single graphic having changed.</p>
+<p>This finding came out of an observation by a veteran player: on seeing the maps we had drawn he said <em>«the underwater ones are wrong, the background is green»</em>. He was right: our program was painting colour 0 as black. Looking for whoever touched the backdrop register turned up the <code>ld a,00ch</code> above.</p>
+<hr>
+<h2>The maps: 29 screens of 512 bytes</h2>
+<p>Each screen of the game is a 512-byte block starting at <code>0x9000</code>: 32 columns by 16 rows, one tile byte per cell, row by row. No compression.</p>
+<p>The arithmetic is right there in the routine that loads them:</p>
+<pre><code>CARGA_MAPA:
+    ld a,(08f0dh)   ; A = numero de pantalla
+    ld d,a
+    sla d           ; SLA D con E=0 deja DE = pantalla * 512
+    ld e,000h
+    ld hl,09000h    ; base de la tabla de mapas
+    add hl,de
+    ld de,07d80h    ; buffer del mapa en RAM
+    ld bc,00200h    ; 512 bytes
+    ldir</code></pre>
+<p>There are <b>29</b> blocks: the 28 playable screens (4 levels × 7) plus the victory one.</p>
+<p>We verified this two ways. First by comparing memory: with the game stopped on screen 0, the 512 bytes at <code>0x9000</code> match <b>byte for byte</b> what is in VRAM. And second by drawing them: if the format were wrong we would get noise, and instead we get perfectly recognisable game screens. They are in <a href="pantallas.html">pantallas.html</a>.</p>
+<hr>
+<h2>Four levels of seven screens, straight from the code</h2>
+<p>The structure of the game does not have to be guessed at. The routine that decides what happens when a screen is finished says it:</p>
+<pre><code>FIN_DE_PANTALLA:
+    ld a,(08f0dh)       ; pantalla que se acaba de terminar
+    cp 00dh             ; 13 -&gt; entra al nivel 3
+    jp z,ENTRA_NIVEL3
+    cp 014h             ; 20 -&gt; entra al nivel 4
+    jp z,ENTRA_NIVEL4
+    cp 01bh             ; 27 -&gt; se acabo el juego
+    jp z,FINAL_JUEGO
+    cp 006h             ; 6  -&gt; entra al nivel 2
+    jp z,L_8B23
+    jp CAMBIO_PANT_NORMAL</code></pre>
+<p>6, 13, 20 and 27. The cuts come every seven screens: 0-6, 7-13, 14-20, 21-27.</p>
+<hr>
+<h2>U and V are the same drawing</h2>
+<p>The game does not use ASCII: it has its own character table. Space is code 0 (not 32), the digits start at 0x5C and the punctuation lives around 0x68.</p>
+<p>Reading the texts out of the binary turns up things like <code>PVES SERES HORRIBLES</code>, <code>DE NUEUO SOBRE TI</code> or <code>MVSICA:GOMINOLAS</code> — that is, PUES, NUEVO and MÚSICA. They look like typos, but on screen they read perfectly.</p>
+<p>The reason is that <b>the codes for &#x27;U&#x27; and &#x27;V&#x27; draw exactly the same glyph</b>. It makes no difference which one you type: the same letter comes out. Whoever typed the texts in used one or the other without distinction.</p>
+<p>Along the way, the character table was confirmed by two independent routes: on one hand by drawing the glyphs, and on the other because the code itself does <code>ld b,05Ch</code> + <code>add a,b</code> to turn a number into a digit, which pins 0x5C down as the &#x27;0&#x27;.</p>
+<hr>
+<h2>A nod to another game from the same publisher</h2>
+<p>The ending text, in full, reads:</p>
+<blockquote>ALELUYA, OH FRAY ARNULFO. SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL CIELO. &quot;SOLUM VICTORIUS EST GLORIA&quot;. ¿TE ATREVERÁS CON &quot;ALEHOP&quot;?</blockquote>
+<p>(«Hallelujah, oh Brother Arnulfo. Having overcome all the perils of evil you have won heaven. &quot;SOLUM VICTORIUS EST GLORIA&quot;. Will you dare take on &quot;ALEHOP&quot;?»)</p>
+<p><em>Alehop</em> was another Topo Soft game. The victory screen ends up selling you the next one.</p>
+<p>And a minor curiosity: the game&#x27;s manual calls the main character <b>Hermano Nonato, «Noni»</b>, but the text that appears on screen says <b>Fray Arnulfo</b>. Somewhere between design and printing, the monk changed his name.</p>
+<hr>
+<h2>Leftovers from another build</h2>
+<p>Between <code>0xCA00</code> and <code>0xD000</code> there are 1,536 bytes that are <b>real code</b>: they disassemble without trouble and the routines make sense. But they never run.</p>
+<p>It is an earlier version of some routines that stayed behind in the binary. And it is a dangerous trap for anyone disassembling: we fell for it. An automatic jump-table detector flagged them as game code, we eyeballed them and they did indeed <em>look</em> like correct code, and in they went. It took a later review to realise that nobody calls them.</p>
+<p>The lesson got written down in the project: a chunk disassembling coherently is no proof that it ever runs.</p>
+<hr>
+<h2>And the bytes nobody touches</h2>
+<p>At the end of the analysis there were 642 bytes left unexplained. We settled them by putting memory watchpoints on every one of them and playing a full game in the emulator — with infinite lives and pushing the monk against the right-hand edge, so as to run through all four levels up to screen 27.</p>
+<ul><li><b>96 bytes</b> were the <b>stack</b>: they took writes from 557 different addresses, including the BASIC ROM itself. Only the back-and-forth of <code>PUSH</code> and <code>POP</code> produces that pattern.</li><li><b>1 byte</b> was a sound-effect slot we had not counted.</li><li><b>543 bytes</b> were not touched by anything for the whole game. Among them, two orphan <code>RET</code>s: return instructions that no path ever reaches, because the routine before them already ends with one of its own.</li></ul>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

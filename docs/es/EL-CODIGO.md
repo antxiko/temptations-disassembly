@@ -1,7 +1,7 @@
 # El código
 
 Mapa de dónde está cada cosa. Para el listado completo de rutinas y datos,
-[INVENTARIO.txt](INVENTARIO.txt).
+[INVENTARIO.txt](../INVENTARIO.txt).
 
 ## Mapa de memoria
 

@@ -77,7 +77,7 @@ recto" no tienen lado definido, así que el juego bloquea el disparo.
 En el nivel 4 el protagonista se convierte en un pez: desaparece la gravedad y se
 puede nadar en las ocho direcciones.
 
-Puedes ver las 29 pantallas dibujadas en [pantallas.html](pantallas.html).
+Puedes ver las 29 pantallas dibujadas en [pantallas.html](../pantallas.html).
 
 ## Objetos
 

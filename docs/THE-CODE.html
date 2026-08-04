@@ -1,0 +1,144 @@
+<title>The code — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html" style=color:var(--tinta)>The code</a><a href="FINDINGS.html">Findings</a><a href="BUGS.html">Bugs</a><a href="TOOLS.html">Tools</a><a href="pantallas.html">Screens</a><a href="es/EL-CODIGO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1>The code</h1>
+<p>A map of where everything lives. For the full listing of routines and data, see <a href="INVENTARIO.txt">INVENTARIO.txt</a>.</p>
+<h2>Memory map</h2>
+<p>With the game running, the MSX looks like this:</p>
+<pre><code>0x0000 ┌──────────────────────────┐
+       │  BASIC ROM               │  NOT touched: the game keeps calling
+       │                          │  the BIOS (drawing on screen, reading
+0x4000 ├──────────────────────────┤  the joystick, moving blocks of memory)
+       │  Graphics                │  font, colours, sprites
+0x5C00 │  Menu screen             │
+0x5FC0 │  Status bar              │
+0x60C0 │  Animation and physics   │  50 slots of 128 bytes
+0x79C0 │  Hidden spots            │  per screen
+0x7BA0 │  Enemies                 │  per screen
+0x7D80 │  Current map buffer      │  512 bytes
+0x8000 ├──────────────────────────┤
+       │  GAME CODE               │  ~5 KB
+0x8F00 │  Variables               │
+0x8FA0 │  Stack                   │  grows downwards from 0x8FFF
+0x9000 ├──────────────────────────┤
+       │  29 screen maps          │  512 bytes each
+0xCA00 ├──────────────────────────┤
+       │  (dead code)             │  leftovers from another build
+0xD000 ├──────────────────────────┤
+       │  Sound player            │
+0xD760 │  Menu music              │
+0xDB00 │  Per-frame routine       │
+0xDE01 └──────────────────────────┘</code></pre>
+<p>Leaving the BASIC ROM in place is a design decision: the game leans on the system routines for the common jobs instead of reimplementing them, and in exchange it gives up 16 KB of memory.</p>
+<h2>The main loop</h2>
+<p>The whole game fits in this:</p>
+<pre><code>BUCLE_PARTIDA:
+    call 0832ah         ; ¿han pulsado CTRL+STOP?
+    halt                ; espera al barrido de pantalla
+    call 0db00h         ; sprites y vídeo
+    halt
+    call 0db00h
+    call DISPARA
+    call MUEVE_DISPAROS
+    call MUEVE_ENEMIGOS
+    call COMPRUEBA_COLISION_SPRITES
+    ...
+    call MUEVE_JUGADOR
+    call COLISIONES_MAPA
+    jp BUCLE_PARTIDA</code></pre>
+<p>Two <code>halt</code>s per turn means the game runs at <b>25 or 30 frames per second</b>, half the display refresh rate. It is deliberate: it leaves enough time to move everything without any visible stutter.</p>
+<h2>How the monk moves</h2>
+<p>The joystick is translated into an <b>action code</b> through a table, and that code is at once the animation index and the character&#x27;s state:</p>
+<table><tr><th>Joystick direction</th><th>Code</th><th>What it does</th></tr><tr><td>centre, down, down±diagonal</td><td><code>0x00</code></td><td>idle (there is no crouching)</td></tr><tr><td>right</td><td><code>0x01</code></td><td>walk right</td></tr><tr><td>left</td><td><code>0x02</code></td><td>walk left</td></tr><tr><td>up</td><td><code>0x08</code></td><td>vertical jump</td></tr><tr><td>up + right</td><td><code>0x09</code></td><td>jump right</td></tr><tr><td>up + left</td><td><code>0x0A</code></td><td>jump left</td></tr></table>
+<p>Look at the numbers: <b>bit 3 means &quot;I am jumping&quot;</b> and bits 0 and 1 are the direction. <code>0x09</code> is <code>0x08 | 0x01</code>. It is designed so each thing can be checked separately with a mask.</p>
+<h2>The animation and physics table</h2>
+<p>This is the neatest thing in the game. At <code>0x60C0</code> there are 50 slots of 128 bytes. Each slot is a sequence of frames, and each frame takes 4 bytes:</p>
+<pre><code>byte 0:  X displacement (signed)
+byte 1:  Y displacement (signed)
+byte 2:  pattern number
+byte 3:  the sprite&#x27;s two colours, one in each half of the byte</code></pre>
+<p>A <code>0x80</code> in the first byte marks the end of the sequence.</p>
+<p>The interesting part is that <b>movement and drawing are the same table</b>. Gravity is not a formula: it is a sequence of frames whose Y displacements keep growing. Neither is the jump: it is another sequence. Changing how the character moves means changing a few bytes of data, not touching code.</p>
+<p>Slots 0 to 13 are the monk, and 16 to 48 the enemies, in pairs: slot N and slot N+17 are the same critter facing the other way. To turn an enemy around, the game adds or subtracts 17 from the slot number.</p>
+<p>There is even a slot (number 14) whose displacements trace <b>a full circle</b>: it is the enemy that orbits.</p>
+<h2>The screens</h2>
+<p>Each screen is a 512-byte block starting at <code>0x9000</code>: 32 columns × 16 rows, one tile byte per cell, uncompressed. The arithmetic is straightforward:</p>
+<pre><code>CARGA_MAPA:
+    ld a,(08f0dh)   ; número de pantalla
+    ld d,a
+    sla d           ; DE = pantalla * 512
+    ld e,000h
+    ld hl,09000h
+    add hl,de
+    ld de,07d80h    ; al buffer de trabajo
+    ld bc,00200h
+    ldir</code></pre>
+<p>There are 29 of them: the 28 playable ones plus the victory screen.</p>
+<p>The <b>type</b> of each cell is not stored in the map: it is worked out from the tile number. <code>CLASIFICA_TILE</code> sorts them into nine classes (air, wall, extra life, ammo, weapon, deadly ground…) by comparing ranges.</p>
+<p>A curious case is class 1: a tile with a blank pattern that the player walks through without noticing, but which <b>makes enemies turn around</b>. They are invisible walls to fence in where each critter patrols. There are 406 of them spread across the 28 maps.</p>
+<h2>The hidden objects</h2>
+<p>Each screen also has a list of up to four <b>hidden spots</b>, at <code>0x79C0 + screen*16</code>, with four bytes per spot:</p>
+<pre><code>column, row, shots it takes, prize it drops</code></pre>
+<p>The shot counter is stored as a negative: the game increments it until it overflows to zero. Same as enemy stamina.</p>
+<p>The striking part, already told in <a href="THE-GAME.html">THE-GAME.md</a>, is that the system works <b>by coordinates</b>: it does not look at what is drawn there. That is why 13 of the game&#x27;s 30 spots are invisible.</p>
+<h2>The sound player</h2>
+<p>A three-channel engine with its own tracker-style format. The data is a byte sequence where values below <code>0x80</code> are notes and <code>0x80</code> upwards are commands:</p>
+<table><tr><th>Command</th><th>What it does</th></tr><tr><td><code>0x80</code></td><td>channel volume</td></tr><tr><td><code>0x81</code></td><td>mixer (tone, noise or both)</td></tr><tr><td><code>0x82</code></td><td>back to the start (loop)</td></tr><tr><td><code>0x83</code></td><td>note duration</td></tr><tr><td><code>0x84</code></td><td>rest</td></tr><tr><td><code>0x85</code></td><td>tempo</td></tr><tr><td><code>0x86</code></td><td>compound duration</td></tr><tr><td><code>0x87</code></td><td>load instrument</td></tr><tr><td><code>0x88</code></td><td>noise period</td></tr><tr><td><code>0x89</code></td><td>noise envelope</td></tr><tr><td><code>0x8A</code></td><td>repeat envelopes</td></tr><tr><td><code>0x8B</code></td><td>end of channel</td></tr><tr><td><code>0x8C</code></td><td>call a phrase</td></tr><tr><td><code>0x8D</code>, <code>0x8E</code></td><td>envelope control</td></tr></table>
+<p>With reusable instruments and calls to phrases, so as not to repeat data. All of it in a little over a kilobyte, and running inside the screen interrupt without stealing time from the game.</p>
+<h2>The variables</h2>
+<p>They all sit together, from <code>0x8F00</code> to <code>0x8F9F</code>. The main ones:</p>
+<table><tr><th>Address</th><th>What it is</th></tr><tr><td><code>0x8F09</code> / <code>0x8F0A</code></td><td>player X and Y, in pixels</td></tr><tr><td><code>0x8F0B</code></td><td>current state / animation</td></tr><tr><td><code>0x8F0C</code></td><td>frame within the animation</td></tr><tr><td><code>0x8F0D</code></td><td>screen (0–28)</td></tr><tr><td><code>0x8F0E</code></td><td>level (0–3)</td></tr><tr><td><code>0x8F11</code></td><td>float mode: wings or level 4</td></tr><tr><td><code>0x8F12</code></td><td><b>lives</b></td></tr><tr><td><code>0x8F13</code> / <code>0x8F14</code></td><td>where to reappear after dying</td></tr><tr><td><code>0x8F17</code></td><td>ammo</td></tr><tr><td><code>0x8F18</code></td><td>weapon</td></tr><tr><td><code>0x8F1E</code></td><td>the cheater flag that nobody ever turns on</td></tr><tr><td><code>0x8F20</code></td><td>the 4 active enemies, 5 bytes each</td></tr><tr><td><code>0x8F80</code></td><td>the 7 shots in flight, 4 bytes each</td></tr></table>
+<h2>The font</h2>
+<p>The game does not use ASCII. It has its own table:</p>
+<pre><code>space    0x00        (not 0x20)
+A..Z     0x41..0x5A  (same as ASCII)
+0..9     0x5C..0x65  (shifted)
+&quot;        0x68
+.        0x6A
+,        0x6B
+:        0x6C
+-        0x6D</code></pre>
+<p>That is why the status bar routine does <code>add 0x5C</code> to turn a number into its digit.</p>
+<p>And a quirk: <b>the codes for U and V draw the same glyph</b>, so the stored texts say things like &quot;PVES&quot; or &quot;NUEUO&quot; (for &quot;PUES&quot; and &quot;NUEVO&quot;) and read perfectly fine on screen.</p>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

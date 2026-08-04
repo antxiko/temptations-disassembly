@@ -1,0 +1,104 @@
+<title>Context — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="BUGS.html">Bugs</a><a href="TOOLS.html">Tools</a><a href="pantallas.html">Screens</a><a href="es/CONTEXTO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1>Context</h1>
+<p><em>Temptations</em> (Topo Soft, 1988, MSX1) — disassembly context.</p>
+<p>Reference document for anyone (human or agent) working on this project. Everything here is <b>verified</b>; anything that is a hypothesis is marked with &quot;(?)&quot;.</p>
+<h2>The game</h2>
+<p>MSX exclusive. There is no ZX Spectrum, Amstrad CPC or C64 version — don&#x27;t go looking for POKEs from other platforms, there aren&#x27;t any.</p>
+<ul><li>Code and graphics: <b>Luis Lopez Navarro</b> (&quot;LuigiLopez&quot;)</li><li>Music: <b>Gominolas</b> (Cesar Astudillo)</li><li>Loading screen: Javier Cano (attribution disputed)</li><li>Cover art: Alfonso Azpiri</li><li>Publisher: Erbe Software, tape, Spain, 1988. Micromania issue 34 gave it an 8.</li></ul>
+<p>Single-screen (flick-screen) platformer. The player character shoots chests and skulls to reveal items: fireballs, crystals, auto-repeat arrows, extra lives and little wings that let you fly. One hit kills him. Sideways movement has inertia.</p>
+<p><b>Structure (confirmed by the user, a fan of the game): 4 levels x 7 screens = 28 screens.</b> It matches the <code>mod 7</code> that the status bar routine does. On <b>level 4</b> the player&#x27;s sprite changes and becomes a <b>fish</b>: it is an underwater level, <b>no gravity</b>, you can float.</p>
+<p>The main character&#x27;s name: the manual calls him &quot;Hermano Nonato (Noni)&quot; (Brother Nonato), but the game&#x27;s own ending text says &quot;FRAY ARNULFO&quot; (Friar Arnulfo). A genuine discrepancy, unresolved.</p>
+<p>Sound: the music only plays on the intro and the menu. During play the same player is reused for sound effects (confirmed by the user).</p>
+<h2>Controls (manual + verified in the code)</h2>
+<table><tr><th></th><th>Keyboard</th><th>Joystick</th></tr><tr><td>Left / Right / Jump</td><td>cursor keys</td><td>stick</td></tr><tr><td>Fire</td><td>SPACE</td><td>button</td></tr><tr><td>Quit</td><td>CTRL+STOP</td><td>CTRL+STOP</td></tr></table>
+<p>There is no key redefinition: the game never calls <code>SNSMAT</code> (0x0141). It reads <code>GTSTCK</code> (0x00D5) with A=1 (joystick) and A=0 (cursor keys) and ORs the two together; same with <code>GTTRIG</code> (0x00D8). Verified example at 0x818C.</p>
+<h2>Load chain (verified end to end in openMSX)</h2>
+<p>The TSX contains 12 blocks. The KCS ones (0x4B) carry the bytes already demodulated, so the extraction is exact and there is no audio to decode.</p>
+<table><tr><th>File</th><th>Load</th><th>Run</th><th>Size</th><th>What it is</th></tr><tr><td><code>TEMPT</code> (ASCII)</td><td>—</td><td>—</td><td>256 B</td><td>BASIC loader: <code>COLOR 1,1,1:SCREEN 2</code> + two <code>BLOAD&quot;cas:&quot;,R</code></td></tr><tr><td><code>TOPO</code> (BIN)</td><td>0x9470</td><td>0x9470</td><td>4254 B</td><td>Topo Soft logo</td></tr><tr><td><code>SLOTS</code> (BIN)</td><td>0xC350</td><td>0xC58F</td><td>700 B</td><td>Finds RAM in the slots + turbo loader</td></tr><tr><td>turbo 1 (block 0x10)</td><td>0x88B8</td><td>0x88B8</td><td>12388 B</td><td>Title screen</td></tr><tr><td>turbo 2 (block 0x10)</td><td>0x4000</td><td><b>0x8000</b></td><td>40449 B</td><td>The game</td></tr></table>
+<p>The turbo blocks have <b>one 0x00 byte in front and one XOR checksum byte behind</b> (the XOR of data+checksum comes out 0). Verified by comparing the RAM dumped by openMSX against the bytes in the TSX: identical with an offset of 1.</p>
+<p>Turbo block 2 (0x4000..0xDE00) <b>overwrites</b> turbo 1, which by then has already done its job.</p>
+<h2>Memory map with the game running</h2>
+<p>0x0000-0x3FFF   BASIC ROM. It is NOT switched to RAM: the game keeps calling the BIOS (INIGRP, LDIRVM, WRTVRM, GTSTCK, GTTRIG...). Verified: a 100% match with the VG-8020 ROM. 0x4000-0x7FFF   Game graphics and data 0x8000-0xDE00   Game code + variables 0x8FFF          Stack 0xFD9F          BIOS H.TIMI hook: the game writes <code>jp 0xD000</code> there</p>
+<h2>Identified data</h2>
+<table><tr><th>Range</th><th>What it is</th></tr><tr><td>0x4000-0x47FF</td><td>Pattern table (font): 256 glyphs x 8 bytes</td></tr><tr><td>0x4800-0x4FFF</td><td>Colour table</td></tr><tr><td>0x5000-0x57FF</td><td>Sprite patterns (they go to VRAM 0x3800)</td></tr><tr><td>0x5CC0-0x5FBF</td><td>Name table for the intro screen (32x24)</td></tr><tr><td>0x5FC0-0x60FF</td><td>Status bar template (goes to VRAM 0x1A00, rows 16-23)</td></tr><tr><td>0xD513-0xD530</td><td>Jump table for the player&#x27;s 15 commands (0x80..0x8E)</td></tr><tr><td>0xD53E-0xD5C7</td><td>Structures for the 3 PSG channels, 46 bytes each</td></tr><tr><td>0xD760 / 0xD891 / 0xD8F8</td><td>Menu tunes, channels 0/1/2</td></tr></table>
+<h2>Game variables (0x8F00-0x8F2F)</h2>
+<table><tr><th>Address</th><th>Variable</th><th>How it was verified</th></tr><tr><td>0x8F09 / 0x8F0A</td><td>Player X / Y</td><td>init 0x80 / 0x68 at 0x80CE / 0x80D6</td></tr><tr><td>0x8F0D</td><td>Screen (global counter)</td><td>init 0 at 0x8114; drawn as <code>(value mod 7)+1</code></td></tr><tr><td>0x8F0E</td><td>Level</td><td>init 0xFF at 0x80F3; drawn <code>+1</code></td></tr><tr><td>0x8F12</td><td><b>LIVES</b></td><td>watchpoint: only written at 0x80FD (A=9) and only read at 0x86A4</td></tr><tr><td>0x8F13 / 0x8F14</td><td>Respawn X / Y</td><td>init 0x80 / 0x68</td></tr><tr><td>0x8F17</td><td>Ammo icons</td><td>init 1 at 0x8102</td></tr><tr><td>0x8F18</td><td>Weapon type</td><td>init 0 at 0x8107; tile = 0xF7 + 2*type</td></tr><tr><td>0x8F1E</td><td>Anti-POKE trap flag</td><td>see below</td></tr></table>
+<h2>Identified routines</h2>
+<table><tr><th>Address</th><th>Routine</th></tr><tr><td>0x8000</td><td>Game entry point</td></tr><tr><td>0x805E</td><td>Border colour, sprites and turn the display on</td></tr><tr><td>0x8076</td><td>Main initialisation</td></tr><tr><td>0x8117</td><td><b>Main game loop</b> (two frames per iteration)</td></tr><tr><td>0x818C</td><td>Reads the controls (GTSTCK joystick + cursor keys, OR)</td></tr><tr><td>0x84CC</td><td>Takes a life away: <code>dec a / cp 0FFh / jp z,0x8C1E</code> (game over)</td></tr><tr><td>0x8528</td><td>Gives a life: <code>inc a / cp 0Ah / ret z</code> (caps at 10)</td></tr><tr><td>0x8698</td><td><b>Draws the status bar</b> (lives / screen / level)</td></tr><tr><td>0x8B80</td><td>Shows the anti-POKE message if 0x8F1E != 0</td></tr><tr><td>0x8C1E</td><td>Game over</td></tr><tr><td>0xD000</td><td>Interrupt routine (60 Hz), hooked into H.TIMI</td></tr><tr><td>0xD041</td><td>Assigns the sound data at DE to channel A</td></tr><tr><td>0xD060</td><td>Advances the 3 channels by one tick</td></tr><tr><td>0xD431</td><td>Indexes a jump table: HL = word at (HL + A*2)</td></tr><tr><td>0xDA00</td><td>Main menu: music + wait for fire</td></tr><tr><td>0xDB00</td><td>Per-frame routine (called twice per loop iteration)</td></tr></table>
+<p>VRAM cells the status bar writes to: <code>0x1A68</code> = LIVES digit, <code>0x1A7D</code> = SCREEN, <code>0x1ABB</code> = LEVEL, <code>0x1AA2</code> = ammo strip.</p>
+<h2>The anti-POKE trap</h2>
+<p>At 0x7F94 there is the string <code>POR QUE NO PRUEBAS SIN POKES</code> (&quot;why don&#x27;t you try without POKEs&quot;). It is shown by the routine at 0x8B80, which only does so if the variable 0x8F1E is non-zero.</p>
+<p>The interesting part: <b>no instruction in the binary ever writes to 0x8F1E</b> (neither <code>32 1E 8F</code> nor any equivalent shows up) and in the clean tape image it is 0. It is a dormant trap that never fires in the original game, and that would only be triggered if somebody poked that byte. It is not documented anywhere.</p>
+<h2>The game&#x27;s character set</h2>
+<p><b>It is not ASCII.</b> Verified two independent ways: by rendering the glyphs from the pattern table, and because the code itself does <code>ld b,05Ch / add a,b</code> to turn a number into a digit.</p>
+<p>space    0x00        (not 0x20!) A..Z     0x41..0x5A  (normal ASCII position) 0..9     0x5C..0x65  (shifted) &quot;        0x68 .        0x6A ,        0x6B :        0x6C</p>
+<ul><li>0x6D</li></ul>
+<p>A verified curiosity: the codes &#x27;U&#x27; (0x55) and &#x27;V&#x27; (0x56) draw <b>the same glyph</b>, which is why the text data stores &quot;PVES&quot;, &quot;NUEUO&quot;, &quot;MVSICA&quot; or &quot;NIUEL&quot; and it still reads fine on screen.</p>
+<p>Game text: <code>PANTALLA:</code> (0x6034, &quot;SCREEN:&quot;), <code> NIVEL:</code> (0x7F80, &quot;LEVEL:&quot;), <code>ACABOSE</code> (0x7F8B, roughly &quot;it&#x27;s all over&quot;), <code>POR QUE NO PRUEBAS SIN POKES</code> (0x7F94), and the ending at 0xC93B: <code>ALELUYA, OH FRAY ARNULFO / SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL CIELO / &quot;SOLUM VICTORIUS EST GLORIA&quot; / TE ATREVERAS CON &quot;ALEHOP&quot;</code>. (Roughly: &quot;Hallelujah, oh Friar Arnulfo / by overcoming all the perils of evil you have won heaven / &#x27;SOLUM VICTORIUS EST GLORIA&#x27; / will you dare take on &#x27;ALEHOP&#x27;&quot; — Alehop being another Topo Soft game.)</p>
+<h2>Project tools</h2>
+<table><tr><th>Tool</th><th>What for</th></tr><tr><td><code>tools/tsx_parse.py</code></td><td>Parses the TSX and extracts the files</td></tr><tr><td><code>tools/z80trace.py</code></td><td>Recursive tracer: separates code from data by following the flow</td></tr><tr><td><code>tools/mkasm.py</code></td><td>Generates the commented listing from the trace + the notes</td></tr><tr><td><code>tools/charset.py</code></td><td>The game&#x27;s character set and a text finder</td></tr><tr><td><code>tools/gen_msx_syms.py</code></td><td>MSX BIOS symbol table (from MSXgl)</td></tr><tr><td><code>tools/dasm_slice.py</code></td><td>Disassembles in sections with different ORGs (for SLOTS)</td></tr><tr><td><code>tools/omsx_*.tcl</code></td><td>openMSX harness: loading, savestates, watchpoints, PC sampling</td></tr></table>
+<p>Data files: <code>dump/turbo2_ram.bin</code> is the game exactly as it ends up in RAM (org 0x4000, 40449 bytes); <code>src/game.notes</code> holds the address-anchored annotations; <code>src/temptations_game.asm</code> is the generated listing.</p>
+<p><b>openMSX savestate</b>: <code>tempt_boot</code> (the game right as it starts at 0x8000). Saves reloading the 7 minutes of tape for every test.</p>
+<h2>Level structure (verified in the code)</h2>
+<p>The routine at 0x8B09 compares the screen counter (0x8F0D) against 6, 13, 20 and</p>
+<ol><li>Those are the last screens of each level, that is, <b>4 levels of 7 screens</b>:</li></ol>
+<p>level 1 -&gt; screens  0..6 level 2 -&gt; screens  7..13 level 3 -&gt; screens 14..20     (0x8B29: switches the sprite bank) level 4 -&gt; screens 21..27     (0x8B55: turns float mode on) screen 28                     the victory one</p>
+<p>The <b>underwater level 4</b> is at 0x8B55: it sets flag 0x8F11 to 1 (float, no gravity), the animation state to 0x0B (swim) and the border to colour 12.</p>
+<h2>Screen maps</h2>
+<p>29 consecutive 512-byte blocks starting at <b>0x9000</b> (32 columns x 16 rows, one tile byte per cell, row by row). The routine at 0x8ACE computes <code>0x9000 + screen*512</code> and copies 512 bytes to the buffer at 0x7D80.</p>
+<p>VERIFIED: with the game frozen on screen 0, the 512 bytes at 0x9000 match byte for byte (512/512) with VRAM 0x1800-0x19FF and with the buffer at 0x7D80.</p>
+<h2>Animation and physics table (0x60C0)</h2>
+<p>128-byte entries indexed by <code>state*128 + step*4</code>. Each frame is 4 bytes: signed dX and dY, the pattern number divided by 4, and the sprite&#x27;s two colours packed together. A dX of 0x80 ends the sequence. 0x82BE reads it. It is used both by the player (states 0-13) and by the enemies (16-48).</p>
+<h2>The punishment for cheating</h2>
+<p>The string &quot;POR QUE NO PRUEBAS SIN POKES&quot; (0x7F94) is not a stray message: the routine at 0x8B80 writes it <b>over the last line of the final victory screen</b> if the variable 0x8F1E is non-zero. It is a punishment reserved for anyone who finishes the game by cheating.</p>
+<p>But <b>no instruction in the binary ever writes to 0x8F1E</b>, so in the original game it never fires: it was left armed in case somebody poked that byte.</p>
+<h2>Infinite-lives POKE</h2>
+<p>The only published one is in &quot;MSX Book II&quot; (Paulisoft, Brazil, 1988, p. 62) and says <code>POKE &amp;HB4CC,0</code>. <b>It is a typo</b>: 0xB4CC is already 0 in the binary. The right address is <b>0x84CC</b>, which holds 0x3D = DEC A in the routine that takes a life away. Verified experimentally (tools/omsx_testpoke.tcl): without the patch 9-&gt;8, with the patch 9-&gt;9.</p>
+<h2>State of the disassembly</h2>
+<p><b>98.4% of the binary explained</b>: 5214 bytes of traced code and 34593 of identified data; 642 bytes (1.6%) are left in small gaps.</p>
+<p>Careful with the &quot;12.9% code&quot; figure: it does not mean the disassembly is incomplete, it means this game is ~87% data (16 KB of graphics and 29 maps of 512 B).</p>
+<p>0xCA00-0xD000 is <b>code from another build</b> that was left in the binary and never runs. It disassembles cleanly because it is real code, and that is exactly why it fooled a heuristic pointer-table detector.</p>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

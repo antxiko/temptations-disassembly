@@ -1,4 +1,4 @@
-<title>Bugs del juego original — Temptations (1988)</title>
+<title>Bugs — Temptations (1988)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -41,13 +41,13 @@ nav.top a:hover{color:var(--tinta)}
 footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
   color:var(--suave);font-size:12px}
 </style>
-<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="COMO-EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="BUGS.html" style=color:var(--tinta)>Bugs</a><a href="HERRAMIENTAS.html">Herramientas</a><a href="pantallas.html">Pantallas</a></nav>
-<h1>Bugs del juego original</h1>
-<p>Fallos que tiene <em>Temptations</em> desde 1988. No son errores del desensamblado: están en el código tal y como salió a la venta.</p>
-<p>Cada uno con el código que lo produce y, cuando se ha podido, la comprobación en el emulador. Van de menos a más grave.</p>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="BUGS.html" style=color:var(--tinta)>Bugs</a><a href="TOOLS.html">Tools</a><a href="pantallas.html">Screens</a><a href="es/BUGS.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1>Bugs</h1>
+<p>Bugs that <em>Temptations</em> has had since 1988. They are not disassembly mistakes: they are in the code exactly as it went on sale.</p>
+<p>Each one comes with the code that produces it and, where it was possible, the check in the emulator. They go from least to most serious.</p>
 <hr>
-<h2>1. El tope de vidas es 9, aunque el código pretenda que sean 10</h2>
-<p>La rutina que te da una vida extra:</p>
+<h2>1. The lives cap is 9, even though the code means it to be 10</h2>
+<p>The routine that gives you an extra life:</p>
 <pre><code>DA_VIDA:
     ld a,(08f12h)   ; A = vidas actuales
     inc a           ; una mas
@@ -56,59 +56,59 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
     ld (08f12h),a   ; NO -&gt; guarda el valor nuevo
     call PINTA_MARCADOR
     ret</code></pre>
-<p>El <code>ret z</code> está <b>antes</b> del <code>ld</code> que guarda. Así que si tienes 9 vidas y coges otra, el <code>inc a</code> da 10, salta el <code>ret z</code>, y la vida se pierde por el camino.</p>
-<p>Nunca verás 10 en el marcador. <b>El tope real es 9.</b></p>
-<p>Puede ser intencionado —el marcador solo tiene un dígito, y la rutina que lo pinta también recorta a 9— pero entonces la comparación tendría que ser con 10 y el orden de las instrucciones al revés. Tal y como está, el código dice una cosa y hace otra.</p>
+<p>The <code>ret z</code> comes <b>before</b> the <code>ld</code> that stores. So if you have 9 lives and pick up another one, the <code>inc a</code> gives 10, the <code>ret z</code> fires, and the life is lost along the way.</p>
+<p>You will never see 10 in the status bar. <b>The real cap is 9.</b></p>
+<p>It may be intentional — the status bar only has one digit, and the routine that draws it also clamps to 9 — but in that case the comparison would have to be with 10 and the order of the instructions the other way round. As it stands, the code says one thing and does another.</p>
 <hr>
-<h2>2. Al coger un objeto desaparece otro</h2>
-<p>Ésta se ve jugando.</p>
-<p>Cuando recoges un objeto, el juego tiene que borrarlo del mapa. Lo hace así:</p>
+<h2>2. Picking up one item makes another one disappear</h2>
+<p>You can see this one just by playing.</p>
+<p>When you pick up an item, the game has to erase it from the map. It does it like this:</p>
 <pre><code>BORRA_OBJETO_MAPA:
     ld hl,07d80h    ; SIEMPRE desde el principio del mapa
     ld bc,00200h    ; los 512 bytes de la pantalla
     cpir            ; busca el primer byte igual a A
     ...
     ld (hl),000h    ; y lo borra</code></pre>
-<p><code>CPIR</code> busca desde el <b>principio del buffer</b>, no desde donde está el jugador. Encuentra el primer tile de ese tipo que haya en la pantalla, sea el que sea.</p>
-<p>En una pantalla con un solo objeto de cada clase no se nota. Pero:</p>
-<table><tr><th>Pantalla</th><th>Objetos repetidos</th></tr><tr><td>16</td><td><b>2</b> de munición</td></tr><tr><td>27</td><td><b>6</b> de vida extra</td></tr></table>
-<p>En la pantalla 27, con seis vidas extra a la vista, cojas la que cojas desaparecerá siempre la primera en orden de barrido — arriba a la izquierda. Si coges la última, verás desaparecer una que está al otro lado de la pantalla, mientras la que acabas de tocar sigue dibujada.</p>
-<h3>Y hay un segundo fallo encadenado</h3>
-<p>Las rutinas que recogen objetos borran la casilla <b>antes</b> de comprobar si tienes el marcador al tope. Es decir: si coges una vida extra teniendo ya 9, o munición teniendo el máximo, o el arma que ya llevas, el objeto <b>desaparece del mapa sin darte nada</b>.</p>
+<p><code>cpir</code> searches from the <b>start of the buffer</b>, not from where the player is. It finds the first tile of that type anywhere on the screen, whichever one it happens to be.</p>
+<p>On a screen with a single item of each kind you don&#x27;t notice. But:</p>
+<table><tr><th>Screen</th><th>Repeated items</th></tr><tr><td>16</td><td><b>2</b> ammo</td></tr><tr><td>27</td><td><b>6</b> extra lives</td></tr></table>
+<p>On screen 27, with six extra lives in plain sight, whichever one you pick up, the one that vanishes is always the first in scan order — top left. If you take the last one, you will see one on the other side of the screen disappear while the one you just touched is still drawn.</p>
+<h3>And there is a second bug chained to it</h3>
+<p>The routines that pick up items clear the tile <b>before</b> checking whether your counter is already at the cap. That is: if you pick up an extra life when you already have 9, or ammo when you are at the maximum, or the weapon you are already carrying, the item <b>disappears from the map without giving you anything</b>.</p>
 <hr>
-<h2>3. Cada partida perdida se come un trozo de pila</h2>
-<p>Éste es el más serio, y tarda en manifestarse.</p>
-<p>El juego coloca la pila una sola vez, durante el arranque:</p>
+<h2>3. Every lost game eats a piece of the stack</h2>
+<p>This is the most serious one, and it takes a while to show up.</p>
+<p>The game sets up the stack only once, during startup:</p>
 <pre><code>GAME_START:
     ld sp,0efffh    ; pila provisional
     ...
     ld sp,08fffh    ; pila definitiva del juego   &lt;- 0x8058
     jp INIT_PRINCIPAL</code></pre>
-<p>Pero cuando pierdes la última vida, el game over termina así:</p>
+<p>But when you lose your last life, the game over ends like this:</p>
 <pre><code>    call 08bfdh
     jp 08076h       ; reinicia... entrando DESPUES del ld sp</code></pre>
-<p><code>0x8076</code> es la inicialización principal, que está <b>por debajo</b> de la instrucción que coloca la pila. Así que la partida nueva arranca con el puntero de pila donde lo dejó la anterior.</p>
-<h3>Medido en el emulador</h3>
-<p>Provocando ocho game overs seguidos y anotando dónde quedaba la pila en cada reinicio:</p>
-<table><tr><th>Reinicio</th><th>Puntero de pila</th></tr><tr><td>1</td><td><code>0x8FFF</code></td></tr><tr><td>2</td><td><code>0x8FFF</code></td></tr><tr><td>3</td><td><code>0x8FFD</code></td></tr><tr><td>4</td><td><code>0x8FFB</code></td></tr><tr><td>5</td><td><code>0x8FF9</code></td></tr><tr><td>6</td><td><code>0x8FDB</code></td></tr><tr><td>7</td><td><code>0x8FD9</code></td></tr><tr><td>8</td><td><code>0x8FD7</code></td></tr></table>
-<p>Baja y no vuelve a subir.</p>
-<p>La pila crece hacia abajo desde <code>0x8FFF</code>, y las variables del juego empiezan en <code>0x8F00</code>. O sea que hay unos 255 bytes de margen: tras suficientes partidas perdidas seguidas <b>sin resetear la máquina</b>, la pila acabaría escribiendo encima de las variables del juego, con lo que eso supone.</p>
-<p>En 1988, jugando en una cinta que tardaba siete minutos en cargar, era difícil que alguien encadenase tantas partidas de una sentada. Hoy, con un emulador y carga instantánea, es trivial llegar ahí.</p>
-<p><b>Arreglo:</b> cambiar el destino del salto de <code>0x8076</code> a una dirección que recoloque la pila antes de continuar.</p>
+<p><code>0x8076</code> is the main initialisation, which is <b>below</b> the instruction that sets up the stack. So the new game starts with the stack pointer wherever the previous one left it.</p>
+<h3>Measured in the emulator</h3>
+<p>Triggering eight game overs in a row and noting where the stack was left at each restart:</p>
+<table><tr><th>Restart</th><th>Stack pointer</th></tr><tr><td>1</td><td><code>0x8FFF</code></td></tr><tr><td>2</td><td><code>0x8FFF</code></td></tr><tr><td>3</td><td><code>0x8FFD</code></td></tr><tr><td>4</td><td><code>0x8FFB</code></td></tr><tr><td>5</td><td><code>0x8FF9</code></td></tr><tr><td>6</td><td><code>0x8FDB</code></td></tr><tr><td>7</td><td><code>0x8FD9</code></td></tr><tr><td>8</td><td><code>0x8FD7</code></td></tr></table>
+<p>It goes down and never comes back up.</p>
+<p>The stack grows downwards from <code>0x8FFF</code>, and the game variables start at <code>0x8F00</code>. So there are about 255 bytes of headroom: after enough lost games in a row <b>without resetting the machine</b>, the stack would end up writing over the game variables, with everything that implies.</p>
+<p>In 1988, playing from a tape that took seven minutes to load, it was unlikely that anyone would string that many games together in one sitting. Today, with an emulator and instant loading, getting there is trivial.</p>
+<p><b>Fix:</b> change the destination of the jump from <code>0x8076</code> to an address that puts the stack back before carrying on.</p>
 <hr>
-<h2>4. El final no tiene salida</h2>
-<p>Cuando te pasas el juego, la pantalla de victoria entra en este bucle:</p>
+<h2>4. The ending has no way out</h2>
+<p>When you finish the game, the victory screen goes into this loop:</p>
 <pre><code>BUCLE_FINAL:
     call MUEVE_ENEMIGOS
     halt
     halt
     halt
     jp BUCLE_FINAL</code></pre>
-<p>No lee el teclado. Ni siquiera CTRL+STOP funciona, porque el juego solo consulta esa combinación desde la rutina de partida, y aquí no se llama.</p>
-<p>Terminado el juego, la única forma de volver es <b>resetear la máquina</b>. No es exactamente un bug —puede ser deliberado, para que la pantalla final se quede puesta— pero conviene saberlo.</p>
+<p>It doesn&#x27;t read the keyboard. Not even CTRL+STOP works, because the game only checks that combination from the in-game routine, and that isn&#x27;t called here.</p>
+<p>Once the game is finished, the only way back is to <b>reset the machine</b>. It isn&#x27;t exactly a bug — it may be deliberate, so that the final screen stays put — but it is worth knowing.</p>
 <hr>
-<h2>Una rareza que no es un bug</h2>
-<p>En la pantalla 26 hay un punto oculto cuyo premio es un tile <b>mortal</b>.</p>
-<p>Los puntos ocultos son casillas que sueltan un objeto al dispararles. Casi todos dan munición, armas o vidas. Ése no: te mata.</p>
-<p>Está en los datos tal cual, así que es intencionado: una trampa para quien vaya disparando a todo lo que se mueve. Muy en el espíritu de un juego que además guarda un reproche para los tramposos en la pantalla final.</p>
+<h2>An oddity that is not a bug</h2>
+<p>On screen 26 there is a hidden spot whose prize is a <b>deadly</b> tile.</p>
+<p>Hidden spots are tiles that drop an item when you shoot them. Nearly all of them give ammo, weapons or lives. That one doesn&#x27;t: it kills you.</p>
+<p>It is in the data exactly like that, so it is intentional: a trap for anyone who goes around shooting at everything that moves. Very much in the spirit of a game that also keeps a telling-off for cheaters on the final screen.</p>
 <footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

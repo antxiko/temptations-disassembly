@@ -56,11 +56,31 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
   color:var(--suave);font-size:12px}
 """
 
-NAV = [("index.html", "Portada"), ("COMO-EMPEZAR.html", "Empezar"),
-       ("EL-JUEGO.html", "El juego"), ("LA-CINTA.html", "La cinta"),
-       ("EL-CODIGO.html", "El código"), ("HALLAZGOS.html", "Hallazgos"),
-       ("BUGS.html", "Bugs"), ("HERRAMIENTAS.html", "Herramientas"),
-       ("pantallas.html", "Pantallas")]
+# Un menu por idioma. La web se publica en ingles en la raiz de docs/ y en
+# castellano bajo docs/es/.
+NAV_EN = [("index.html", "Home"), ("GETTING-STARTED.html", "Start"),
+          ("THE-GAME.html", "The game"), ("THE-TAPE.html", "The tape"),
+          ("THE-CODE.html", "The code"), ("FINDINGS.html", "Findings"),
+          ("BUGS.html", "Bugs"), ("TOOLS.html", "Tools"),
+          ("pantallas.html", "Screens")]
+NAV_ES = [("index.html", "Portada"), ("COMO-EMPEZAR.html", "Empezar"),
+          ("EL-JUEGO.html", "El juego"), ("LA-CINTA.html", "La cinta"),
+          ("EL-CODIGO.html", "El código"), ("HALLAZGOS.html", "Hallazgos"),
+          ("BUGS.html", "Bugs"), ("HERRAMIENTAS.html", "Herramientas"),
+          ("../pantallas.html", "Pantallas")]
+
+# Cada documento tiene su pareja en el otro idioma, para el selector.
+PAREJA = {
+    "index.html": "index.html",
+    "GETTING-STARTED.html": "COMO-EMPEZAR.html", "COMO-EMPEZAR.html": "GETTING-STARTED.html",
+    "THE-GAME.html": "EL-JUEGO.html",   "EL-JUEGO.html": "THE-GAME.html",
+    "THE-TAPE.html": "LA-CINTA.html",   "LA-CINTA.html": "THE-TAPE.html",
+    "THE-CODE.html": "EL-CODIGO.html",  "EL-CODIGO.html": "THE-CODE.html",
+    "FINDINGS.html": "HALLAZGOS.html",  "HALLAZGOS.html": "FINDINGS.html",
+    "BUGS.html": "BUGS.html",
+    "TOOLS.html": "HERRAMIENTAS.html",  "HERRAMIENTAS.html": "TOOLS.html",
+    "CONTEXT.html": "CONTEXTO.html",    "CONTEXTO.html": "CONTEXT.html",
+}
 
 
 def enlinea(t):
@@ -90,7 +110,10 @@ def ruta(href):
     """Los enlaces entre documentos apuntan a .md; en la web van a .html."""
     if href.startswith(("http", "#", "mailto:")):
         return href
-    h = href.replace("docs/", "").replace("../", "")
+    h = href.replace("docs/", "")
+    if h.startswith("../") and not h.startswith("../src") and not h.startswith("../tools"):
+        return h if h.endswith((".html", ".png", ".txt")) else h.replace("../", "")
+    h = h.replace("../", "")
     # Codigo fuente, herramientas y ficheros de la raiz: no estan bajo docs/
     if h.startswith(("src/", "tools/")) or h in (
             "README.md", "LICENSE", "AVISO-LEGAL.md", "Makefile"):
@@ -100,7 +123,7 @@ def ruta(href):
     return h
 
 
-def convierte(texto, titulo, actual):
+def convierte(texto, titulo, actual, idioma="en"):
     ln = texto.split("\n")
     out, i = [], 0
     while i < len(ln):
@@ -156,8 +179,15 @@ def convierte(texto, titulo, actual):
             parr.append(ln[i].strip()); i += 1
         out.append(f"<p>{enlinea(' '.join(parr))}</p>")
 
+    menu = NAV_EN if idioma == "en" else NAV_ES
     nav = "".join(f'<a href="{h}"{" style=color:var(--tinta)" if h == actual else ""}>{t}</a>'
-                  for h, t in NAV)
+                  for h, t in menu)
+    # Selector de idioma: lleva al documento equivalente, no a la portada
+    otro = PAREJA.get(actual, "index.html")
+    if idioma == "en":
+        nav += f'<a href="es/{otro}" style="margin-left:auto;color:var(--oro)">Castellano</a>'
+    else:
+        nav += f'<a href="../{otro}" style="margin-left:auto;color:var(--oro)">English</a>' 
     return (f"<title>{html.escape(titulo)}</title>\n<style>{ESTILO}</style>\n"
             f'<div class="w"><nav class="top">{nav}</nav>\n' + "\n".join(out) +
             '\n<footer><p><em>Temptations</em> es obra de Luis López Navarro y César '
@@ -166,7 +196,7 @@ def convierte(texto, titulo, actual):
             'preservación, estudio y documentación.</p></footer></div>\n')
 
 
-def main(docdir):
+def main(docdir, idioma="en"):
     n = 0
     for fn in sorted(os.listdir(docdir)):
         if not fn.endswith(".md"):
@@ -176,11 +206,12 @@ def main(docdir):
         texto = open(src, encoding="utf-8").read()
         m = re.search(r"^#\s+(.*)$", texto, re.M)
         titulo = (m.group(1) if m else fn[:-3]) + " — Temptations (1988)"
-        open(dst, "w", encoding="utf-8").write(convierte(texto, titulo, fn[:-3] + ".html"))
+        open(dst, "w", encoding="utf-8").write(
+            convierte(texto, titulo, fn[:-3] + ".html", idioma))
         print(f"  {fn} -> {os.path.basename(dst)}")
         n += 1
-    print(f"{n} documentos convertidos")
+    print(f"{n} documentos convertidos ({idioma})")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "en")

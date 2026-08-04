@@ -1,0 +1,102 @@
+<title>Getting started — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html" style=color:var(--tinta)>Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="BUGS.html">Bugs</a><a href="TOOLS.html">Tools</a><a href="pantallas.html">Screens</a><a href="es/COMO-EMPEZAR.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1>Getting started</h1>
+<p>A guide to having it running in five minutes. You don&#x27;t need to know assembly, or to have ever touched an MSX in your life.</p>
+<h2>1. What you need to install</h2>
+<p>Four things. On macOS, with <a href="https://brew.sh">Homebrew</a>:</p>
+<pre><code>brew install z80dasm pasmo openmsx</code></pre>
+<p>Python 3 already comes with the system. On Linux, the three of them are in the usual repositories (<code>apt install z80dasm pasmo openmsx</code> or equivalent).</p>
+<table><tr><th>Program</th><th>What it&#x27;s for</th></tr><tr><td><code>z80dasm</code></td><td>Turns the game&#x27;s bytes into instructions</td></tr><tr><td><code>pasmo</code></td><td>Goes the other way round, to check we haven&#x27;t got it wrong</td></tr><tr><td><code>openmsx</code></td><td>MSX emulator. It&#x27;s there to <em>verify</em> things, not just to play</td></tr><tr><td>Python 3</td><td>All the project&#x27;s tools</td></tr></table>
+<p><code>openmsx</code> is optional if you only want to read the code, but it&#x27;s what lets you really check the claims instead of just taking them on trust.</p>
+<h2>2. Get the tape</h2>
+<p>You need an image of the original tape in <b>TSX</b> format. It isn&#x27;t distributed here. You can look for it in the usual MSX preservation archives; the canonical name is:</p>
+<pre><code>Temptations (1988)(Topo Soft)(ES)[!][RUN&#x27;CAS-&#x27;][v0.8b].tsx</code></pre>
+<p>Leave it in the project folder, next to the <code>Makefile</code>. There&#x27;s no need to rename it.</p>
+<h2>3. Run it</h2>
+<pre><code>make</code></pre>
+<p>And that&#x27;s it. That does four things in a row:</p>
+<ol><li>Opens the tape and pulls out the four programs it contains</li><li>Works out which of their bytes are instructions and which are data</li><li>Generates the commented listings in <code>src/</code></li><li>Checks that everything adds up</li></ol>
+<p>If it finishes with <code>TODO VERDE</code> (all green), it worked.</p>
+<h2>4. Read it</h2>
+<p>Open <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/temptations_game.asm">src/temptations_game.asm</a>. That&#x27;s the main game, about 5,800 lines. Start at the beginning: the first routine is the boot code, and from there you can follow the thread.</p>
+<p>A snippet, so you can see what it looks like:</p>
+<pre><code>PINTA_MARCADOR:         ; Redibuja el marcador (vidas / pantalla / nivel)
+    ld hl,05fc0h        ; Plantilla del marcador -&gt; VRAM 0x1A00, las filas 16..23
+    ld de,01a00h
+    ld bc,00100h
+    call 0005ch         ; BIOS LDIRVM - copia un bloque de memoria a la VRAM
+    ld a,(08f12h)       ; A = numero de vidas
+    cp 009h             ; El marcador solo tiene un digito: mas de 9 se ven como 9
+    jp m,L_86AE
+    ld a,009h
+L_86AE:
+    ld b,05ch           ; 0x5C es el codigo del digito &#x27;0&#x27; en la fuente del juego...
+    add a,b             ; ...asi que 0x5C+vidas da directamente el caracter
+    ld hl,01a68h        ; Casilla del digito de VIDAS en la VRAM</code></pre>
+<p>If you get lost, <a href="THE-CODE.html">THE-CODE.md</a> has the map of where everything is.</p>
+<h2>5. Adding your own comments</h2>
+<p>**Don&#x27;t edit the <code>.asm</code> files**: they&#x27;re regenerated every time and you&#x27;d lose the work. Comments go in <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/game.notes">../src/game.notes</a>, anchored to the memory address:</p>
+<pre><code>L 0x8698 PINTA_MARCADOR   Redibuja el marcador completo
+C 0x86A4 A = numero de vidas
+B 0x8698 Este texto sale como cabecera antes de la rutina
+D 0x9000 0xCA00 mapas   Los 29 mapas de pantalla, 512 bytes cada uno</code></pre>
+<p>Four kinds of line: <code>L</code> gives a routine a name, <code>C</code> adds a comment at the end of an instruction, <code>B</code> puts a block of text before it, and <code>D</code> describes a range of data.</p>
+<p>Then <code>make</code>, and it&#x27;s in the listing.</p>
+<h2>Other commands</h2>
+<pre><code>make verify   # just the checks, without regenerating
+make sanity   # just the fake-coverage check
+make clean    # deletes what was generated</code></pre>
+<p>To see the game&#x27;s screens drawn straight from the binary:</p>
+<pre><code>python3 tools/render_maps.py dump/turbo2_ram.bin docs/mapas</code></pre>
+<p>To play from the emulator, with the original tape:</p>
+<pre><code>TEMPT_TSX=&quot;$PWD/tu-cinta.tsx&quot; openmsx -machine Philips_VG_8020-20 \
+  -script tools/omsx_demo.tcl</code></pre>
+<p>(Loading really does take seven minutes, just like in 1988. That script speeds it up ×10 and goes back to normal speed when the game starts.)</p>
+<h2>If something goes wrong</h2>
+<p>**<code>make: z80dasm: command not found</code>** — the tools from step 1 haven&#x27;t been installed.</p>
+<p>**<code>no es TZX/TSX</code>** (&quot;not a TZX/TSX&quot;) — the tape file isn&#x27;t a valid TSX, or it&#x27;s compressed. Uncompress it.</p>
+<p><b>openMSX doesn&#x27;t start, or complains about ROMs</b> — the emulator needs the ROM of a real MSX machine. The project uses a Philips VG-8020 (an MSX1 with 64 KB, which is what the game asks for). Without system ROMs, openMSX only ships C-BIOS, which has no BASIC and therefore can&#x27;t load tapes.</p>
+<p>**<code>DIFIERE</code>** (&quot;differs&quot;) when verifying — something has broken in the annotations. The message says which bytes don&#x27;t match. If you&#x27;ve just edited the <code>.notes</code>, undo the last change.</p>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

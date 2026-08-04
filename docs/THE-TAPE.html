@@ -1,0 +1,104 @@
+<title>The tape — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html" style=color:var(--tinta)>The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="BUGS.html">Bugs</a><a href="TOOLS.html">Tools</a><a href="pantallas.html">Screens</a><a href="es/LA-CINTA.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
+<h1>The tape</h1>
+<p>How <em>Temptations</em> loads from a cassette, and why it takes seven minutes.</p>
+<h2>What is inside the file</h2>
+<p>The <b>TSX</b> format is the MSX version of TZX, a preservation format that does not store audio but the <em>description</em> of the pulses that were on the tape, plus metadata. That makes it much smaller and much more exact than a WAV.</p>
+<p>Our file has 12 blocks:</p>
+<table><tr><th></th><th>Contents</th></tr><tr><td>3 blocks</td><td>Metadata: who dumped it, the load command, the TOSEC name</td></tr><tr><td>1 block</td><td>Game record: title, publisher, year, language</td></tr><tr><td>6 blocks</td><td>The first three programs, in header + data pairs</td></tr><tr><td>2 blocks</td><td>The two big blocks, in turbo format</td></tr></table>
+<p>Blocks of type <b>KCS</b> (<code>0x4B</code>, the MSX&#x27;s own extension) carry the bytes <b>already demodulated</b>. So there is no audio to decode: the extraction is exact, with no margin for error.</p>
+<h2>The four programs</h2>
+<table><tr><th>Name</th><th>Loads at</th><th>Runs at</th><th>Size</th><th>What it is</th></tr><tr><td><code>TEMPT</code></td><td>—</td><td>—</td><td>256 B</td><td>BASIC loader</td></tr><tr><td><code>TOPO</code></td><td>0x9470</td><td>0x9470</td><td>4,254 B</td><td>The Topo Soft logo</td></tr><tr><td><code>SLOTS</code></td><td>0xC350</td><td>0xC58F</td><td>700 B</td><td>RAM finder + turbo loader</td></tr><tr><td><em>(turbo 1)</em></td><td>0x88B8</td><td>0x88B8</td><td>12,388 B</td><td>The title screen</td></tr><tr><td><em>(turbo 2)</em></td><td>0x4000</td><td><b>0x8000</b></td><td>40,449 B</td><td>The game</td></tr></table>
+<p>The BASIC loader is disarmingly simple:</p>
+<pre><code>10 COLOR 1,1,1:SCREEN 2
+20 BLOAD&quot;cas:&quot;,R
+30 BLOAD&quot;cas:&quot;,R</code></pre>
+<p>It sets the display to black on black (so you do not see the mess while it loads), switches to graphics mode, and loads the next two programs, running them.</p>
+<h2>SLOTS: the interesting piece</h2>
+<p><code>SLOTS</code> does two jobs, and both of them have their charm.</p>
+<h3>Finding the RAM</h3>
+<p>The game needs the MSX&#x27;s full 64 KB. But on an MSX the memory is spread across slots, and every machine organises them its own way. So <code>SLOTS</code> walks through all of them, writing and reading back to work out where there is real RAM:</p>
+<pre><code>SONDEA_PAGINA:
+    ld a,080h       ; marca de slot expandido
+    ld c,004h       ; 4 slots primarios
+    ...
+    ld (hl),020h    ; escribe 0x20 y lo relee
+    ld a,(hl)
+    cp 020h
+    jr nz,siguiente
+    ld (hl),0fah    ; y luego 0xFA, para descartar ROM</code></pre>
+<p>And here comes the nice detail: probing the first page of memory is a chicken-and-egg problem. That page is where the BIOS lives, and the routine you need in order to switch slots <b>is in the BIOS</b>. If you switch it out to test the RAM, you are left without the routine.</p>
+<p>Topo&#x27;s solution: <b>carry its own copy of the routine</b>. <code>SLOTS</code> copies its own version of that function into high memory, rewrites on the fly the destination of its own <code>CALL</code> instruction so that it points at the copy, and only then can it probe page 0 without depending on the BIOS.</p>
+<pre><code>    ld hl,00024h        ; primero, la de la BIOS
+    ld (0c3b3h),hl      ; escrita como operando del CALL de 0xC3B2
+    ...
+    ld hl,lc418h        ; ahora copia la nuestra a RAM
+    ld de,09c40h
+    ld bc,000c8h
+    ldir
+    ld hl,09c40h
+    ld (0c3b3h),hl      ; y reescribe el CALL para usarla</code></pre>
+<h3>Reading the tape the raw way</h3>
+<p>The second half is a <b>turbo loader</b>: it reads the tape much faster than the system routines do, measuring the width of the pulses by hand.</p>
+<p>It reads bit 7 of register 14 of the sound chip, which is where the MSX hooks up the cassette input, and counts how long it takes to change level. Short pulse, one bit; long pulse, the other.</p>
+<p>And while it is at it, this detail:</p>
+<pre><code>    ld a,r          ; el registro R del Z80: un valor practicamente aleatorio
+    and 00fh
+    out (099h),a    ; ...escrito en el registro de color del video</code></pre>
+<p>The Z80&#x27;s <code>R</code> register increments on its own with every instruction. Taking it and dumping it into the backdrop colour produces <b>the coloured stripes you see while it loads</b>. It is not decoration that somebody added: it is a by-product of the read loop itself, for free.</p>
+<h2>Turbo block format</h2>
+<p>Each turbo block is:</p>
+<pre><code>[ 0x00 ] [ ......data...... ] [ checksum ]</code></pre>
+<p>A sync byte, the data, and a check byte worked out so that the XOR of the whole block comes out zero.</p>
+<p>This was verified by comparing the memory the emulator had loaded after reading the tape against the bytes in the TSX file: <b>identical</b>, with the one-byte offset that corresponds to the sync byte.</p>
+<h2>The full sequence</h2>
+<p>Timed in the emulator, in real machine time:</p>
+<table><tr><th>Moment</th><th>What happens</th></tr><tr><td>0 s</td><td>The tape starts</td></tr><tr><td>65 s</td><td>The Topo Soft logo appears</td></tr><tr><td>96 s</td><td><code>SLOTS</code> starts up: it finds the RAM and takes over the loading</td></tr><tr><td>181 s</td><td>The title screen is in; it gets drawn on the display</td></tr><tr><td><b>406 s</b></td><td>The game starts</td></tr></table>
+<p>Almost seven minutes. That is how it was.</p>
+<h2>Rebuilding the tape</h2>
+<p>The project can go the other way round: take the commented listings, assemble them, and put the whole tape back together with its headers, sync bytes and checksums.</p>
+<pre><code>python3 tools/build_tape.py build build/Temptations_rebuild.tsx</code></pre>
+<p>The result is <b>byte-for-byte identical</b> to the original TSX, and it loads in the emulator with the same timings. That is the proof that the format is understood all the way through: nothing is left uninterpreted.</p>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>
