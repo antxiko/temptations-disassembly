@@ -38,12 +38,12 @@ T = {
                 ("INVENTARIO.txt", "Inventory")],
         otro=("es/index.html", "Castellano"),
         h_num="The game in numbers",
-        cifras=[("100%", "of the binary accounted for"), ("135", "routines identified"),
+        cifras=[("100%", "of the binary accounted for"), ("137", "routines identified"),
                 ("29", "screen maps"), ("5,214", "bytes of code"),
                 ("35,235", "bytes of data"), ("0", "bytes unidentified")],
         nota_num="Only 13% being code doesn't mean anything is missing: this game is "
-                 "<b style='color:var(--tinta);font-weight:400'>87% data</b>. Sixteen "
-                 "kilobytes of graphics and twenty-nine screen maps of 512 bytes each.",
+                 "<b style='color:var(--tinta);font-weight:400'>87% data</b>. The graphics, "
+                 "the animation tables and twenty-nine screen maps of 512 bytes each.",
         h_find="What turned up when we took it apart",
         h_bugs="Bugs the game has carried since 1988",
         h_scr="All 29 screens",
@@ -75,12 +75,12 @@ so and it comes down, no argument.</p>""",
                 ("../INVENTARIO.txt", "Inventario")],
         otro=("../index.html", "English"),
         h_num="El juego en cifras",
-        cifras=[("100%", "del binario explicado"), ("135", "rutinas identificadas"),
+        cifras=[("100%", "del binario explicado"), ("137", "rutinas identificadas"),
                 ("29", "mapas de pantalla"), ("5.214", "bytes de código"),
                 ("35.235", "bytes de datos"), ("0", "bytes sin identificar")],
         nota_num="Que solo el 13% sea código no significa que falte nada: este juego es "
-                 "<b style='color:var(--tinta);font-weight:400'>87% datos</b>. Dieciséis "
-                 "kilobytes de gráficos y veintinueve mapas de pantalla de 512 bytes cada uno.",
+                 "<b style='color:var(--tinta);font-weight:400'>87% datos</b>. Los gráficos, "
+                 "las tablas de animación y veintinueve mapas de pantalla de 512 bytes cada uno.",
         h_find="Lo que apareció al desmontarlo",
         h_bugs="Bugs que el juego arrastra desde 1988",
         h_scr="Las 29 pantallas",

@@ -76,7 +76,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <pre><code>BUCLE_PARTIDA:
     call 0832ah         ; ¿han pulsado CTRL+STOP?
     halt                ; espera al barrido de pantalla
-    call 0db00h         ; sprites y vídeo
+    call 0db00h         ; efectos de sonido (motor PSG)
     halt
     call 0db00h
     call DISPARA
@@ -124,7 +124,7 @@ byte 3:  los dos colores del sprite, uno en cada mitad del byte</code></pre>
 <p>Lo llamativo, ya contado en <a href="EL-JUEGO.html">EL-JUEGO.md</a>, es que el sistema funciona <b>por coordenadas</b>: no mira qué hay dibujado. De ahí que 13 de los 30 puntos del juego sean invisibles.</p>
 <h2>El reproductor de sonido</h2>
 <p>Un motor de tres canales con formato propio, tipo tracker. Los datos son una secuencia de bytes donde los valores por debajo de <code>0x80</code> son notas y los de <code>0x80</code> en adelante son comandos:</p>
-<table><tr><th>Comando</th><th>Qué hace</th></tr><tr><td><code>0x80</code></td><td>volumen del canal</td></tr><tr><td><code>0x81</code></td><td>mezclador (tono, ruido o ambos)</td></tr><tr><td><code>0x82</code></td><td>volver al principio (bucle)</td></tr><tr><td><code>0x83</code></td><td>duración de nota</td></tr><tr><td><code>0x84</code></td><td>silencio</td></tr><tr><td><code>0x85</code></td><td>tempo</td></tr><tr><td><code>0x86</code></td><td>duración compuesta</td></tr><tr><td><code>0x87</code></td><td>cargar instrumento</td></tr><tr><td><code>0x88</code></td><td>periodo de ruido</td></tr><tr><td><code>0x89</code></td><td>envolvente de ruido</td></tr><tr><td><code>0x8A</code></td><td>repetir envolventes</td></tr><tr><td><code>0x8B</code></td><td>fin del canal</td></tr><tr><td><code>0x8C</code></td><td>llamar a una frase</td></tr><tr><td><code>0x8D</code>, <code>0x8E</code></td><td>control de envolventes</td></tr></table>
+<table><tr><th>Comando</th><th>Qué hace</th></tr><tr><td><code>0x80</code></td><td>volumen del canal</td></tr><tr><td><code>0x81</code></td><td>mezclador (tono, ruido o ambos)</td></tr><tr><td><code>0x82</code></td><td>volver al principio (bucle)</td></tr><tr><td><code>0x83</code></td><td>duración de nota</td></tr><tr><td><code>0x84</code></td><td>silencio</td></tr><tr><td><code>0x85</code></td><td>tempo</td></tr><tr><td><code>0x86</code></td><td>duración compuesta</td></tr><tr><td><code>0x87</code></td><td>cargar instrumento</td></tr><tr><td><code>0x88</code></td><td>periodo de ruido</td></tr><tr><td><code>0x89</code></td><td>envolvente de ruido</td></tr><tr><td><code>0x8A</code></td><td>repetir envolventes</td></tr><tr><td><code>0x8B</code></td><td>fin del canal</td></tr><tr><td><code>0x8C</code></td><td>llamar a una frase</td></tr><tr><td><code>0x8D</code></td><td>volver de la frase (cierra el <code>0x8C</code>)</td></tr><tr><td><code>0x8E</code></td><td>transposición del canal en semitonos</td></tr></table>
 <p>Con instrumentos reutilizables y llamadas a frases, para no repetir datos. Todo en algo más de un kilobyte, y funcionando dentro de la interrupción de pantalla sin robarle tiempo al juego.</p>
 <h2>Las variables</h2>
 <p>Están todas juntas, de <code>0x8F00</code> a <code>0x8F9F</code>. Las principales:</p>

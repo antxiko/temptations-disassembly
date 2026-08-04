@@ -271,7 +271,7 @@ C 0x84CF No quedan vidas: game over
 C 0x84D2 Guarda el nuevo contador
 C 0x84D5 Y repinta el marcador para que se vea
 
-L 0x8528 DA_VIDA          Suma una vida (tope 10)
+L 0x8528 DA_VIDA          Suma una vida. El RET Z sale antes de guardar, asi que el tope real es 9
 C 0x8528 A = vidas actuales
 L 0x8C1E GAME_OVER        Fin de partida
 

@@ -76,7 +76,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <pre><code>BUCLE_PARTIDA:
     call 0832ah         ; ¿han pulsado CTRL+STOP?
     halt                ; espera al barrido de pantalla
-    call 0db00h         ; sprites y vídeo
+    call 0db00h         ; efectos de sonido (motor PSG)
     halt
     call 0db00h
     call DISPARA
@@ -87,7 +87,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
     call MUEVE_JUGADOR
     call COLISIONES_MAPA
     jp BUCLE_PARTIDA</code></pre>
-<p>Two <code>halt</code>s per turn means the game runs at <b>25 or 30 frames per second</b>, half the display refresh rate. It is deliberate: it leaves enough time to move everything without any visible stutter.</p>
+<p>Two <code>halt</code>s per loop means the game runs at <b>25 or 30 frames per second</b>, half the display refresh rate. It is deliberate: it leaves enough time to move everything without any visible stutter.</p>
 <h2>How the monk moves</h2>
 <p>The joystick is translated into an <b>action code</b> through a table, and that code is at once the animation index and the character&#x27;s state:</p>
 <table><tr><th>Joystick direction</th><th>Code</th><th>What it does</th></tr><tr><td>centre, down, down±diagonal</td><td><code>0x00</code></td><td>idle (there is no crouching)</td></tr><tr><td>right</td><td><code>0x01</code></td><td>walk right</td></tr><tr><td>left</td><td><code>0x02</code></td><td>walk left</td></tr><tr><td>up</td><td><code>0x08</code></td><td>vertical jump</td></tr><tr><td>up + right</td><td><code>0x09</code></td><td>jump right</td></tr><tr><td>up + left</td><td><code>0x0A</code></td><td>jump left</td></tr></table>
@@ -121,11 +121,11 @@ byte 3:  the sprite&#x27;s two colours, one in each half of the byte</code></pre
 <p>Each screen also has a list of up to four <b>hidden spots</b>, at <code>0x79C0 + screen*16</code>, with four bytes per spot:</p>
 <pre><code>column, row, shots it takes, prize it drops</code></pre>
 <p>The shot counter is stored as a negative: the game increments it until it overflows to zero. Same as enemy stamina.</p>
-<p>The striking part, already told in <a href="THE-GAME.html">THE-GAME.md</a>, is that the system works <b>by coordinates</b>: it does not look at what is drawn there. That is why 13 of the game&#x27;s 30 spots are invisible.</p>
+<p>The striking part, already covered in <a href="THE-GAME.html">THE-GAME.md</a>, is that the system works <b>by coordinates</b>: it does not look at what is drawn there. That is why 13 of the game&#x27;s 30 spots are invisible.</p>
 <h2>The sound player</h2>
 <p>A three-channel engine with its own tracker-style format. The data is a byte sequence where values below <code>0x80</code> are notes and <code>0x80</code> upwards are commands:</p>
-<table><tr><th>Command</th><th>What it does</th></tr><tr><td><code>0x80</code></td><td>channel volume</td></tr><tr><td><code>0x81</code></td><td>mixer (tone, noise or both)</td></tr><tr><td><code>0x82</code></td><td>back to the start (loop)</td></tr><tr><td><code>0x83</code></td><td>note duration</td></tr><tr><td><code>0x84</code></td><td>rest</td></tr><tr><td><code>0x85</code></td><td>tempo</td></tr><tr><td><code>0x86</code></td><td>compound duration</td></tr><tr><td><code>0x87</code></td><td>load instrument</td></tr><tr><td><code>0x88</code></td><td>noise period</td></tr><tr><td><code>0x89</code></td><td>noise envelope</td></tr><tr><td><code>0x8A</code></td><td>repeat envelopes</td></tr><tr><td><code>0x8B</code></td><td>end of channel</td></tr><tr><td><code>0x8C</code></td><td>call a phrase</td></tr><tr><td><code>0x8D</code>, <code>0x8E</code></td><td>envelope control</td></tr></table>
-<p>With reusable instruments and calls to phrases, so as not to repeat data. All of it in a little over a kilobyte, and running inside the screen interrupt without stealing time from the game.</p>
+<table><tr><th>Command</th><th>What it does</th></tr><tr><td><code>0x80</code></td><td>channel volume</td></tr><tr><td><code>0x81</code></td><td>mixer (tone, noise or both)</td></tr><tr><td><code>0x82</code></td><td>back to the start (loop)</td></tr><tr><td><code>0x83</code></td><td>note duration</td></tr><tr><td><code>0x84</code></td><td>rest</td></tr><tr><td><code>0x85</code></td><td>tempo</td></tr><tr><td><code>0x86</code></td><td>compound duration</td></tr><tr><td><code>0x87</code></td><td>load instrument</td></tr><tr><td><code>0x88</code></td><td>noise period</td></tr><tr><td><code>0x89</code></td><td>noise envelope</td></tr><tr><td><code>0x8A</code></td><td>repeat envelopes</td></tr><tr><td><code>0x8B</code></td><td>end of channel</td></tr><tr><td><code>0x8C</code></td><td>call a phrase</td></tr><tr><td><code>0x8D</code></td><td>return from phrase (closes the <code>0x8C</code>)</td></tr><tr><td><code>0x8E</code></td><td>channel transposition in semitones</td></tr></table>
+<p>With reusable instruments and calls to phrases, so as not to repeat data. All of it in a little over a kilobyte, and running inside the display interrupt without stealing time from the game.</p>
 <h2>The variables</h2>
 <p>They all sit together, from <code>0x8F00</code> to <code>0x8F9F</code>. The main ones:</p>
 <table><tr><th>Address</th><th>What it is</th></tr><tr><td><code>0x8F09</code> / <code>0x8F0A</code></td><td>player X and Y, in pixels</td></tr><tr><td><code>0x8F0B</code></td><td>current state / animation</td></tr><tr><td><code>0x8F0C</code></td><td>frame within the animation</td></tr><tr><td><code>0x8F0D</code></td><td>screen (0–28)</td></tr><tr><td><code>0x8F0E</code></td><td>level (0–3)</td></tr><tr><td><code>0x8F11</code></td><td>float mode: wings or level 4</td></tr><tr><td><code>0x8F12</code></td><td><b>lives</b></td></tr><tr><td><code>0x8F13</code> / <code>0x8F14</code></td><td>where to reappear after dying</td></tr><tr><td><code>0x8F17</code></td><td>ammo</td></tr><tr><td><code>0x8F18</code></td><td>weapon</td></tr><tr><td><code>0x8F1E</code></td><td>the cheater flag that nobody ever turns on</td></tr><tr><td><code>0x8F20</code></td><td>the 4 active enemies, 5 bytes each</td></tr><tr><td><code>0x8F80</code></td><td>the 7 shots in flight, 4 bytes each</td></tr></table>

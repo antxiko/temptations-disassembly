@@ -93,7 +93,7 @@ ya ha hecho su trabajo.
 | 0x8F09 / 0x8F0A | X / Y del jugador | init 0x80 / 0x68 en 0x80CE / 0x80D6 |
 | 0x8F0D | Pantalla (contador global) | init 0 en 0x8114; se pinta como `(valor mod 7)+1` |
 | 0x8F0E | Nivel | init 0xFF en 0x80F3; se pinta `+1` |
-| 0x8F12 | **VIDAS** | watchpoint: solo se escribe en 0x80FD (A=9) y solo se lee en 0x86A4 |
+| 0x8F12 | **VIDAS** | se inicializa a 9 en 0x80FD; la tocan QUITA_VIDA (0x84C9) y DA_VIDA (0x8528), y la lee el marcador en 0x86A4 |
 | 0x8F13 / 0x8F14 | X / Y de reaparicion | init 0x80 / 0x68 |
 | 0x8F17 | Iconos de municion | init 1 en 0x8102 |
 | 0x8F18 | Tipo de arma | init 0 en 0x8107; tile = 0xF7 + 2*tipo |
@@ -109,7 +109,7 @@ ya ha hecho su trabajo.
 | 0x8117 | **Bucle principal de la partida** (dos frames por vuelta) |
 | 0x818C | Lee el control (GTSTCK joystick + cursores, OR) |
 | 0x84CC | Quita una vida: `dec a / cp 0FFh / jp z,0x8C1E` (game over) |
-| 0x8528 | Da una vida: `inc a / cp 0Ah / ret z` (tope 10) |
+| 0x8528 | Da una vida: `inc a / cp 0Ah / ret z`. El RET Z sale ANTES de guardar, asi que el tope real es 9 |
 | 0x8698 | **Pinta el marcador** (vidas / pantalla / nivel) |
 | 0x8B80 | Muestra el mensaje anti-POKE si 0x8F1E != 0 |
 | 0x8C1E | Game over |
@@ -227,8 +227,8 @@ con parche 9->9.
 
 ## Estado del desensamblado
 
-**98,4% del binario explicado**: 5214 bytes de codigo trazado y 34593 de datos
-identificados; quedan 642 bytes (1,6%) en huecos pequenos.
+**Los 40449 bytes estan asignados**: 5214 de codigo trazado y 35235 dentro de
+bloques de datos con nombre. No quedan huecos sin reclamar.
 
 Cuidado con la metrica "12,9% de codigo": no significa desensamblado incompleto,
 significa que este juego es ~87% datos (16 KB de graficos y 29 mapas de 512 B).

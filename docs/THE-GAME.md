@@ -7,7 +7,7 @@
 
 You control a monk —the manual calls him Brother Nonato, "Noni", although the
 game itself calls him **Fray Arnulfo**— who has to get through 28 screens
-infested with creatures of evil to earn his place in the order.
+infested with creatures of evil to earn his place in his order.
 
 The intro text puts it like this:
 

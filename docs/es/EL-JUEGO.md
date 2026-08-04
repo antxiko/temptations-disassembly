@@ -92,8 +92,8 @@ puntos que existen en todo el juego, solo 17 están sobre una calavera o un cofr
 **los otros 13 son invisibles**, en el aire o sobre decorado.
 
 Las alitas, en concreto, solo se consiguen en **dos puntos ocultos de todo el
-juego** —uno en la pantalla 7 y otro en la 10—, y los dos están sobre fondo, sin
-nada dibujado que los delate. El tile de las alitas no aparece ni una sola vez en
+juego** —uno en la pantalla 7 y otro en la 10—. El de la pantalla 7 está sobre
+fondo vacío; el de la 10, sobre un tile de decorado que no delata nada. El tile de las alitas no aparece ni una sola vez en
 los 29 mapas: la única forma de conseguirlas es disparar al sitio exacto.
 
 También hay trampas: en la pantalla 26, uno de esos puntos ocultos suelta un tile

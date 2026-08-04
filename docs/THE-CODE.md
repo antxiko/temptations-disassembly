@@ -46,7 +46,7 @@ The whole game fits in this:
 BUCLE_PARTIDA:
     call 0832ah         ; ¿han pulsado CTRL+STOP?
     halt                ; espera al barrido de pantalla
-    call 0db00h         ; sprites y vídeo
+    call 0db00h         ; efectos de sonido (motor PSG)
     halt
     call 0db00h
     call DISPARA
@@ -59,7 +59,7 @@ BUCLE_PARTIDA:
     jp BUCLE_PARTIDA
 ```
 
-Two `halt`s per turn means the game runs at **25 or 30 frames per second**, half
+Two `halt`s per loop means the game runs at **25 or 30 frames per second**, half
 the display refresh rate. It is deliberate: it leaves enough time to move
 everything without any visible stutter.
 
@@ -148,7 +148,7 @@ column, row, shots it takes, prize it drops
 The shot counter is stored as a negative: the game increments it until it
 overflows to zero. Same as enemy stamina.
 
-The striking part, already told in [THE-GAME.md](THE-GAME.md), is that the system
+The striking part, already covered in [THE-GAME.md](THE-GAME.md), is that the system
 works **by coordinates**: it does not look at what is drawn there. That is why 13
 of the game's 30 spots are invisible.
 
@@ -172,10 +172,11 @@ sequence where values below `0x80` are notes and `0x80` upwards are commands:
 | `0x8A` | repeat envelopes |
 | `0x8B` | end of channel |
 | `0x8C` | call a phrase |
-| `0x8D`, `0x8E` | envelope control |
+| `0x8D` | return from phrase (closes the `0x8C`) |
+| `0x8E` | channel transposition in semitones |
 
 With reusable instruments and calls to phrases, so as not to repeat data. All of
-it in a little over a kilobyte, and running inside the screen interrupt without
+it in a little over a kilobyte, and running inside the display interrupt without
 stealing time from the game.
 
 ## The variables

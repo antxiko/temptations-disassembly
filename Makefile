@@ -9,7 +9,10 @@
 
 TSX  := Temptations (1988)(Topo Soft)(ES)[!][RUN'CAS-'][v0.8b].tsx
 SYMS := work/msx.sym
-MSXGL := /Users/fx-media/Documents/BARCOEMESEKS/MSXgl/engine/src
+# Tabla de simbolos de la BIOS del MSX. Se publica ya generada en work/msx.sym;
+# esta ruta solo hace falta para volver a generarla (make syms) y se puede pasar
+# por entorno: make syms MSXGL=/ruta/a/MSXgl/engine/src
+MSXGL ?= /Users/fx-media/Documents/BARCOEMESEKS/MSXgl/engine/src
 
 .PHONY: all verify clean extract syms listados
 
@@ -26,43 +29,64 @@ extracted/.stamp: tools/tsx_parse.py
 	python3 -c "import sys; d=open('extracted/09_SLOTS.bin','rb').read(); open('work/SLOTS.raw','wb').write(d[6:])"
 	touch $@
 
-syms: $(SYMS)
-$(SYMS): tools/gen_msx_syms.py
-	mkdir -p work
-	python3 tools/gen_msx_syms.py $(MSXGL) $@
+# work/msx.sym va versionado, asi que en una copia recien descargada ya esta.
+# Solo se regenera a peticion, y solo si estan los headers de MSXgl.
+syms:
+	@mkdir -p work
+	@if [ -d "$(MSXGL)" ]; then \
+	  python3 tools/gen_msx_syms.py "$(MSXGL)" $(SYMS); \
+	else \
+	  echo "MSXgl no esta en $(MSXGL); se conserva el $(SYMS) que ya hay."; \
+	  echo "Para regenerarlo: make syms MSXGL=/ruta/a/MSXgl/engine/src"; \
+	fi
+
+# Los dos bloques turbo se sacan de la cinta directamente. Llevan un byte de
+# sincronismo delante y un checksum detras, asi que basta con recortarlos.
+# (Antes venian de un volcado del emulador; se comprobo que son identicos.)
+dump/turbo1_ram.bin: extracted/.stamp
+	@mkdir -p dump
+	python3 -c "d=open('extracted/10_raw_10.bin','rb').read(); open('$@','wb').write(d[1:12389])"
+
+dump/turbo2_ram.bin: extracted/.stamp
+	@mkdir -p dump
+	python3 -c "d=open('extracted/11_raw_10.bin','rb').read(); open('$@','wb').write(d[1:40450])"
 
 # ------------------------------------------------------------------ trazado
 work/game.trace.json: tools/z80trace.py src/game.entries src/game_dynamic.entries \
-                     src/game_tables.entries src/game.nocode
+                     src/game_tables.entries src/game.nocode dump/turbo2_ram.bin
+	@mkdir -p work
 	cat src/game.entries src/game_dynamic.entries src/game_tables.entries > work/game_all.entries
 	python3 tools/z80trace.py dump/turbo2_ram.bin 0x4000 work/game_all.entries work/game src/game.nocode
 
 work/slots.trace.json: tools/z80trace.py src/slots.entries extract
+	@mkdir -p work
 	python3 tools/z80trace.py work/SLOTS.raw 0xC350 src/slots.entries work/slots
 
 work/topo.trace.json: tools/z80trace.py src/topo.entries extract
+	@mkdir -p work
 	python3 tools/z80trace.py work/TOPO.raw 0x9470 src/topo.entries work/topo
 
-work/turbo1.trace.json: tools/z80trace.py src/turbo1.entries
+work/turbo1.trace.json: tools/z80trace.py src/turbo1.entries dump/turbo1_ram.bin
+	@mkdir -p work
 	python3 tools/z80trace.py dump/turbo1_ram.bin 0x88B8 src/turbo1.entries work/turbo1
 
 # ----------------------------------------------------------------- listados
 listados: src/temptations_game.asm src/temptations_slots.asm \
           src/temptations_topo.asm src/temptations_portada.asm
 
-src/temptations_game.asm: work/game.trace.json src/game.notes tools/mkasm.py $(SYMS)
+src/temptations_game.asm: work/game.trace.json src/game.notes tools/mkasm.py
 	python3 tools/mkasm.py dump/turbo2_ram.bin 0x4000 work/game.trace.json \
 	  src/game.notes $(SYMS) $@ "TEMPTATIONS (Topo Soft, 1988) - MSX - juego principal"
 
-src/temptations_slots.asm: work/slots.trace.json src/slots.notes tools/mkasm.py $(SYMS)
+src/temptations_slots.asm: work/slots.trace.json src/slots.notes tools/mkasm.py
 	python3 tools/mkasm.py work/SLOTS.raw 0xC350 work/slots.trace.json \
 	  src/slots.notes $(SYMS) $@ "TEMPTATIONS - MSX - SLOTS: buscador de RAM y cargador turbo"
 
-src/temptations_topo.asm: work/topo.trace.json src/topo.notes tools/mkasm.py $(SYMS)
+src/temptations_topo.asm: work/topo.trace.json src/topo.notes tools/mkasm.py
 	python3 tools/mkasm.py work/TOPO.raw 0x9470 work/topo.trace.json \
 	  src/topo.notes $(SYMS) $@ "TEMPTATIONS - MSX - TOPO: logo de Topo Soft"
 
-src/temptations_portada.asm: work/turbo1.trace.json src/turbo1.notes tools/mkasm.py $(SYMS)
+src/temptations_portada.asm: work/turbo1.trace.json src/turbo1.notes tools/mkasm.py
 	python3 tools/mkasm.py dump/turbo1_ram.bin 0x88B8 work/turbo1.trace.json \
 	  src/turbo1.notes $(SYMS) $@ "TEMPTATIONS - MSX - bloque turbo 1: pantalla de portada"
 
@@ -105,6 +129,8 @@ test:
 
 .PHONY: test
 
+# No borra los .asm: son el producto que el README ofrece para leer sin
+# compilar nada. Para rehacerlos: make listados
 clean:
 	rm -f work/*.trace.json work/*.blocks work/game_all.entries
-	rm -f src/temptations_*.asm
+	rm -rf dump extracted

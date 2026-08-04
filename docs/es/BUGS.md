@@ -101,8 +101,9 @@ de pila donde lo dejó la anterior.
 
 ### Medido en el emulador
 
-Provocando ocho game overs seguidos y anotando dónde quedaba la pila en cada
-reinicio:
+Provocando ocho game overs seguidos —forzados desde el depurador, poniendo las
+vidas a cero y saltando a la rutina de morir— y anotando dónde quedaba la pila
+en cada reinicio:
 
 | Reinicio | Puntero de pila |
 |---|---|
@@ -117,10 +118,12 @@ reinicio:
 
 Baja y no vuelve a subir.
 
-La pila crece hacia abajo desde `0x8FFF`, y las variables del juego empiezan en
-`0x8F00`. O sea que hay unos 255 bytes de margen: tras suficientes partidas
-perdidas seguidas **sin resetear la máquina**, la pila acabaría escribiendo
-encima de las variables del juego, con lo que eso supone.
+La pila crece hacia abajo desde `0x8FFF`. Justo debajo, en `0x8FA0`, está la
+tabla de los cuatro puntos ocultos de la pantalla en curso, y más abajo aún,
+desde `0x8F00`, las variables del juego. O sea que el primer daño llega a los
+~80 bytes de fuga, y a partir de ~160 empieza a comerse las variables. Tras
+suficientes partidas perdidas seguidas **sin resetear la máquina**, la partida
+acabaría corrompiéndose.
 
 En 1988, jugando en una cinta que tardaba siete minutos en cargar, era difícil
 que alguien encadenase tantas partidas de una sentada. Hoy, con un emulador y

@@ -264,9 +264,10 @@ algún momento entre el diseño y la impresión, el monje cambió de nombre.
 
 ## Restos de otra compilación
 
-Entre `0xCA00` y `0xD000` hay 1.536 bytes que son **código de verdad**: se
+Entre `0xCA00` y `0xD000` hay 1.536 bytes que el análisis no reclama. Unos 729
+son **código de verdad** —los tramos 0xCA00-0xCC10 y 0xCE00-0xCEC7—: se
 desensamblan sin problemas y las rutinas tienen sentido. Pero no se ejecutan
-nunca.
+nunca. El resto son tablas y relleno.
 
 Es una versión anterior de algunas rutinas que quedó en el binario. Y es una
 trampa peligrosa para quien desensambla: nosotros picamos. Un detector
@@ -286,10 +287,11 @@ vigilantes de memoria sobre cada uno y jugando una partida completa en el
 emulador —con vidas infinitas y empujando al monje contra el borde derecho, para
 recorrer los cuatro niveles hasta la pantalla 27.
 
-- **96 bytes** eran la **pila**: recibieron escrituras desde 557 direcciones
-  distintas, incluida la propia ROM del BASIC. Ese patrón sólo lo produce el
-  vaivén de `PUSH` y `POP`.
+- **80 bytes** (0x8FB0-0x8FFF) eran la **pila**: recibieron escrituras desde 342
+  direcciones distintas, incluida la propia ROM del BASIC. Ese patrón sólo lo
+  produce el vaivén de `PUSH` y `POP`. Los 16 de debajo (0x8FA0-0x8FAF) no son
+  pila: son la tabla de los cuatro puntos ocultos de la pantalla en curso.
 - **1 byte** era una ranura de efectos de sonido que no habíamos contado.
-- **543 bytes** no los tocó nadie en toda la partida. Entre ellos, dos `RET`
+- **545 bytes** no los tocó nadie en toda la partida. Entre ellos, dos `RET`
   huérfanos: instrucciones de retorno a las que no llega ningún camino, porque la
   rutina anterior ya cierra con otro.

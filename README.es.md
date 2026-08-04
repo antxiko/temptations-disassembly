@@ -15,12 +15,13 @@ Aquí está entero, explicado.
 
 ## Qué encontrarás
 
-**Los 40.449 bytes del juego están explicados al 100%.** No queda ni un byte sin
-identificar: cada uno es o una instrucción que sabemos qué hace, o un dato que
-sabemos qué representa.
+**Los 40.449 bytes del juego están asignados.** Cada byte es o una instrucción
+trazada o cae dentro de un bloque de datos con nombre. La mayoría de esos bloques
+están acotados con precisión —los mapas, las tablas de animación, la fuente—; unas
+pocas zonas grandes de gráficos están identificadas en conjunto, no campo a campo.
 
-- **135 rutinas** con nombre y descripción
-- **40 bloques de datos** identificados: los gráficos, los 29 mapas de pantalla,
+- **137 rutinas** con nombre y descripción
+- **74 bloques de datos** identificados: los gráficos, los 29 mapas de pantalla,
   las animaciones, la música
 - Un **build reproducible**: el código fuente vuelve a producir el binario
   original **byte a byte**

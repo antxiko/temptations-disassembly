@@ -1,4 +1,4 @@
-# Bugs
+# Bugs in the original game
 
 Bugs that *Temptations* has had since 1988. They are not disassembly mistakes:
 they are in the code exactly as it went on sale.

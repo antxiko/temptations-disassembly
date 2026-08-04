@@ -70,7 +70,7 @@ chicken-and-egg problem. That page is where the BIOS lives, and the routine you
 need in order to switch slots **is in the BIOS**. If you switch it out to test
 the RAM, you are left without the routine.
 
-Topo's solution: **carry its own copy of the routine**. `SLOTS` copies its own
+Topo's solution: **copy the routine into itself**. `SLOTS` copies its own
 version of that function into high memory, rewrites on the fly the destination
 of its own `CALL` instruction so that it points at the copy, and only then can
 it probe page 0 without depending on the BIOS.

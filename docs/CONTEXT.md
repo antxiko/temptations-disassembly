@@ -1,6 +1,4 @@
-# Context
-
-*Temptations* (Topo Soft, 1988, MSX1) — disassembly context.
+# Temptations (Topo Soft, 1988, MSX1) — disassembly context
 
 Reference document for anyone (human or agent) working on this project.
 Everything here is **verified**; anything that is a hypothesis is marked
@@ -31,7 +29,7 @@ The main character's name: the manual calls him "Hermano Nonato (Noni)"
 (Friar Arnulfo). A genuine discrepancy, unresolved.
 
 Sound: the music only plays on the intro and the menu. During play the same
-player is reused for sound effects (confirmed by the user).
+sound player is used for effects (confirmed by the user).
 
 ## Controls (manual + verified in the code)
 
@@ -84,7 +82,7 @@ done its job.
 | 0x5000-0x57FF | Sprite patterns (they go to VRAM 0x3800) |
 | 0x5CC0-0x5FBF | Name table for the intro screen (32x24) |
 | 0x5FC0-0x60FF | Status bar template (goes to VRAM 0x1A00, rows 16-23) |
-| 0xD513-0xD530 | Jump table for the player's 15 commands (0x80..0x8E) |
+| 0xD513-0xD530 | Jump table for the sound player's 15 commands (0x80..0x8E) |
 | 0xD53E-0xD5C7 | Structures for the 3 PSG channels, 46 bytes each |
 | 0xD760 / 0xD891 / 0xD8F8 | Menu tunes, channels 0/1/2 |
 
@@ -234,13 +232,13 @@ a life away. Verified experimentally (tools/omsx_testpoke.tcl): without the patc
 
 ## State of the disassembly
 
-**98.4% of the binary explained**: 5214 bytes of traced code and 34593 of
-identified data; 642 bytes (1.6%) are left in small gaps.
+**All 40,449 bytes assigned**: 5214 bytes of traced code and 34593 of
+identified data; bloques de datos con nombre. No quedan huecos sin reclamar.
 
 Careful with the "12.9% code" figure: it does not mean the disassembly is
 incomplete, it means this game is ~87% data (16 KB of graphics and 29 maps of
 512 B).
 
 0xCA00-0xD000 is **code from another build** that was left in the binary and
-never runs. It disassembles cleanly because it is real code, and that is exactly
-why it fooled a heuristic pointer-table detector.
+never runs. It disassembles cleanly because it is real code, and that is why it
+fooled a heuristic pointer-table detector.

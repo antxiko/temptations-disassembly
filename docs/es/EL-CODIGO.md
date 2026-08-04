@@ -46,7 +46,7 @@ Todo el juego cabe en esto:
 BUCLE_PARTIDA:
     call 0832ah         ; ¿han pulsado CTRL+STOP?
     halt                ; espera al barrido de pantalla
-    call 0db00h         ; sprites y vídeo
+    call 0db00h         ; efectos de sonido (motor PSG)
     halt
     call 0db00h
     call DISPARA
@@ -172,7 +172,8 @@ secuencia de bytes donde los valores por debajo de `0x80` son notas y los de
 | `0x8A` | repetir envolventes |
 | `0x8B` | fin del canal |
 | `0x8C` | llamar a una frase |
-| `0x8D`, `0x8E` | control de envolventes |
+| `0x8D` | volver de la frase (cierra el `0x8C`) |
+| `0x8E` | transposición del canal en semitonos |
 
 Con instrumentos reutilizables y llamadas a frases, para no repetir datos. Todo
 en algo más de un kilobyte, y funcionando dentro de la interrupción de pantalla

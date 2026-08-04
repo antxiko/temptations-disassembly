@@ -12,7 +12,7 @@ In the binary, at address `0x7F94`, there is this sentence:
 
 > POR QUE NO PRUEBAS SIN POKES
 
-(«Why don't you try it without pokes».) It is not a stray message or a debug
+("Why don't you try it without pokes.") It is not a stray message or a debug
 string. The routine that uses it sits at `0x8B80`, and it is part of the
 **end-of-game** sequence:
 
@@ -70,7 +70,7 @@ punishment never triggers.
 
 ### And now the good part: they forgot to initialise it
 
-At first we assumed Topo had left the trap «armed and waiting». Looking at the
+At first we assumed Topo had left the trap "armed and waiting". Looking at the
 data more carefully, the explanation is different, and quite a bit better.
 
 The game's start-up initialises fifteen variables, one after another:
@@ -169,7 +169,7 @@ green all at once, and the whole level turns into the bottom of the sea without
 a single graphic having changed.
 
 This finding came out of an observation by a veteran player: on seeing the maps
-we had drawn he said *«the underwater ones are wrong, the background is green»*.
+we had drawn he said *"the underwater ones are wrong, the background is green"*.
 He was right: our program was painting colour 0 as black. Looking for whoever
 touched the backdrop register turned up the `ld a,00ch` above.
 
@@ -256,9 +256,9 @@ The ending text, in full, reads:
 > ALELUYA, OH FRAY ARNULFO. SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL
 > CIELO. "SOLUM VICTORIUS EST GLORIA". ¿TE ATREVERÁS CON "ALEHOP"?
 
-(«Hallelujah, oh Brother Arnulfo. Having overcome all the perils of evil you
-have won heaven. "SOLUM VICTORIUS EST GLORIA". Will you dare take on
-"ALEHOP"?»)
+(In English: "Hallelujah, oh Brother Arnulfo. Having overcome all the perils of
+evil you have won heaven. SOLUM VICTORIUS EST GLORIA. Will you dare take on
+ALEHOP?")
 
 *Alehop* was another Topo Soft game. The victory screen ends up selling you the
 next one.

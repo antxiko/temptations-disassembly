@@ -89,10 +89,10 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
     jp 08076h       ; reinicia... entrando DESPUES del ld sp</code></pre>
 <p><code>0x8076</code> es la inicialización principal, que está <b>por debajo</b> de la instrucción que coloca la pila. Así que la partida nueva arranca con el puntero de pila donde lo dejó la anterior.</p>
 <h3>Medido en el emulador</h3>
-<p>Provocando ocho game overs seguidos y anotando dónde quedaba la pila en cada reinicio:</p>
+<p>Provocando ocho game overs seguidos —forzados desde el depurador, poniendo las vidas a cero y saltando a la rutina de morir— y anotando dónde quedaba la pila en cada reinicio:</p>
 <table><tr><th>Reinicio</th><th>Puntero de pila</th></tr><tr><td>1</td><td><code>0x8FFF</code></td></tr><tr><td>2</td><td><code>0x8FFF</code></td></tr><tr><td>3</td><td><code>0x8FFD</code></td></tr><tr><td>4</td><td><code>0x8FFB</code></td></tr><tr><td>5</td><td><code>0x8FF9</code></td></tr><tr><td>6</td><td><code>0x8FDB</code></td></tr><tr><td>7</td><td><code>0x8FD9</code></td></tr><tr><td>8</td><td><code>0x8FD7</code></td></tr></table>
 <p>Baja y no vuelve a subir.</p>
-<p>La pila crece hacia abajo desde <code>0x8FFF</code>, y las variables del juego empiezan en <code>0x8F00</code>. O sea que hay unos 255 bytes de margen: tras suficientes partidas perdidas seguidas <b>sin resetear la máquina</b>, la pila acabaría escribiendo encima de las variables del juego, con lo que eso supone.</p>
+<p>La pila crece hacia abajo desde <code>0x8FFF</code>. Justo debajo, en <code>0x8FA0</code>, está la tabla de los cuatro puntos ocultos de la pantalla en curso, y más abajo aún, desde <code>0x8F00</code>, las variables del juego. O sea que el primer daño llega a los ~80 bytes de fuga, y a partir de ~160 empieza a comerse las variables. Tras suficientes partidas perdidas seguidas <b>sin resetear la máquina</b>, la partida acabaría corrompiéndose.</p>
 <p>En 1988, jugando en una cinta que tardaba siete minutos en cargar, era difícil que alguien encadenase tantas partidas de una sentada. Hoy, con un emulador y carga instantánea, es trivial llegar ahí.</p>
 <p><b>Arreglo:</b> cambiar el destino del salto de <code>0x8076</code> a una dirección que recoloque la pila antes de continuar.</p>
 <hr>

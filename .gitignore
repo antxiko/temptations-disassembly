@@ -8,6 +8,7 @@ dump/
 dump_rebuild/
 build/
 work/
+!work/msx.sym
 
 # -----------------------------------------------------------------------------
 # La cinta original

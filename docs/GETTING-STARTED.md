@@ -8,7 +8,14 @@ or to have ever touched an MSX in your life.
 Four things. On macOS, with [Homebrew](https://brew.sh):
 
 ```sh
-brew install z80dasm pasmo openmsx
+brew install z80dasm openmsx
+```
+
+`pasmo` isn't in Homebrew; it builds in a couple of minutes:
+
+```sh
+git clone https://github.com/nataliapc/pasmo.git /tmp/pasmo
+cd /tmp/pasmo && ./configure && make && sudo make install
 ```
 
 Python 3 already comes with the system. On Linux, the three of them are in the
@@ -55,7 +62,7 @@ If it finishes with `TODO VERDE` (all green), it worked.
 ## 4. Read it
 
 Open [src/temptations_game.asm](../src/temptations_game.asm). That's the main
-game, about 5,800 lines. Start at the beginning: the first routine is the boot
+game, about 6,000 lines. Start at the beginning: the first routine is the boot
 code, and from there you can follow the thread.
 
 A snippet, so you can see what it looks like:
@@ -100,7 +107,7 @@ Then `make`, and it's in the listing.
 ## Other commands
 
 ```sh
-make verify   # just the checks, without regenerating
+make verify   # same as `make`: rebuilds if needed, then checks
 make sanity   # just the fake-coverage check
 make clean    # deletes what was generated
 ```

@@ -14,8 +14,8 @@ python3 tools/tsx_parse.py cinta.tsx extracted
 ```
 
 Reads the TSX file, identifies its blocks and pulls out the programs it
-contains. It knows the MSX file headers, so it can tell you that a block is
-"a binary called SLOTS that loads at 0xC350 and runs at 0xC58F".
+contains. It recognises the MSX file headers, so it can tell you that a
+block is "a binary called SLOTS that loads at 0xC350 and runs at 0xC58F".
 
 It also writes a manifest so the tape can be rebuilt afterwards.
 
@@ -78,7 +78,7 @@ python3 tools/check_trace.py trazado.json zonas.nocode
 
 Checks that the zones we know are data have not ended up marked as code.
 
-It exists because it had to. Seeding the tracer with destinations from an
+It exists because it was needed. Seeding the tracer with destinations from an
 automatic detector pushed coverage from 13% to 80%, and it looked like a
 success. It was contamination: 100% of the colour table and of the end-game
 text had been marked as code. And the worst part is that `verify_build.sh`
@@ -140,8 +140,8 @@ They generate the list of identified routines and the screen gallery.
 
 ## Verifying for real: the openMSX scripts
 
-This is where guessing becomes knowing. Instead of working out what a routine
-does by reading it, you set the game running and watch.
+This is the difference between guessing and knowing. Instead of working out
+what a routine does by reading it, you set the game running and watch.
 
 ```sh
 TEMPT_TSX="$PWD/cinta.tsx" TEMPT_OUT="$PWD/dump" \
@@ -150,7 +150,7 @@ TEMPT_TSX="$PWD/cinta.tsx" TEMPT_OUT="$PWD/dump" \
 
 | Script | What it is for |
 |---|---|
-| `omsx_load.tcl` | Loads the whole tape and dumps memory at each stage. It was what made it possible to **use the game's own loader as the decoder**: instead of reimplementing the turbo loader, you let it do the work and capture the result. |
+| `omsx_load.tcl` | Loads the whole tape and dumps memory at each stage. It was used to **turn the game's original loader into the decoder**: instead of reimplementing the turbo loader, you let it do the work and capture the result. |
 | `omsx_run.tcl` | Saves a savestate right as the game starts. From then on the tests are instant instead of a seven-minute wait. |
 | `omsx_watch.tcl` | **Watchpoints**: tells you which code reads or writes an address. That is how the lives counter was identified: not by deduction, but by seeing that only one routine reads it and that this routine draws it in the exact cell of the status bar. |
 | `omsx_pcsample.tcl` | Samples the program counter while the game runs. Every address captured is code that **really executed**. |

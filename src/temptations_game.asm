@@ -2071,7 +2071,7 @@ COGE_VIDA:		; Tipo 3: vida extra
 	ld (0ddb2h),a		;8520   ; Barrido ascendente: vida extra recogida
 	ld a,0abh		;8523   ; Borra del mapa el tile 0xAB
 	call BORRA_OBJETO_MAPA		;8525   ; Borra el tile del mapa
-DA_VIDA:		; Suma una vida (tope 10)
+DA_VIDA:		; Suma una vida. El RET Z sale antes de guardar, asi que el tope real es 9
 	ld a,(08f12h)		;8528   ; A = vidas actuales
 	inc a			;852b   ; Una vida mas...
 	cp 00ah			;852c   ; Compara con 10 y sale SIN GUARDAR, asi que las vidas se quedan clavadas en 9: con 9 el INC A da 10, salta el RET Z y no se escribe nada. El tope real es 9, no 10 [SUSTITUYE]

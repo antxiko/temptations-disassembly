@@ -17,12 +17,13 @@ It's all here, explained.
 
 ## What's in it
 
-**All 40,449 bytes of the game are accounted for.** Not a single byte is left
-unidentified: every one is either an instruction we know the purpose of, or data
-we know the meaning of.
+**All 40,449 bytes of the game are accounted for.** Every byte is either a traced
+instruction or falls inside a named data block. Most of those blocks are pinned
+down precisely — the screen maps, the animation tables, the font; a few of the
+largest graphics areas are identified as a whole rather than field by field.
 
-- **135 routines**, named and described
-- **40 data blocks** identified: the graphics, the 29 screen maps, the animation
+- **137 routines**, named and described
+- **74 data blocks** identified: the graphics, the 29 screen maps, the animation
   tables, the music
 - A **reproducible build**: the source reassembles to the original binary,
   **byte for byte**

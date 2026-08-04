@@ -1,5 +1,5 @@
 ==============================================================================
- RUTINAS IDENTIFICADAS: 135
+ RUTINAS IDENTIFICADAS: 137
 ==============================================================================
   0x8000  GAME_START             Punto de entrada del juego
   0x805e  INIT_PANTALLA          Color de borde, sprites y encender pantalla
@@ -26,7 +26,7 @@
   0x8493  MUERE_JUGADOR          Animacion de muerte, resta de vida y reaparici
   0x84c9  QUITA_VIDA             Resta una vida y salta a game over si no queda
   0x8519  COGE_VIDA              Tipo 3: vida extra
-  0x8528  DA_VIDA                Suma una vida (tope 10)
+  0x8528  DA_VIDA                Suma una vida. El RET Z sale antes de guardar,
   0x8536  COGE_MUNICION          Tipo 4: un icono mas de municion
   0x8553  COGE_ARMA              Tipo 5: pasa a la siguiente arma
   0x856f  LEE_FLAGS_ESTADO       Devuelve el byte de flags de colision del esta
@@ -57,6 +57,7 @@
   0x8ae3  BORRA_OBJETO_MAPA      Quita del mapa el primer tile igual a A y repi
   0x8afc  VUELCA_BUFFER          Copia los 512 bytes del buffer de RAM a VRAM 0
   0x8b09  FIN_DE_PANTALLA        Decide si al pasar de pantalla hay ademas camb
+  0x8b23  CEREMONIA_NIVEL        Cola comun del cambio de nivel (rotulo + punto
   0x8b29  ENTRA_NIVEL3           Cambia el banco de sprites y recoloca al jugad
   0x8b55  ENTRA_NIVEL4           Activa el modo acuatico: vuelo permanente y bo
   0x8b6d  FINAL_JUEGO            Pantalla de victoria y bucle final
@@ -66,6 +67,7 @@
   0x8ba7  SUBE_NIVEL             Incrementa 0x8F0E (el nivel es variable propia
   0x8bf3  ESCRIBE_ROTULO         LDIRVM de 10 bytes a VRAM 0x194B (rotulos de n
   0x8c1e  GAME_OVER              Fin de partida
+  0x8c46  CASILLA_DE_ENEMIGO     Pasa la posicion en pixeles de un enemigo a ca
   0x8c59  INDEXA_TABLA_B         HL = HL + A  (indexar una tabla de bytes)
   0x8e00  CORTINILLA             Scroll horizontal entre dos pantallas, una col
   0x8f00  VAR_FLAGS_TMP          Copia del byte de flags del estado, la usa 0x8
@@ -138,7 +140,7 @@
   0xddb3  VAR_SFX_RUIDO_VUELO    
 
 ==============================================================================
- RANGOS DE DATOS IDENTIFICADOS: 40
+ RANGOS DE DATOS IDENTIFICADOS: 74
 ==============================================================================
   0x4000..0x4800   2048 B  fuente                 Tabla de PATRONES: 256 glifos de 8
   0x4800..0x5000   2048 B  colores                Tabla de COLORES de los patrones, 
@@ -146,39 +148,73 @@
   0x5800..0x5cc0   1216 B  grafdesc               Datos graficos sin identificar tod
   0x5cc0..0x5fc0    768 B  pantalla_menu          Tabla de NOMBRES de la pantalla de
   0x5fc0..0x8000   8256 B  datos_juego            Datos del juego sin identificar to
-  0x79c0..0x7ba0    480 B  objetos_pantalla       Objetos rompibles de cada pantalla
-  0x7ba0..0x7d80    480 B  enemigos_pantalla      Enemigos de cada pantalla: 16 byte
+  0x79c0..0x7ba0    480 B  tabla_puntos_ocultos   29 grupos de 16 bytes indexados co
+  0x7ba0..0x7d80    480 B  tabla_enemigos         29 grupos de 16 bytes indexados co
   0x7d80..0x7f80    512 B  buffer_mapa            Buffer del mapa de la pantalla act
   0x856e..0x856f      1 B  ret_huerfano_1         Un RET (0xC9) que no se alcanza po
   0x8a36..0x8a37      1 B  ret_huerfano_2         Otro RET inalcanzable, entre la ru
-  0x8c60..0x8c70     16 B  init_sprites           16 bytes que el arranque (0x8090) 
+  0x8c60..0x8c70     16 B  attr_sprites_portada   Cuatro entradas (Y, X, patron, col
   0x8c70..0x8ca2     50 B  tabla_estado_sig       Tabla ESTADO -> ESTADO SIGUIENTE, 
   0x8ca2..0x8cab      9 B  tabla_direccion        Direccion del stick (0..8) -> codi
   0x8cab..0x8cb8     13 B  tabla_flags            Flags por estado del jugador, inde
   0x8cb8..0x8cd4     28 B  plantilla_disparos     Plantilla de los 7 registros de pr
   0x8cd4..0x8cdc      8 B  ceros_init             Ocho ceros que 0x8099, 0x80A4 y 0x
-  0x8cdc..0x8e00    292 B  muerto_8CDC            292 bytes que NADIE lee ni escribe
-  0x8ed5..0x8f00     43 B  muerto_8ED5            43 bytes sin un solo acceso en una
+  0x8cdc..0x8cea     14 B  ceros_sobrantes        Cola de la reserva de ceros que em
+  0x8cea..0x8e00    278 B  relleno_ram_sucia      278 bytes de relleno que el volcad
+  0x8ed5..0x8f00     43 B  relleno_ram_sucia_2    43 bytes del mismo relleno, entre 
   0x8f00..0x8f30     48 B  vars_juego             Variables del juego. Las identific
   0x8f20..0x8f80     96 B  enemigos_activos       Enemigos en juego: 4 registros de 
   0x8f80..0x8fa0     32 B  disparos_activos       Proyectiles en vuelo: 7 registros,
-  0x8fa0..0x9000     96 B  pila                   LA PILA. El juego la fija en 0x8FF
-  0x9000..0xca00  14848 B  mapas_pantalla         29 mapas de 512 bytes (32x16 tiles
+  0x8fa0..0x8fb0     16 B  objetos_activos        Los cuatro puntos ocultos de la pa
+  0x8fb0..0x9000     80 B  pila                   Espacio de pila. SP arranca en 0x8
+  0x9000..0x9200    512 B  mapa_p00               Pantalla 0 (nivel 1, marcador 1/7)
+  0x9200..0x9400    512 B  mapa_p01               Pantalla 1 (nivel 1, marcador 2/7)
+  0x9400..0x9600    512 B  mapa_p02               Pantalla 2 (nivel 1, marcador 3/7)
+  0x9600..0x9800    512 B  mapa_p03               Pantalla 3 (nivel 1, marcador 4/7)
+  0x9800..0x9a00    512 B  mapa_p04               Pantalla 4 (nivel 1, marcador 5/7)
+  0x9a00..0x9c00    512 B  mapa_p05               Pantalla 5 (nivel 1, marcador 6/7)
+  0x9c00..0x9e00    512 B  mapa_p06               Pantalla 6 (nivel 1, marcador 7/7)
+  0x9e00..0xa000    512 B  mapa_p07               Pantalla 7 (nivel 2, marcador 1/7)
+  0xa000..0xa200    512 B  mapa_p08               Pantalla 8 (nivel 2, marcador 2/7)
+  0xa200..0xa400    512 B  mapa_p09               Pantalla 9 (nivel 2, marcador 3/7)
+  0xa400..0xa600    512 B  mapa_p10               Pantalla 10 (nivel 2, marcador 4/7
+  0xa600..0xa800    512 B  mapa_p11               Pantalla 11 (nivel 2, marcador 5/7
+  0xa800..0xaa00    512 B  mapa_p12               Pantalla 12 (nivel 2, marcador 6/7
+  0xaa00..0xac00    512 B  mapa_p13               Pantalla 13 (nivel 2, marcador 7/7
+  0xac00..0xae00    512 B  mapa_p14               Pantalla 14 (nivel 3, marcador 1/7
+  0xae00..0xb000    512 B  mapa_p15               Pantalla 15 (nivel 3, marcador 2/7
+  0xb000..0xb200    512 B  mapa_p16               Pantalla 16 (nivel 3, marcador 3/7
+  0xb200..0xb400    512 B  mapa_p17               Pantalla 17 (nivel 3, marcador 4/7
+  0xb400..0xb600    512 B  mapa_p18               Pantalla 18 (nivel 3, marcador 5/7
+  0xb600..0xb800    512 B  mapa_p19               Pantalla 19 (nivel 3, marcador 6/7
+  0xb800..0xba00    512 B  mapa_p20               Pantalla 20 (nivel 3, marcador 7/7
+  0xba00..0xbc00    512 B  mapa_p21               Pantalla 21 (nivel 4, marcador 1/7
+  0xbc00..0xbe00    512 B  mapa_p22               Pantalla 22 (nivel 4, marcador 2/7
+  0xbe00..0xc000    512 B  mapa_p23               Pantalla 23 (nivel 4, marcador 3/7
+  0xc000..0xc200    512 B  mapa_p24               Pantalla 24 (nivel 4, marcador 4/7
+  0xc200..0xc400    512 B  mapa_p25               Pantalla 25 (nivel 4, marcador 5/7
+  0xc400..0xc600    512 B  mapa_p26               Pantalla 26 (nivel 4, marcador 6/7
+  0xc600..0xc800    512 B  mapa_p27               Pantalla 27 (nivel 4, marcador 7/7
+  0xc800..0xca00    512 B  mapa_p28               Pantalla 28: la de VICTORIA. La ca
   0xca00..0xd000   1536 B  codigo_muerto          Codigo de OTRA COMPILACION que que
   0xd015..0xd041     44 B  muerto_D015            44 bytes entre el manejador de int
-  0xd453..0xd513    192 B  tabla_periodos         Tabla cromatica de 96 periodos de 
+  0xd453..0xd513    192 B  tabla_periodos         Tabla de periodos de nota del PSG:
   0xd513..0xd531     30 B  tabla_cmd_sonido       Tabla de saltos de los 15 comandos
-  0xd531..0xd533      2 B  psg_control            0xD531 = canal que se esta procesa
-  0xd533..0xd53e     11 B  psg_shadow             Copia en RAM de los registros 0..1
+  0xd531..0xd532      1 B  snd_canal_actual       Canal que el reproductor esta proc
+  0xd532..0xd533      1 B  snd_ticks_unidad       Duracion en ticks de interrupcion 
+  0xd533..0xd53e     11 B  snd_regs_psg           Sombra en RAM de los 11 registros 
   0xd53e..0xd5c8    138 B  canales_psg            Estructuras de los 3 canales del P
   0xd5c8..0xd760    408 B  datos_psg              Tablas del reproductor PSG (period
   0xd760..0xd891    305 B  melodia_canal0         Datos de la melodia del menu, cana
   0xd891..0xd8f8    103 B  melodia_canal1         Datos de la melodia del menu, cana
   0xd8f8..0xda00    264 B  melodia_canal2         Datos de la melodia del menu, cana
-  0xda5c..0xdb00    164 B  muerto_DA5C            164 bytes entre el menu y la rutin
-  0xdda8..0xddab      3 B  sfx_hueco              Tres bytes a cero; ninguna instruc
-  0xddab..0xddac      1 B  ranura_sonido_0        Ranura de efecto de sonido. SI se 
+  0xda5c..0xda80     36 B  relleno_00ff           36 bytes de 00 FF alternado, sin u
+  0xda80..0xdb00    128 B  ram_sin_iniciar        128 bytes del mismo patron 00/FF p
+  0xdda8..0xddab      3 B  sfx_hueco              Tres bytes a cero de alineacion, d
+  0xddab..0xddac      1 B  sfx_contador           Contador de frames libre del motor
   0xddac..0xddb4      8 B  ranuras_sonido         8 ranuras de efecto de sonido. 0xD
-  0xddb4..0xde01     77 B  sfx_restos             Cola del binario. 0xDDB4..0xDDBA s
+  0xddb4..0xddbb      7 B  resto_epilogo_irq      Siete bytes, D9 F1 C1 D1 E1 FB C9 
+  0xddbb..0xddc7     12 B  ceros_cola             Doce bytes a cero, sin ninguna ref
+  0xddc7..0xde01     58 B  ram_sin_iniciar_cola   58 bytes del mismo patron degradad
 
   codigo trazado: 5214 bytes en 8 regiones

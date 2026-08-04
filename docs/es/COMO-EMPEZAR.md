@@ -8,7 +8,14 @@ ni haber tocado un MSX en tu vida.
 Cuatro cosas. En macOS con [Homebrew](https://brew.sh):
 
 ```sh
-brew install z80dasm pasmo openmsx
+brew install z80dasm openmsx
+```
+
+`pasmo` no está en Homebrew; se compila en dos minutos:
+
+```sh
+git clone https://github.com/nataliapc/pasmo.git /tmp/pasmo
+cd /tmp/pasmo && ./configure && make && sudo make install
 ```
 
 Python 3 ya viene con el sistema. En Linux, los tres están en los repositorios
@@ -55,7 +62,7 @@ Si termina con `TODO VERDE`, funcionó.
 ## 4. Léelo
 
 Abre [src/temptations_game.asm](../src/temptations_game.asm). Es el juego
-principal, unas 5.800 líneas. Empieza por el principio: la primera rutina es el
+principal. unas 6.000 líneas. Empieza por el principio: la primera rutina es el
 arranque, y de ahí se sigue el hilo.
 
 Un fragmento, para que veas la pinta que tiene:
@@ -100,7 +107,7 @@ Luego `make` y ya está en el listado.
 ## Otros comandos
 
 ```sh
-make verify   # solo las comprobaciones, sin regenerar
+make verify   # lo mismo que `make`: regenera si hace falta y comprueba
 make sanity   # solo el control de cobertura falsa
 make clean    # borra lo generado
 ```

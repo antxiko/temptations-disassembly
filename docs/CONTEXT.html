@@ -1,4 +1,4 @@
-<title>Context — Temptations (1988)</title>
+<title>Temptations (Topo Soft, 1988, MSX1) — disassembly context — Temptations (1988)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
   --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
@@ -42,8 +42,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
   color:var(--suave);font-size:12px}
 </style>
 <div class="w"><nav class="top"><a href="index.html">Home</a><a href="GETTING-STARTED.html">Start</a><a href="THE-GAME.html">The game</a><a href="THE-TAPE.html">The tape</a><a href="THE-CODE.html">The code</a><a href="FINDINGS.html">Findings</a><a href="BUGS.html">Bugs</a><a href="TOOLS.html">Tools</a><a href="pantallas.html">Screens</a><a href="es/CONTEXTO.html" style="margin-left:auto;color:var(--oro)">Castellano</a></nav>
-<h1>Context</h1>
-<p><em>Temptations</em> (Topo Soft, 1988, MSX1) — disassembly context.</p>
+<h1>Temptations (Topo Soft, 1988, MSX1) — disassembly context</h1>
 <p>Reference document for anyone (human or agent) working on this project. Everything here is <b>verified</b>; anything that is a hypothesis is marked with &quot;(?)&quot;.</p>
 <h2>The game</h2>
 <p>MSX exclusive. There is no ZX Spectrum, Amstrad CPC or C64 version — don&#x27;t go looking for POKEs from other platforms, there aren&#x27;t any.</p>
@@ -51,7 +50,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <p>Single-screen (flick-screen) platformer. The player character shoots chests and skulls to reveal items: fireballs, crystals, auto-repeat arrows, extra lives and little wings that let you fly. One hit kills him. Sideways movement has inertia.</p>
 <p><b>Structure (confirmed by the user, a fan of the game): 4 levels x 7 screens = 28 screens.</b> It matches the <code>mod 7</code> that the status bar routine does. On <b>level 4</b> the player&#x27;s sprite changes and becomes a <b>fish</b>: it is an underwater level, <b>no gravity</b>, you can float.</p>
 <p>The main character&#x27;s name: the manual calls him &quot;Hermano Nonato (Noni)&quot; (Brother Nonato), but the game&#x27;s own ending text says &quot;FRAY ARNULFO&quot; (Friar Arnulfo). A genuine discrepancy, unresolved.</p>
-<p>Sound: the music only plays on the intro and the menu. During play the same player is reused for sound effects (confirmed by the user).</p>
+<p>Sound: the music only plays on the intro and the menu. During play the same sound player is used for effects (confirmed by the user).</p>
 <h2>Controls (manual + verified in the code)</h2>
 <table><tr><th></th><th>Keyboard</th><th>Joystick</th></tr><tr><td>Left / Right / Jump</td><td>cursor keys</td><td>stick</td></tr><tr><td>Fire</td><td>SPACE</td><td>button</td></tr><tr><td>Quit</td><td>CTRL+STOP</td><td>CTRL+STOP</td></tr></table>
 <p>There is no key redefinition: the game never calls <code>SNSMAT</code> (0x0141). It reads <code>GTSTCK</code> (0x00D5) with A=1 (joystick) and A=0 (cursor keys) and ORs the two together; same with <code>GTTRIG</code> (0x00D8). Verified example at 0x818C.</p>
@@ -63,7 +62,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <h2>Memory map with the game running</h2>
 <p>0x0000-0x3FFF   BASIC ROM. It is NOT switched to RAM: the game keeps calling the BIOS (INIGRP, LDIRVM, WRTVRM, GTSTCK, GTTRIG...). Verified: a 100% match with the VG-8020 ROM. 0x4000-0x7FFF   Game graphics and data 0x8000-0xDE00   Game code + variables 0x8FFF          Stack 0xFD9F          BIOS H.TIMI hook: the game writes <code>jp 0xD000</code> there</p>
 <h2>Identified data</h2>
-<table><tr><th>Range</th><th>What it is</th></tr><tr><td>0x4000-0x47FF</td><td>Pattern table (font): 256 glyphs x 8 bytes</td></tr><tr><td>0x4800-0x4FFF</td><td>Colour table</td></tr><tr><td>0x5000-0x57FF</td><td>Sprite patterns (they go to VRAM 0x3800)</td></tr><tr><td>0x5CC0-0x5FBF</td><td>Name table for the intro screen (32x24)</td></tr><tr><td>0x5FC0-0x60FF</td><td>Status bar template (goes to VRAM 0x1A00, rows 16-23)</td></tr><tr><td>0xD513-0xD530</td><td>Jump table for the player&#x27;s 15 commands (0x80..0x8E)</td></tr><tr><td>0xD53E-0xD5C7</td><td>Structures for the 3 PSG channels, 46 bytes each</td></tr><tr><td>0xD760 / 0xD891 / 0xD8F8</td><td>Menu tunes, channels 0/1/2</td></tr></table>
+<table><tr><th>Range</th><th>What it is</th></tr><tr><td>0x4000-0x47FF</td><td>Pattern table (font): 256 glyphs x 8 bytes</td></tr><tr><td>0x4800-0x4FFF</td><td>Colour table</td></tr><tr><td>0x5000-0x57FF</td><td>Sprite patterns (they go to VRAM 0x3800)</td></tr><tr><td>0x5CC0-0x5FBF</td><td>Name table for the intro screen (32x24)</td></tr><tr><td>0x5FC0-0x60FF</td><td>Status bar template (goes to VRAM 0x1A00, rows 16-23)</td></tr><tr><td>0xD513-0xD530</td><td>Jump table for the sound player&#x27;s 15 commands (0x80..0x8E)</td></tr><tr><td>0xD53E-0xD5C7</td><td>Structures for the 3 PSG channels, 46 bytes each</td></tr><tr><td>0xD760 / 0xD891 / 0xD8F8</td><td>Menu tunes, channels 0/1/2</td></tr></table>
 <h2>Game variables (0x8F00-0x8F2F)</h2>
 <table><tr><th>Address</th><th>Variable</th><th>How it was verified</th></tr><tr><td>0x8F09 / 0x8F0A</td><td>Player X / Y</td><td>init 0x80 / 0x68 at 0x80CE / 0x80D6</td></tr><tr><td>0x8F0D</td><td>Screen (global counter)</td><td>init 0 at 0x8114; drawn as <code>(value mod 7)+1</code></td></tr><tr><td>0x8F0E</td><td>Level</td><td>init 0xFF at 0x80F3; drawn <code>+1</code></td></tr><tr><td>0x8F12</td><td><b>LIVES</b></td><td>watchpoint: only written at 0x80FD (A=9) and only read at 0x86A4</td></tr><tr><td>0x8F13 / 0x8F14</td><td>Respawn X / Y</td><td>init 0x80 / 0x68</td></tr><tr><td>0x8F17</td><td>Ammo icons</td><td>init 1 at 0x8102</td></tr><tr><td>0x8F18</td><td>Weapon type</td><td>init 0 at 0x8107; tile = 0xF7 + 2*type</td></tr><tr><td>0x8F1E</td><td>Anti-POKE trap flag</td><td>see below</td></tr></table>
 <h2>Identified routines</h2>
@@ -98,7 +97,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <h2>Infinite-lives POKE</h2>
 <p>The only published one is in &quot;MSX Book II&quot; (Paulisoft, Brazil, 1988, p. 62) and says <code>POKE &amp;HB4CC,0</code>. <b>It is a typo</b>: 0xB4CC is already 0 in the binary. The right address is <b>0x84CC</b>, which holds 0x3D = DEC A in the routine that takes a life away. Verified experimentally (tools/omsx_testpoke.tcl): without the patch 9-&gt;8, with the patch 9-&gt;9.</p>
 <h2>State of the disassembly</h2>
-<p><b>98.4% of the binary explained</b>: 5214 bytes of traced code and 34593 of identified data; 642 bytes (1.6%) are left in small gaps.</p>
+<p><b>All 40,449 bytes assigned</b>: 5214 bytes of traced code and 34593 of identified data; bloques de datos con nombre. No quedan huecos sin reclamar.</p>
 <p>Careful with the &quot;12.9% code&quot; figure: it does not mean the disassembly is incomplete, it means this game is ~87% data (16 KB of graphics and 29 maps of 512 B).</p>
-<p>0xCA00-0xD000 is <b>code from another build</b> that was left in the binary and never runs. It disassembles cleanly because it is real code, and that is exactly why it fooled a heuristic pointer-table detector.</p>
+<p>0xCA00-0xD000 is <b>code from another build</b> that was left in the binary and never runs. It disassembles cleanly because it is real code, and that is why it fooled a heuristic pointer-table detector.</p>
 <footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

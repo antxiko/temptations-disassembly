@@ -70,7 +70,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
     jr nz,siguiente
     ld (hl),0fah    ; y luego 0xFA, para descartar ROM</code></pre>
 <p>And here comes the nice detail: probing the first page of memory is a chicken-and-egg problem. That page is where the BIOS lives, and the routine you need in order to switch slots <b>is in the BIOS</b>. If you switch it out to test the RAM, you are left without the routine.</p>
-<p>Topo&#x27;s solution: <b>carry its own copy of the routine</b>. <code>SLOTS</code> copies its own version of that function into high memory, rewrites on the fly the destination of its own <code>CALL</code> instruction so that it points at the copy, and only then can it probe page 0 without depending on the BIOS.</p>
+<p>Topo&#x27;s solution: <b>copy the routine into itself</b>. <code>SLOTS</code> copies its own version of that function into high memory, rewrites on the fly the destination of its own <code>CALL</code> instruction so that it points at the copy, and only then can it probe page 0 without depending on the BIOS.</p>
 <pre><code>    ld hl,00024h        ; primero, la de la BIOS
     ld (0c3b3h),hl      ; escrita como operando del CALL de 0xC3B2
     ...

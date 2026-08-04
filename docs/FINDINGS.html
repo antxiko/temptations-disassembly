@@ -48,7 +48,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <h2>The cheater&#x27;s punishment</h2>
 <p>In the binary, at address <code>0x7F94</code>, there is this sentence:</p>
 <blockquote>POR QUE NO PRUEBAS SIN POKES</blockquote>
-<p>(«Why don&#x27;t you try it without pokes».) It is not a stray message or a debug string. The routine that uses it sits at <code>0x8B80</code>, and it is part of the <b>end-of-game</b> sequence:</p>
+<p>(&quot;Why don&#x27;t you try it without pokes.&quot;) It is not a stray message or a debug string. The routine that uses it sits at <code>0x8B80</code>, and it is part of the <b>end-of-game</b> sequence:</p>
 <pre><code>FINAL_JUEGO:
     ld a,(08f0dh)       ; avanza a la pantalla 28, la de victoria
     inc a
@@ -77,7 +77,7 @@ with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
 <p>We searched all four of the game&#x27;s binaries for any instruction that writes to <code>0x8F1E</code>, in every form: <code>ld (0x8F1E),a</code>, <code>ld hl,0x8F1E</code>, <code>ld de,…</code>, <code>ld bc,…</code>. <b>The only reference in the whole game is the read at 0x8B80.</b> No write, anywhere.</p>
 <p>The flag is zero on a clean tape and stays zero with the game running, so the punishment never triggers.</p>
 <h3>And now the good part: they forgot to initialise it</h3>
-<p>At first we assumed Topo had left the trap «armed and waiting». Looking at the data more carefully, the explanation is different, and quite a bit better.</p>
+<p>At first we assumed Topo had left the trap &quot;armed and waiting&quot;. Looking at the data more carefully, the explanation is different, and quite a bit better.</p>
 <p>The game&#x27;s start-up initialises fifteen variables, one after another:</p>
 <pre><code>8F09 8F0A 8F0B 8F0C 8F0D 8F0E 8F11 8F12 8F13 8F14 8F17 8F18 8F19 8F1C 8F1D</code></pre>
 <p>One is missing. <b>0x8F1E is the only variable the game reads and never initialises</b>, and it sits right next to 0x8F1C and 0x8F1D, which are initialised. That is precisely the one they skipped.</p>
@@ -113,7 +113,7 @@ with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
     ld a,001h
     ld (08f11h),a       ; y enciende el modo flotar</code></pre>
 <p>One byte. With that, every transparent area of every tile goes from black to green all at once, and the whole level turns into the bottom of the sea without a single graphic having changed.</p>
-<p>This finding came out of an observation by a veteran player: on seeing the maps we had drawn he said <em>«the underwater ones are wrong, the background is green»</em>. He was right: our program was painting colour 0 as black. Looking for whoever touched the backdrop register turned up the <code>ld a,00ch</code> above.</p>
+<p>This finding came out of an observation by a veteran player: on seeing the maps we had drawn he said <em>&quot;the underwater ones are wrong, the background is green&quot;</em>. He was right: our program was painting colour 0 as black. Looking for whoever touched the backdrop register turned up the <code>ld a,00ch</code> above.</p>
 <hr>
 <h2>The maps: 29 screens of 512 bytes</h2>
 <p>Each screen of the game is a 512-byte block starting at <code>0x9000</code>: 32 columns by 16 rows, one tile byte per cell, row by row. No compression.</p>
@@ -155,7 +155,7 @@ with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
 <h2>A nod to another game from the same publisher</h2>
 <p>The ending text, in full, reads:</p>
 <blockquote>ALELUYA, OH FRAY ARNULFO. SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL CIELO. &quot;SOLUM VICTORIUS EST GLORIA&quot;. ¿TE ATREVERÁS CON &quot;ALEHOP&quot;?</blockquote>
-<p>(«Hallelujah, oh Brother Arnulfo. Having overcome all the perils of evil you have won heaven. &quot;SOLUM VICTORIUS EST GLORIA&quot;. Will you dare take on &quot;ALEHOP&quot;?»)</p>
+<p>(In English: &quot;Hallelujah, oh Brother Arnulfo. Having overcome all the perils of evil you have won heaven. SOLUM VICTORIUS EST GLORIA. Will you dare take on ALEHOP?&quot;)</p>
 <p><em>Alehop</em> was another Topo Soft game. The victory screen ends up selling you the next one.</p>
 <p>And a minor curiosity: the game&#x27;s manual calls the main character <b>Hermano Nonato, «Noni»</b>, but the text that appears on screen says <b>Fray Arnulfo</b>. Somewhere between design and printing, the monk changed his name.</p>
 <hr>

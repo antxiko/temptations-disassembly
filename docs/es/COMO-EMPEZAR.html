@@ -46,7 +46,10 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <p>Guía para tenerlo funcionando en cinco minutos. No hace falta saber ensamblador ni haber tocado un MSX en tu vida.</p>
 <h2>1. Lo que necesitas instalar</h2>
 <p>Cuatro cosas. En macOS con <a href="https://brew.sh">Homebrew</a>:</p>
-<pre><code>brew install z80dasm pasmo openmsx</code></pre>
+<pre><code>brew install z80dasm openmsx</code></pre>
+<p><code>pasmo</code> no está en Homebrew; se compila en dos minutos:</p>
+<pre><code>git clone https://github.com/nataliapc/pasmo.git /tmp/pasmo
+cd /tmp/pasmo &amp;&amp; ./configure &amp;&amp; make &amp;&amp; sudo make install</code></pre>
 <p>Python 3 ya viene con el sistema. En Linux, los tres están en los repositorios habituales (<code>apt install z80dasm pasmo openmsx</code> o equivalente).</p>
 <table><tr><th>Programa</th><th>Para qué</th></tr><tr><td><code>z80dasm</code></td><td>Traduce los bytes del juego a instrucciones</td></tr><tr><td><code>pasmo</code></td><td>Hace el camino inverso, para comprobar que no nos hemos equivocado</td></tr><tr><td><code>openmsx</code></td><td>Emulador de MSX. Sirve para <em>verificar</em> cosas, no solo para jugar</td></tr><tr><td>Python 3</td><td>Todas las herramientas del proyecto</td></tr></table>
 <p><code>openmsx</code> es opcional si solo quieres leer el código, pero es lo que permite comprobar de verdad las afirmaciones en vez de creérselas.</p>
@@ -60,7 +63,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <ol><li>Abre la cinta y saca los cuatro programas que contiene</li><li>Analiza cuáles de sus bytes son instrucciones y cuáles son datos</li><li>Genera los listados comentados en <code>src/</code></li><li>Comprueba que todo cuadra</li></ol>
 <p>Si termina con <code>TODO VERDE</code>, funcionó.</p>
 <h2>4. Léelo</h2>
-<p>Abre <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/temptations_game.asm">src/temptations_game.asm</a>. Es el juego principal, unas 5.800 líneas. Empieza por el principio: la primera rutina es el arranque, y de ahí se sigue el hilo.</p>
+<p>Abre <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/temptations_game.asm">src/temptations_game.asm</a>. Es el juego principal. unas 6.000 líneas. Empieza por el principio: la primera rutina es el arranque, y de ahí se sigue el hilo.</p>
 <p>Un fragmento, para que veas la pinta que tiene:</p>
 <pre><code>PINTA_MARCADOR:         ; Redibuja el marcador (vidas / pantalla / nivel)
     ld hl,05fc0h        ; Plantilla del marcador -&gt; VRAM 0x1A00, las filas 16..23
@@ -85,7 +88,7 @@ D 0x9000 0xCA00 mapas   Los 29 mapas de pantalla, 512 bytes cada uno</code></pre
 <p>Cuatro tipos de línea: <code>L</code> pone nombre a una rutina, <code>C</code> añade un comentario al final de una instrucción, <code>B</code> mete un bloque de texto antes, y <code>D</code> describe un rango de datos.</p>
 <p>Luego <code>make</code> y ya está en el listado.</p>
 <h2>Otros comandos</h2>
-<pre><code>make verify   # solo las comprobaciones, sin regenerar
+<pre><code>make verify   # lo mismo que `make`: regenera si hace falta y comprueba
 make sanity   # solo el control de cobertura falsa
 make clean    # borra lo generado</code></pre>
 <p>Para ver las pantallas del juego dibujadas desde el binario:</p>
