@@ -1,0 +1,102 @@
+<title>Temptations (Topo Soft, 1988, MSX1) — contexto del desensamblado — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="COMO-EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="BUGS.html">Bugs</a><a href="HERRAMIENTAS.html">Herramientas</a><a href="pantallas.html">Pantallas</a></nav>
+<h1>Temptations (Topo Soft, 1988, MSX1) — contexto del desensamblado</h1>
+<p>Documento de referencia para cualquiera (persona o agente) que trabaje en este proyecto. Todo lo que aparece aqui esta <b>verificado</b>; lo que sea hipotesis va marcado con &quot;(?)&quot;.</p>
+<h2>El juego</h2>
+<p>Exclusivo de MSX. No existe version de ZX Spectrum, Amstrad CPC ni C64 — no busques POKEs de otras plataformas, no los hay.</p>
+<ul><li>Programa y graficos: <b>Luis Lopez Navarro</b> (&quot;LuigiLopez&quot;)</li><li>Musica: <b>Gominolas</b> (Cesar Astudillo)</li><li>Pantalla de carga: Javier Cano (atribucion discutida)</li><li>Caratula: Alfonso Azpiri</li><li>Editor: Erbe Software, cinta, Espana, 1988. Micromania nº34 le dio un 8.</li></ul>
+<p>Plataformas de pantalla fija (flick-screen). El protagonista dispara a cofres y calaveras para revelar objetos: bolas de fuego, cristales, flechas de autorrepeticion, vidas extra y alitas que permiten volar. Muere de un solo impacto. Los movimientos laterales tienen inercia.</p>
+<p><b>Estructura (confirmada por el usuario, fan del juego): 4 niveles x 7 pantallas = 28 pantallas.</b> Encaja con el <code>mod 7</code> que hace la rutina del marcador. En el <b>nivel 4</b> el sprite del protagonista cambia y se convierte en un <b>pez</b>: es un nivel acuatico, <b>sin gravedad</b>, se puede flotar.</p>
+<p>Nombre del protagonista: el manual lo llama &quot;Hermano Nonato (Noni)&quot;, pero el texto final del propio juego dice &quot;FRAY ARNULFO&quot;. Discrepancia real, sin resolver.</p>
+<p>Sonido: la musica solo suena en la presentacion y el menu. Durante la partida el mismo reproductor se usa para efectos (confirmado por el usuario).</p>
+<h2>Controles (manual + verificado en el codigo)</h2>
+<table><tr><th></th><th>Teclado</th><th>Joystick</th></tr><tr><td>Izquierda / Derecha / Salto</td><td>cursores</td><td>palanca</td></tr><tr><td>Disparo</td><td>ESPACIO</td><td>boton</td></tr><tr><td>Abandonar</td><td>CTRL+STOP</td><td>CTRL+STOP</td></tr></table>
+<p>No hay redefinicion de teclas: el juego nunca llama a <code>SNSMAT</code> (0x0141). Lee <code>GTSTCK</code> (0x00D5) con A=1 (joystick) y A=0 (cursores) y hace OR de ambos; igual con <code>GTTRIG</code> (0x00D8). Ejemplo verificado en 0x818C.</p>
+<h2>Cadena de carga (verificada en openMSX de principio a fin)</h2>
+<p>El TSX contiene 12 bloques. Los KCS (0x4B) traen los bytes ya desmodulados, asi que la extraccion es exacta y no hay que decodificar audio.</p>
+<table><tr><th>Fichero</th><th>Carga</th><th>Ejecuta</th><th>Tamano</th><th>Que es</th></tr><tr><td><code>TEMPT</code> (ASCII)</td><td>—</td><td>—</td><td>256 B</td><td>Cargador BASIC: <code>COLOR 1,1,1:SCREEN 2</code> + dos <code>BLOAD&quot;cas:&quot;,R</code></td></tr><tr><td><code>TOPO</code> (BIN)</td><td>0x9470</td><td>0x9470</td><td>4254 B</td><td>Logo de Topo Soft</td></tr><tr><td><code>SLOTS</code> (BIN)</td><td>0xC350</td><td>0xC58F</td><td>700 B</td><td>Busca RAM en slots + cargador turbo</td></tr><tr><td>turbo 1 (bloque 0x10)</td><td>0x88B8</td><td>0x88B8</td><td>12388 B</td><td>Pantalla de portada</td></tr><tr><td>turbo 2 (bloque 0x10)</td><td>0x4000</td><td><b>0x8000</b></td><td>40449 B</td><td>El juego</td></tr></table>
+<p>Los bloques turbo llevan <b>1 byte 0x00 delante y 1 byte de checksum XOR detras</b> (el XOR de datos+checksum da 0). Verificado comparando la RAM volcada por openMSX con los bytes del TSX: identicos con offset 1.</p>
+<p>El bloque turbo 2 (0x4000..0xDE00) <b>sobreescribe</b> al turbo 1, que para entonces ya ha hecho su trabajo.</p>
+<h2>Mapa de memoria con el juego corriendo</h2>
+<p>0x0000-0x3FFF   ROM del BASIC. NO se conmuta a RAM: el juego sigue llamando a la BIOS (INIGRP, LDIRVM, WRTVRM, GTSTCK, GTTRIG...). Verificado: coincide al 100% con la ROM del VG-8020. 0x4000-0x7FFF   Graficos y datos del juego 0x8000-0xDE00   Codigo del juego + variables 0x8FFF          Pila 0xFD9F          Hook H.TIMI de la BIOS: el juego escribe ahi <code>jp 0xD000</code></p>
+<h2>Datos identificados</h2>
+<table><tr><th>Rango</th><th>Que es</th></tr><tr><td>0x4000-0x47FF</td><td>Tabla de patrones (fuente): 256 glifos x 8 bytes</td></tr><tr><td>0x4800-0x4FFF</td><td>Tabla de colores</td></tr><tr><td>0x5000-0x57FF</td><td>Patrones de sprites (van a VRAM 0x3800)</td></tr><tr><td>0x5CC0-0x5FBF</td><td>Tabla de nombres de la pantalla de presentacion (32x24)</td></tr><tr><td>0x5FC0-0x60FF</td><td>Plantilla del marcador (va a VRAM 0x1A00, filas 16-23)</td></tr><tr><td>0xD513-0xD530</td><td>Tabla de saltos de los 15 comandos del reproductor (0x80..0x8E)</td></tr><tr><td>0xD53E-0xD5C7</td><td>Estructuras de los 3 canales PSG, 46 bytes cada una</td></tr><tr><td>0xD760 / 0xD891 / 0xD8F8</td><td>Melodias del menu, canales 0/1/2</td></tr></table>
+<h2>Variables del juego (0x8F00-0x8F2F)</h2>
+<table><tr><th>Direccion</th><th>Variable</th><th>Como se verifico</th></tr><tr><td>0x8F09 / 0x8F0A</td><td>X / Y del jugador</td><td>init 0x80 / 0x68 en 0x80CE / 0x80D6</td></tr><tr><td>0x8F0D</td><td>Pantalla (contador global)</td><td>init 0 en 0x8114; se pinta como <code>(valor mod 7)+1</code></td></tr><tr><td>0x8F0E</td><td>Nivel</td><td>init 0xFF en 0x80F3; se pinta <code>+1</code></td></tr><tr><td>0x8F12</td><td><b>VIDAS</b></td><td>watchpoint: solo se escribe en 0x80FD (A=9) y solo se lee en 0x86A4</td></tr><tr><td>0x8F13 / 0x8F14</td><td>X / Y de reaparicion</td><td>init 0x80 / 0x68</td></tr><tr><td>0x8F17</td><td>Iconos de municion</td><td>init 1 en 0x8102</td></tr><tr><td>0x8F18</td><td>Tipo de arma</td><td>init 0 en 0x8107; tile = 0xF7 + 2*tipo</td></tr><tr><td>0x8F1E</td><td>Flag de la trampa anti-POKE</td><td>ver abajo</td></tr></table>
+<h2>Rutinas identificadas</h2>
+<table><tr><th>Direccion</th><th>Rutina</th></tr><tr><td>0x8000</td><td>Entrada del juego</td></tr><tr><td>0x805E</td><td>Color de borde, sprites y encender pantalla</td></tr><tr><td>0x8076</td><td>Inicializacion principal</td></tr><tr><td>0x8117</td><td><b>Bucle principal de la partida</b> (dos frames por vuelta)</td></tr><tr><td>0x818C</td><td>Lee el control (GTSTCK joystick + cursores, OR)</td></tr><tr><td>0x84CC</td><td>Quita una vida: <code>dec a / cp 0FFh / jp z,0x8C1E</code> (game over)</td></tr><tr><td>0x8528</td><td>Da una vida: <code>inc a / cp 0Ah / ret z</code> (tope 10)</td></tr><tr><td>0x8698</td><td><b>Pinta el marcador</b> (vidas / pantalla / nivel)</td></tr><tr><td>0x8B80</td><td>Muestra el mensaje anti-POKE si 0x8F1E != 0</td></tr><tr><td>0x8C1E</td><td>Game over</td></tr><tr><td>0xD000</td><td>Rutina de interrupcion (60 Hz), enganchada en H.TIMI</td></tr><tr><td>0xD041</td><td>Asigna al canal A los datos de sonido de DE</td></tr><tr><td>0xD060</td><td>Avanza los 3 canales un tick</td></tr><tr><td>0xD431</td><td>Indexa una tabla de saltos: HL = word en (HL + A*2)</td></tr><tr><td>0xDA00</td><td>Menu principal: musica + espera de disparo</td></tr><tr><td>0xDB00</td><td>Rutina de cada frame (llamada 2 veces por vuelta del bucle)</td></tr></table>
+<p>Casillas de VRAM que escribe el marcador: <code>0x1A68</code> = digito de VIDAS, <code>0x1A7D</code> = PANTALLA, <code>0x1ABB</code> = NIVEL, <code>0x1AA2</code> = tira de municion.</p>
+<h2>La trampa anti-POKE</h2>
+<p>En 0x7F94 hay la cadena <code>POR QUE NO PRUEBAS SIN POKES</code>. La muestra la rutina de 0x8B80, que solo lo hace si la variable 0x8F1E es distinta de 0.</p>
+<p>Lo interesante: <b>ninguna instruccion del binario escribe en 0x8F1E</b> (no aparece <code>32 1E 8F</code> ni equivalente) y en la imagen limpia de cinta vale 0. Es una trampa latente que en el juego original nunca salta, y que solo se dispararia si alguien pokease ese byte. No esta documentada en ninguna parte.</p>
+<h2>Tabla de caracteres del juego</h2>
+<p><b>No es ASCII.</b> Verificada por dos vias independientes: renderizando los glifos de la tabla de patrones, y porque el propio codigo hace <code>ld b,05Ch / add a,b</code> para convertir un numero en digito.</p>
+<p>espacio  0x00        (¡no 0x20!) A..Z     0x41..0x5A  (posicion ASCII normal) 0..9     0x5C..0x65  (desplazados) &quot;        0x68 .        0x6A ,        0x6B :        0x6C</p>
+<ul><li>0x6D</li></ul>
+<p>Curiosidad verificada: los codigos &#x27;U&#x27; (0x55) y &#x27;V&#x27; (0x56) dibujan <b>el mismo glifo</b>, por eso los textos guardan &quot;PVES&quot;, &quot;NUEUO&quot;, &quot;MVSICA&quot; o &quot;NIUEL&quot; y aun asi se leen bien en pantalla.</p>
+<p>Textos del juego: <code>PANTALLA:</code> (0x6034), <code> NIVEL:</code> (0x7F80), <code>ACABOSE</code> (0x7F8B), <code>POR QUE NO PRUEBAS SIN POKES</code> (0x7F94), y el final en 0xC93B: <code>ALELUYA, OH FRAY ARNULFO / SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL CIELO / &quot;SOLUM VICTORIUS EST GLORIA&quot; / TE ATREVERAS CON &quot;ALEHOP&quot;</code>.</p>
+<h2>Herramientas del proyecto</h2>
+<table><tr><th>Herramienta</th><th>Para que</th></tr><tr><td><code>tools/tsx_parse.py</code></td><td>Parsea el TSX y extrae los ficheros</td></tr><tr><td><code>tools/z80trace.py</code></td><td>Trazador recursivo: separa codigo de datos siguiendo el flujo</td></tr><tr><td><code>tools/mkasm.py</code></td><td>Genera el listado comentado desde el trazado + las notas</td></tr><tr><td><code>tools/charset.py</code></td><td>Tabla de caracteres del juego y buscador de textos</td></tr><tr><td><code>tools/gen_msx_syms.py</code></td><td>Tabla de simbolos de la BIOS MSX (desde MSXgl)</td></tr><tr><td><code>tools/dasm_slice.py</code></td><td>Desensambla por secciones con ORG distintos (para SLOTS)</td></tr><tr><td><code>tools/omsx_*.tcl</code></td><td>Arnes de openMSX: carga, savestate, watchpoints, muestreo de PC</td></tr></table>
+<p>Ficheros de datos: <code>dump/turbo2_ram.bin</code> es el juego tal cual queda en RAM (org 0x4000, 40449 bytes); <code>src/game.notes</code> son las anotaciones ancladas a direccion; <code>src/temptations_game.asm</code> es el listado generado.</p>
+<p><b>Savestate de openMSX</b>: <code>tempt_boot</code> (el juego justo al arrancar en 0x8000). Evita recargar los 7 minutos de cinta en cada prueba.</p>
+<h2>Estructura de niveles (verificada en el codigo)</h2>
+<p>La rutina 0x8B09 compara el contador de pantalla (0x8F0D) con 6, 13, 20 y 27. Son las ultimas pantallas de cada nivel, o sea <b>4 niveles de 7 pantallas</b>:</p>
+<p>nivel 1 -&gt; pantallas  0..6 nivel 2 -&gt; pantallas  7..13 nivel 3 -&gt; pantallas 14..20     (0x8B29: cambia el banco de sprites) nivel 4 -&gt; pantallas 21..27     (0x8B55: enciende el modo flotar) pantalla 28                      la de victoria</p>
+<p>El <b>nivel 4 acuatico</b> esta en 0x8B55: pone el flag 0x8F11 a 1 (flotar, sin gravedad), el estado de animacion a 0x0B (nadar) y el borde de color 12.</p>
+<h2>Mapas de pantalla</h2>
+<p>29 bloques de 512 bytes seguidos desde <b>0x9000</b> (32 columnas x 16 filas, un byte de tile por casilla, fila a fila). La rutina 0x8ACE calcula <code>0x9000 + pantalla*512</code> y copia 512 bytes al buffer 0x7D80.</p>
+<p>VERIFICADO: con el juego parado en la pantalla 0, los 512 bytes de 0x9000 coinciden byte a byte (512/512) con la VRAM 0x1800-0x19FF y con el buffer 0x7D80.</p>
+<h2>Tabla de animacion y fisica (0x60C0)</h2>
+<p>Ranuras de 128 bytes indexadas por <code>estado*128 + paso*4</code>. Cada fotograma son 4 bytes: dX y dY con signo, numero de patron entre 4, y los dos colores del sprite empaquetados. Un dX de 0x80 termina la secuencia. La lee 0x82BE. La usan tanto el jugador (estados 0-13) como los enemigos (16-48).</p>
+<h2>El castigo por hacer trampas</h2>
+<p>La cadena &quot;POR QUE NO PRUEBAS SIN POKES&quot; (0x7F94) no es un mensaje suelto: la rutina 0x8B80 la escribe <b>encima de la ultima linea de la pantalla final de victoria</b> si la variable 0x8F1E no es cero. Es un castigo reservado a quien se termine el juego haciendo trampas.</p>
+<p>Pero <b>ninguna instruccion del binario escribe nunca en 0x8F1E</b>, asi que en el juego original no salta jamas: quedo armado por si alguien pokeaba ese byte.</p>
+<h2>POKE de vidas infinitas</h2>
+<p>El unico publicado esta en &quot;MSX Book II&quot; (Paulisoft, Brasil, 1988, pag. 62) y dice <code>POKE &amp;HB4CC,0</code>. <b>Es una errata</b>: 0xB4CC ya vale 0 en el binario. La direccion buena es <b>0x84CC</b>, que contiene 0x3D = DEC A en la rutina de quitar vida. Verificado experimentalmente (tools/omsx_testpoke.tcl): sin parche 9-&gt;8, con parche 9-&gt;9.</p>
+<h2>Estado del desensamblado</h2>
+<p><b>98,4% del binario explicado</b>: 5214 bytes de codigo trazado y 34593 de datos identificados; quedan 642 bytes (1,6%) en huecos pequenos.</p>
+<p>Cuidado con la metrica &quot;12,9% de codigo&quot;: no significa desensamblado incompleto, significa que este juego es ~87% datos (16 KB de graficos y 29 mapas de 512 B).</p>
+<p>0xCA00-0xD000 es <b>codigo de otra compilacion</b> que quedo en el binario y no se ejecuta nunca. Desensambla bien porque es codigo real, y por eso engano a un detector heuristico de tablas de punteros.</p>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

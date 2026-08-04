@@ -1,0 +1,15 @@
+# Layout de SLOTS.bin  (carga 0xC350, ejecuta 0xC58F, 700 bytes)
+# nombre       off_ini  off_fin  org      tipo  descripcion
+#
+# El cargador se copia a si mismo a RAM alta antes de ejecutarse, asi que cada
+# seccion se desensambla en la direccion donde REALMENTE corre. Origen de cada
+# ORG: los LDIR de la rutina de arranque en 0xC58F (ver seccion entry).
+
+ramfinder     0x000    0x082    0xC350   code  Busca RAM en todos los slots y la conmuta (deja el MSX con 64K RAM)
+pad1          0x082    0x0C8    0xC3D2   data  Relleno a cero
+rdslt_reloc   0x0C8    0x140    0x9C40   code  Copia de RDSLT/ENASLT en RAM; hace falta para sondear la pagina 0, donde la BIOS deja de estar mapeada
+slotsel       0x140    0x187    0xE22C   code  Selector de slot por pagina; 6 puntos de entrada (paginas x primario/secundario)
+turboload     0x187    0x23F    0xE2F4   code  CARGADOR TURBO: lee un bloque de cinta a (IX) de longitud DE
+entry         0x23F    0x276    0xC58F   code  Punto de entrada (BLOAD ,R): relocaliza todo y salta a la secuencia de carga
+loadseq       0x276    0x2B2    0xE3BC   code  Secuencia principal: carga los 2 bloques turbo, aplica parches y arranca el juego
+tail          0x2B2    0x2BC    0xC602   data  Cola sin usar

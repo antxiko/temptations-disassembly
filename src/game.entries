@@ -1,0 +1,34 @@
+# Puntos de entrada del juego principal (bloque turbo 2, org 0x4000).
+#
+# 0x8000  Entrada del juego. Origen: 'jp 08000h' al final de la secuencia de
+#         carga de SLOTS. Verificado en openMSX: breakpoint alcanzado a los
+#         406 s de tiempo emulado.
+0x8000
+
+# 0xD000  Rutina de interrupcion del juego (60 Hz). NO se alcanza siguiendo el
+#         flujo desde 0x8000: el juego la instala en tiempo de ejecucion en el
+#         hook H.TIMI de la BIOS. Verificado leyendo 0xFD9F con el juego en
+#         marcha: contiene C3 00 D0 = 'jp 0d000h'. De aqui cuelga el bucle de
+#         juego (sprites, control, sonido).
+0xD000
+
+# --- Tabla de saltos del reproductor de musica PSG, en 0xD513 ---
+# El despachador esta en 0xD095: 'sub 080h / ld hl,0d513h / call 0d431h / jp (hl)'.
+# 0xD431 calcula HL = word en (0xD513 + A*2). Los comandos van de 0x80 a 0x8E;
+# a partir de 0x8F la tabla ya son datos de otra cosa (punteros fuera del
+# binario), asi que solo se siembran las 15 entradas validas.
+0xD25A   # cmd 0x80
+0xD278   # cmd 0x81
+0xD2DA   # cmd 0x82
+0xD263   # cmd 0x83
+0xD2D6   # cmd 0x84
+0xD2A8   # cmd 0x85
+0xD2E9   # cmd 0x86
+0xD320   # cmd 0x87
+0xD2C2   # cmd 0x88
+0xD369   # cmd 0x89
+0xD30C   # cmd 0x8A
+0xD283   # cmd 0x8B
+0xD3C0   # cmd 0x8C
+0xD3DC   # cmd 0x8D
+0xD3ED   # cmd 0x8E

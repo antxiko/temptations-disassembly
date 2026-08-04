@@ -1,0 +1,89 @@
+# SLOTS: buscador de RAM + cargador turbo de Topo Soft.
+#
+# Se carga en 0xC350 y se ejecuta en 0xC58F. Es la pieza mas interesante de la
+# cinta: deja el MSX con 64 KB de RAM utilizables y luego lee los dos bloques
+# turbo directamente del cassette, sin usar la BIOS de cinta.
+#
+# AVISO AL LEER ESTE LISTADO: el cargador se copia a si mismo a RAM alta antes
+# de ejecutarse. Cuatro trozos aparecen aqui en la direccion donde ESTAN
+# cargados, pero las direcciones absolutas que contienen apuntan a donde se
+# EJECUTAN. La correspondencia es:
+#     0xC418 -> 0x9C40   (200 bytes)
+#     0xC490 -> 0xE22C   ( 71 bytes)   [solapa con el bloque anterior]
+#     0xC4D7 -> 0xE2F4   (184 bytes)
+#     0xC5C6 -> 0xE3BC   ( 60 bytes)
+
+B 0xC350 ############################################################
+B 0xC350 BUSCADOR DE RAM EN LOS SLOTS
+B 0xC350 ############################################################
+B 0xC350 Recorre los 4 slots primarios x 4 secundarios probando a
+B 0xC350 escribir y releer, para localizar RAM en cada pagina. Guarda
+B 0xC350 los identificadores de slot encontrados en 0xE290..0xE293 y
+B 0xC350 deja los slots como estaban al salir: quien conmuta de verdad
+B 0xC350 es luego la secuencia de carga.
+L 0xC350 BUSCA_RAM        Localiza RAM en todas las paginas y anota los slots
+C 0xC350 Nada de interrupciones mientras se toquetean los slots
+C 0xC351 Guarda un byte de 0x8000 para restaurarlo: la prueba lo machaca
+C 0xC358 Codigo automodificable: escribe 0x0024 (ENASLT) como destino del CALL de 0xC3B2
+C 0xC35E Sondea la pagina 1 (0x4000)
+C 0xC364 Sondea la pagina 2 (0x8000)
+C 0xC36A Copia el buscador a 0x9C40, en RAM...
+C 0xC375 ...y reescribe el CALL para usar esa copia en vez de la BIOS
+C 0xC37B Ahora ya se puede sondear la pagina 0, donde la BIOS dejaria de estar mapeada
+C 0xC384 Restaura los slots tal y como estaban
+L 0xC395 GUARDA_SLOTS_A   Anota en 0xE290 el estado actual de slots
+L 0xC39A GUARDA_SLOTS_B   Anota en 0xE292 el estado actual de slots
+L 0xC3A7 SONDEA_PAGINA    Prueba todos los slots de la pagina HL y se queda con el que tenga RAM
+C 0xC3A7 0x80 = marca de slot expandido
+C 0xC3A9 4 slots primarios
+C 0xC3AD 4 slots secundarios por cada primario
+C 0xC3B2 ENASLT o su copia en RAM (ver 0xC358 y 0xC375)
+C 0xC3B6 Prueba de RAM: escribe 0x20 y lo relee...
+C 0xC3BD ...y luego 0xFA, para descartar que sea ROM o bus flotante
+
+B 0xC4D7 ############################################################
+B 0xC4D7 CARGADOR TURBO  (se ejecuta en 0xE2F4)
+B 0xC4D7 ############################################################
+B 0xC4D7 Lee un bloque de cinta a (IX) con longitud DE. No usa la BIOS
+B 0xC4D7 de cassette: mide a mano la anchura de los pulsos leyendo el
+B 0xC4D7 bit 7 del registro 14 del PSG.
+B 0xC4D7 Formato del bloque, verificado comparando con la RAM que vuelca
+B 0xC4D7 openMSX: un byte 0x00 de sincronismo, los datos, y un byte de
+B 0xC4D7 checksum tal que el XOR de todo da cero.
+L 0xC4D7 CARGA_TURBO      Lee un bloque de cinta a (IX), longitud DE
+C 0xC4D7 Mete 0xE39D en la pila: al hacer RET se ira a apagar el motor
+C 0xC4F9 Escribe en el PPI para arrancar el motor del cassette
+C 0xC4FD Selecciona el registro 14 del PSG, donde esta la entrada de cinta
+
+B 0xC58F ############################################################
+B 0xC58F ENTRADA DEL CARGADOR  (BLOAD "cas:",R)
+B 0xC58F ############################################################
+B 0xC58F Verificado en openMSX: breakpoint alcanzado a los 96,4 s de
+B 0xC58F tiempo emulado, justo despues del logo de Topo.
+L 0xC58F SLOTS_START      Punto de entrada: relocaliza todo y arranca la carga
+C 0xC58F Apaga interrupciones para el resto del proceso
+C 0xC59B DISSCR: apaga la pantalla durante la carga
+C 0xC59E Localiza la RAM de todas las paginas
+C 0xC5A2 Copia el selector de slots a 0xE22C
+C 0xC5AD Copia el cargador turbo a 0xE2F4
+C 0xC5B8 Copia la secuencia de carga a 0xE3BC
+C 0xC5C3 Y salta a ella: a partir de aqui se ejecuta desde RAM alta
+
+B 0xC5C6 ############################################################
+B 0xC5C6 SECUENCIA DE CARGA  (se ejecuta en 0xE3BC)
+B 0xC5C6 ############################################################
+B 0xC5C6 Conmuta a RAM las paginas 1 y 2 y carga los dos bloques turbo.
+B 0xC5C6 La pagina 0 se deja como esta -con la ROM del BASIC- porque el
+B 0xC5C6 juego sigue llamando a la BIOS. Verificado: el volcado de
+B 0xC5C6 0x0000-0x3FFF coincide al 100% con la ROM del VG-8020.
+L 0xC5C6 SECUENCIA_CARGA  Carga los dos bloques turbo y arranca el juego
+C 0xC5C6 Conmuta la pagina 1 (0x4000) a RAM
+C 0xC5C9 Conmuta la pagina 2 (0x8000) a RAM
+C 0xC5CC Destino del bloque 1: la pantalla de portada
+C 0xC5D0 12388 bytes
+C 0xC5D8 Ejecuta la portada, que la vuelca a la VRAM y vuelve
+C 0xC5DB Destino del bloque 2: el juego entero
+C 0xC5DF 40449 bytes
+C 0xC5E7 Mecanismo de parcheo: si en 0xDEA8 hay tres 0xC9 seguidos...
+C 0xC5F4 ...lee un contador y aplica esa cantidad de parches (direccion, valor)
+C 0xC5FF Arranca el juego

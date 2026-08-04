@@ -1,0 +1,26 @@
+# Zonas del juego que son DATOS con certeza. El trazador no entra aqui.
+#
+# Cada una esta verificada: las cuatro primeras porque el propio codigo de
+# arranque las vuelca a la VRAM con LDIRVM (ver 0x8010-0x8055 y 0x8066), y las
+# demas por su contenido (texto legible con la tabla de caracteres del juego).
+#
+# inicio  fin      que es
+0x4000  0x4800   # tabla de patrones (fuente): LDIRVM a VRAM 0x0000/0800/1000
+0x4800  0x5000   # tabla de colores: LDIRVM a VRAM 0x2000/2800/3000
+0x5000  0x5800   # patrones de sprites: LDIRVM a VRAM 0x3800
+0x5CC0  0x5FC0   # tabla de nombres de la pantalla de presentacion
+0x5FC0  0x6100   # plantilla del marcador: LDIRVM a VRAM 0x1A00
+0xC93B  0xCA20   # textos del final del juego
+
+# --- Anadido tras la verificacion adversarial (2026-08-04) ---
+#
+# 0x9000-0xCA00: MAPAS DE PANTALLA. 29 mapas de 512 bytes (32x16 tiles), que son
+# las 28 pantallas jugables mas la de victoria. Verificado empiricamente: con el
+# juego parado en la pantalla 0, los 512 bytes de 0x9000 coinciden byte a byte
+# (512/512) tanto con la VRAM 0x1800-0x19FF como con el buffer de RAM 0x7D80.
+0x9000  0xCA00   # 29 mapas de pantalla de 512 bytes
+
+# 0xCA00-0xD000: codigo de OTRA COMPILACION que quedo en el binario y nunca se
+# ejecuta. Se declara como no-codigo para que no ensucie el listado: desensambla
+# bien porque es codigo real, pero no pertenece al juego que corre.
+0xCA00  0xD000   # codigo muerto, de otra compilacion

@@ -1,0 +1,1706 @@
+# Anotaciones del juego principal de Temptations (MSX, Topo Soft 1988).
+#
+# Cada linea esta anclada a una direccion, asi que los comentarios sobreviven a
+# un retrazado del binario. Directivas: L=etiqueta, C=comentario de linea,
+# B=cabecera de bloque, D=rango de datos.
+#
+# TODO lo que hay aqui esta verificado sobre el binario o sobre la ejecucion
+# real en openMSX. Lo que sea suposicion va marcado con "(?)".
+
+# =============================================================================
+# RANGOS DE DATOS
+# =============================================================================
+# Origen: las llamadas a LDIRVM de la rutina de arranque en 0x8000, que dicen
+# exactamente que trozo de RAM va a que zona de VRAM.
+
+D 0x4000 0x4800 fuente        Tabla de PATRONES: 256 glifos de 8 bytes. Se copia a los tres tercios de la pantalla (VRAM 0x0000/0x0800/0x1000), por eso los tres se ven iguales.
+D 0x4800 0x5000 colores       Tabla de COLORES de los patrones, uno por linea de glifo. Va a VRAM 0x2000/0x2800/0x3000.
+D 0x5000 0x5800 sprites       Patrones de SPRITES. Se copian a VRAM 0x3800 desde la rutina 0x805E.
+D 0x5800 0x5CC0 grafdesc      Datos graficos sin identificar todavia (?)
+D 0x5CC0 0x5FC0 pantalla_menu Tabla de NOMBRES de la pantalla de presentacion (32x24 = 768 bytes). Copiada tal cual a VRAM 0x1800. Contiene el texto del monje y los creditos.
+D 0x5FC0 0x8000 datos_juego   Datos del juego sin identificar todavia (mapas de pantallas, tablas) (?)
+
+# =============================================================================
+# ARRANQUE DEL JUEGO
+# =============================================================================
+
+B 0x8000 ############################################################
+B 0x8000 ENTRADA DEL JUEGO
+B 0x8000 ############################################################
+B 0x8000 Aqui salta el cargador turbo (SLOTS) con 'jp 08000h' una vez
+B 0x8000 tiene los 40449 bytes del juego en 0x4000..0xDE00.
+B 0x8000
+B 0x8000 Mapa de memoria en este punto (verificado en openMSX):
+B 0x8000   0x0000-0x3FFF  ROM del BASIC  <- NO se conmuta: el juego sigue
+B 0x8000                                   llamando a la BIOS (LDIRVM, etc.)
+B 0x8000   0x4000-0xDE00  el juego (codigo + graficos)
+B 0x8000   0xEFFF         pila inicial
+L 0x8000 GAME_START       Punto de entrada del juego
+C 0x8000 Pila provisional en 0xEFFF
+C 0x8003 B=dato, C=nº de registro: escribe 0xF2 en el registro 1 del VDP
+C 0x800A Inicializa SCREEN 2 (modo grafico de 256x192)
+C 0x800D Apaga la pantalla mientras se vuelca la VRAM (evita ver el destrozo)
+C 0x8010 Fuente -> tercio 1 de la tabla de patrones
+C 0x801C Fuente -> tercio 2 (mismo origen: los tres tercios son identicos)
+C 0x8028 Fuente -> tercio 3
+C 0x8034 Colores -> tercio 1
+C 0x8040 Colores -> tercio 2
+C 0x804C Colores -> tercio 3
+L 0x805E INIT_PANTALLA    Color de borde, sprites y encender pantalla
+C 0x8061 Borde negro
+C 0x8066 Patrones de sprites -> VRAM 0x3800
+C 0x8072 Ya esta todo en VRAM: se puede encender la pantalla
+L 0x8076 INIT_PRINCIPAL   Continuacion del arranque: prepara el menu
+C 0x807B Desactiva el "click" de teclado
+C 0x8081 Pinta la pantalla de presentacion (texto del monje y creditos)
+C 0x808D Atributos de sprites -> VRAM 0x1B00
+
+# =============================================================================
+# REPRODUCTOR DE SONIDO PSG
+# =============================================================================
+# El juego trae un reproductor propio de 3 canales, con datos tipo tracker.
+# Segun el usuario (fan del juego): la MUSICA solo suena en la presentacion y
+# el menu; durante la partida este mismo reproductor se usa para los EFECTOS.
+# La musica es de Gominolas y el programa de Luigi Lopez (creditos en pantalla).
+
+B 0xD000 ############################################################
+B 0xD000 RUTINA DE INTERRUPCION (60 Hz)
+B 0xD000 ############################################################
+B 0xD000 Se engancha en el hook H.TIMI de la BIOS (0xFD9F), que el MSX
+B 0xD000 llama en cada interrupcion de barrido. Verificado leyendo
+B 0xD000 0xFD9F con el juego en marcha: contiene C3 00 D0 (jp 0d000h).
+B 0xD000 La instalacion la hace la rutina de menu en 0xDA00.
+L 0xD000 IRQ_HANDLER      Manejador de la interrupcion de temporizador
+C 0xD000 Quita de la pila la direccion de retorno que metio la BIOS
+C 0xD002 Todo el trabajo real: avanzar los 3 canales de sonido
+C 0xD005 Restaura el contexto completo que la BIOS habia apilado
+
+L 0xD041 SND_SET_CANAL    Asigna al canal A los datos de sonido que apunta DE
+C 0xD043 46 bytes por canal
+C 0xD046 HL = 0xD53E + A*46 -> estructura del canal A
+
+L 0xD060 SND_UPDATE       Avanza los 3 canales un tick; se llama desde la IRQ
+C 0xD061 Tres canales del PSG
+C 0xD064 IX = estructura del canal 0
+C 0xD075 Si el canal esta en pausa/retardo, no lo toca
+C 0xD082 BC = puntero a los datos de sonido del canal
+C 0xD08A Puntero nulo: canal en silencio
+C 0xD08D Lee el siguiente byte del "tracker"
+C 0xD08E >= 0x80 es un COMANDO; por debajo es una NOTA
+C 0xD093 Indice de comando 0..14
+C 0xD095 Tabla de saltos de comandos
+C 0xD098 HL = word en (0xD513 + A*2)
+C 0xD09B Salta al comando. El trazador no puede seguir esto: los 15 destinos se siembran a mano en game.entries
+
+L 0xD402 SND_MUL          Multiplica para calcular el offset de un canal
+L 0xD431 SND_JUMPIDX      HL = puntero nº A de la tabla que apunta HL
+C 0xD432 A*2 (los punteros son de 2 bytes)
+
+D 0xD513 0xD531 tabla_cmd_sonido Tabla de saltos de los 15 comandos del reproductor (0x80..0x8E). A partir de 0xD531 ya son otros datos.
+D 0xD53E 0xD5C8 canales_psg      Estructuras de los 3 canales del PSG, 46 bytes cada una (0xD53E, 0xD56C, 0xD59A).
+D 0xD760 0xD891 melodia_canal0   Datos de la melodia del menu, canal 0
+D 0xD891 0xD8F8 melodia_canal1   Datos de la melodia del menu, canal 1
+D 0xD8F8 0xDA00 melodia_canal2   Datos de la melodia del menu, canal 2
+
+# =============================================================================
+# MENU PRINCIPAL
+# =============================================================================
+
+B 0xDA00 ############################################################
+B 0xDA00 MENU PRINCIPAL: suena la musica y se espera a que pulsen
+B 0xDA00 ############################################################
+B 0xDA00 Esta es la pantalla que se ve tras el logo de Topo y la
+B 0xDA00 portada: el texto del viejo monje y los creditos
+B 0xDA00 "LUIGILOPEZ '88 - MUSICA:GOMINOLAS".
+L 0xDA00 MENU_PRINCIPAL   Pantalla de presentacion con musica; sale al pulsar disparo
+C 0xDA01 Guarda el hook H.TIMI original para poder restaurarlo al salir
+C 0xDA0D Escribe un JP 0xD000 sobre el hook: engancha la interrupcion
+C 0xDA18 Canal 0 <- melodia de 0xD760
+C 0xDA21 Canal 1 <- melodia de 0xD891
+C 0xDA28 Canal 2 <- melodia de 0xD8F8
+C 0xDA2E Espera un frame (la IRQ va avanzando la musica mientras tanto)
+C 0xDA33 GTTRIG: lee el gatillo (barra espaciadora o boton del joystick)
+C 0xDA38 Si no han pulsado, sigue sonando la musica
+C 0xDA3B Han pulsado: puntero nulo a los 3 canales = callar la musica
+C 0xDA4E Devuelve el hook H.TIMI a como estaba
+
+# =============================================================================
+# VARIABLES DEL JUEGO  (0x8F00..0x8F2F)
+# =============================================================================
+# Identificadas con watchpoints en openMSX (tools/omsx_watch.tcl): se observa
+# QUE codigo lee o escribe cada direccion con el juego en marcha, y se contrasta
+# con lo que aparece en pantalla decodificando la tabla de nombres de la VRAM.
+
+D 0x8F00 0x8F30 vars_juego  Variables del juego. Las identificadas: 0x8F09/0x8F0A = X/Y del jugador; 0x8F0D = pantalla; 0x8F0E = nivel; 0x8F12 = vidas.
+
+B 0x8698 ############################################################
+B 0x8698 MARCADOR: pinta vidas, pantalla y nivel
+B 0x8698 ############################################################
+B 0x8698 Verificado con watchpoints: 0x8F12 solo se escribe en 0x80FD
+B 0x8698 (la inicializacion, con A=9) y solo se lee aqui, en 0x86A4.
+B 0x8698 Las tres posiciones de VRAM coinciden exactamente con las
+B 0x8698 casillas del marcador leidas de la pantalla real:
+B 0x8698   0x1A68 = fila 19 col  8  -> "VIDAS:x"
+B 0x8698   0x1A7D = fila 19 col 29  -> "PANTALLA:x"
+B 0x8698   0x1ABB = fila 21 col 27  -> "NIVEL:x"
+L 0x8698 PINTA_MARCADOR   Redibuja el marcador completo (vidas / pantalla / nivel)
+C 0x8698 Plantilla del marcador (0x5FC0) -> VRAM 0x1A00, o sea las filas 16..23
+C 0x86A4 A = numero de vidas
+C 0x86A7 El marcador solo tiene un digito: mas de 9 vidas se muestran como 9
+C 0x86AE 0x5C es el codigo del digito '0' en la fuente del juego...
+C 0x86B0 ...asi que 0x5C+vidas da directamente el caracter a pintar
+C 0x86B1 Casilla del digito de VIDAS en la VRAM
+C 0x86B4 BIOS WRTVRM: escribe el caracter A en la VRAM apuntada por HL
+C 0x86B7 A = numero de pantalla
+C 0x86BA Resto de dividir entre 7: hay 7 pantallas por nivel (?)
+C 0x86C4 0x5D es el digito '1': la pantalla interna 0 se muestra como 1
+C 0x86C7 Casilla del digito de PANTALLA
+C 0x86CD A = numero de nivel
+C 0x86D3 Casilla del digito de NIVEL
+
+L 0x8F09 VAR_JUGADOR_X
+L 0x8F0A VAR_JUGADOR_Y
+L 0x8F0D VAR_PANTALLA
+L 0x8F0E VAR_NIVEL
+L 0x8F12 VAR_VIDAS
+
+# =============================================================================
+# BUCLE PRINCIPAL DE LA PARTIDA
+# =============================================================================
+
+B 0x8117 ############################################################
+B 0x8117 BUCLE PRINCIPAL DE LA PARTIDA
+B 0x8117 ############################################################
+B 0x8117 Verificado por muestreo del PC en openMSX: con el juego en
+B 0x8117 partida (marcador "VIDAS:9 PANTALLA:1 NIVEL:1" en pantalla)
+B 0x8117 el PC pasa casi todo el tiempo en los dos HALT de aqui.
+B 0x8117 Cada vuelta procesa DOS frames (dos halt + dos llamadas a
+B 0x8117 0xDB00), de modo que el juego va a 25/30 Hz y no a 50/60.
+L 0x8117 BUCLE_PARTIDA    Bucle de juego: se repite mientras dura la partida
+C 0x811A Espera al barrido de pantalla (sincroniza y deja correr la IRQ)
+C 0x811B Rutina de cada frame (sprites / VDP)
+C 0x8122 Rutinas de la logica del juego, una por frame doble
+C 0x812E Si esta variable no es 0, hay algo extra que atender
+C 0x813E Cierra el bucle: vuelve al principio
+
+# =============================================================================
+# CONTROL DEL JUGADOR
+# =============================================================================
+# Controles (manual + verificado en el codigo): cursores + ESPACIO para disparar,
+# ARRIBA para saltar, joystick en el puerto 1. No hay redefinicion de teclas: el
+# juego nunca llama a SNSMAT (0x0141).
+#
+# El usuario (fan del juego) describe el salto asi: "puedes saltar en parado pero
+# solo hacia arriba; para saltar hacia los laterales tiene que ser diagonal arriba
+# izquierda o derecha". El codigo lo confirma exactamente, ver la tabla 0x8CA2.
+
+B 0x818C ############################################################
+B 0x818C LECTURA DEL CONTROL
+B 0x818C ############################################################
+B 0x818C Lee el joystick del puerto 1 y los cursores y hace OR de los
+B 0x818C dos, de modo que valen indistintamente. GTSTCK devuelve la
+B 0x818C direccion en 0..8 (0=centro, 1=arriba y luego en sentido
+B 0x818C horario hasta 8=arriba-izquierda).
+L 0x818C LEE_CONTROL      Lee joystick + cursores y traduce a codigo de accion
+C 0x818F Guarda la lectura del joystick...
+C 0x8192 ...y la combina con la de los cursores
+C 0x8196 Centro: no hay direccion
+C 0x819B Abajo-derecha, abajo y abajo-izquierda se ignoran igual que el centro:
+C 0x81AA Traduce la direccion a codigo de accion con la tabla de 0x8CA2
+C 0x81AD HL = 0x8CA2 + A (indexado simple, un byte por direccion)
+C 0x81B3 Sin direccion util: rutina de "quieto"
+C 0x81B9 Guarda el codigo de accion como estado del jugador
+
+L 0x8C59 INDEXA_TABLA_B   HL = HL + A  (indexar una tabla de bytes)
+L 0x8F0B VAR_ESTADO_JUGADOR
+
+B 0x8CA2 ############################################################
+B 0x8CA2 TABLA: direccion del stick -> codigo de accion del jugador
+B 0x8CA2 ############################################################
+B 0x8CA2 Indexada con el valor 0..8 que devuelve GTSTCK. El codigo
+B 0x8CA2 resultante esta pensado a nivel de bits:
+B 0x8CA2    bit 3 (0x08) = esta SALTANDO
+B 0x8CA2    bits 0-1     = direccion horizontal (1=dcha, 2=izq)
+B 0x8CA2
+B 0x8CA2   dir 0 centro       -> 0x00  quieto
+B 0x8CA2   dir 1 arriba       -> 0x08  salto vertical, sin desplazamiento
+B 0x8CA2   dir 2 arriba-dcha  -> 0x09  salto hacia la derecha  (0x08|0x01)
+B 0x8CA2   dir 3 derecha      -> 0x01  andar hacia la derecha
+B 0x8CA2   dir 4 abajo-dcha   -> 0x00  quieto
+B 0x8CA2   dir 5 abajo        -> 0x00  quieto (no hay agacharse)
+B 0x8CA2   dir 6 abajo-izq    -> 0x00  quieto
+B 0x8CA2   dir 7 izquierda    -> 0x02  andar hacia la izquierda
+B 0x8CA2   dir 8 arriba-izq   -> 0x0A  salto hacia la izquierda (0x08|0x02)
+B 0x8CA2
+B 0x8CA2 Aqui esta la explicacion de por que "en parado solo se salta
+B 0x8CA2 recto": la componente horizontal del salto sale de la
+B 0x8CA2 direccion del stick EN ESE INSTANTE, no de si el jugador
+B 0x8CA2 venia andando. Pulsar solo ARRIBA da 0x08, sin bits de
+B 0x8CA2 direccion, asi que el salto es vertical puro.
+D 0x8CA2 0x8CAB tabla_direccion  Direccion del stick (0..8) -> codigo de accion del jugador
+
+# =============================================================================
+# PERDER UNA VIDA / GAME OVER
+# =============================================================================
+# Esta rutina es el objetivo del unico POKE publicado para el juego. Aparecio en
+# "MSX Book II" (Paulisoft, Brasil, 1988), pagina 62, dentro de un cargador
+# firmado "BY MBCF/88", impreso como:
+#
+#     POKE &HB4CC,0
+#
+# Pero esa direccion es una ERRATA del libro (en su tipografia matricial el 8 y
+# la B son casi identicos): en el binario 0xB4CC ya vale 0x00, con lo que el
+# poke no haria nada. La direccion buena es 0x84CC, que contiene 0x3D = DEC A.
+#
+# Comprobado experimentalmente en openMSX (tools/omsx_testpoke.tcl), forzando la
+# ejecucion de esta rutina con y sin el parche:
+#     sin parche : VIDAS 9 -> 8   (pierde vida)
+#     con parche : VIDAS 9 -> 9   (vidas infinitas)
+
+B 0x84C9 ############################################################
+B 0x84C9 QUITAR UNA VIDA
+B 0x84C9 ############################################################
+B 0x84C9 Poner un NOP (0x00) en el DEC A de 0x84CC da vidas infinitas:
+B 0x84C9 A no cambia, el CP 0FFh nunca da cero y se reescribe el mismo
+B 0x84C9 valor. Es el POKE de "MSX Book II" con la direccion corregida.
+L 0x84C9 QUITA_VIDA       Resta una vida y salta a game over si no quedan
+C 0x84C9 A = vidas actuales
+C 0x84CC Aqui va el parche de vidas infinitas (0x3D -> 0x00)
+C 0x84CD Se compara con 0xFF porque al bajar de 0 el DEC A desborda
+C 0x84CF No quedan vidas: game over
+C 0x84D2 Guarda el nuevo contador
+C 0x84D5 Y repinta el marcador para que se vea
+
+L 0x8528 DA_VIDA          Suma una vida (tope 10)
+C 0x8528 A = vidas actuales
+L 0x8C1E GAME_OVER        Fin de partida
+
+# =============================================================================
+# MAPAS DE PANTALLA Y TABLAS POR PANTALLA
+# =============================================================================
+# Resultado de la verificacion adversarial del 2026-08-04, contrastado por mi
+# contra los volcados de openMSX.
+#
+# Cada pantalla es una tabla de nombres de 32x16 tiles = 512 bytes, que es
+# justo el area de juego (las 8 filas de abajo son el marcador). El juego copia
+# el mapa de la pantalla actual al buffer 0x7D80 y de ahi a la VRAM.
+#
+# VERIFICADO: con el juego parado en la pantalla 0, los 512 bytes de 0x9000
+# coinciden byte a byte (512/512) con la VRAM 0x1800-0x19FF Y con el buffer
+# 0x7D80 de la RAM.
+
+D 0x7D80 0x7F80 buffer_mapa       Buffer del mapa de la pantalla actual (512 bytes). Se llena desde 0x9000+pantalla*512 y se vuelca a VRAM 0x1800.
+D 0x8F20 0x8F80 enemigos_activos  Enemigos en juego: 4 registros de 5 bytes.
+D 0x8F80 0x8FA0 disparos_activos  Proyectiles en vuelo: 7 registros, plantilla inicial en 0x8CB8.
+D 0x8CAB 0x8CB8 tabla_flags       Flags por estado del jugador, indexada igual que la tabla de direcciones.
+D 0x8CB8 0x8CD4 plantilla_disparos Plantilla de los 7 registros de proyectil (02 15 00 00 cada uno); el arranque la copia en 0x80BA.
+D 0xCA00 0xD000 codigo_muerto     Codigo de OTRA COMPILACION que quedo en el binario y nunca se ejecuta. Desensambla bien porque es codigo real, pero no pertenece al juego que corre; no se traza para no ensuciar el listado.
+D 0xD5C8 0xD760 datos_psg         Tablas del reproductor PSG (periodos de nota, envolventes) (?)
+D 0xDDAC 0xDDB4 ranuras_sonido    8 ranuras de efecto de sonido. 0xDDAC = andar, 0xDDAD = saltar/caer (las escribe 0x8141).
+
+# =============================================================================
+# CORRECCIONES Y AMPLIACIONES VERIFICADAS (2026-08-04)
+# =============================================================================
+
+B 0x872F ############################################################
+B 0x872F MOVER LOS ENEMIGOS
+B 0x872F ############################################################
+B 0x872F Trabaja sobre la tabla 0x8F20 (4 registros de 5 bytes) con
+B 0x872F coordenadas en pixeles, y los dibuja como SPRITES en los
+B 0x872F planos 6 a 13. Los enemigos de cada pantalla se cargan desde
+B 0x872F 0x7BA0 + pantalla*16 (ver 0x87FE).
+L 0x872F MUEVE_ENEMIGOS   Avanza y dibuja los enemigos de la pantalla
+
+B 0x8933 ############################################################
+B 0x8933 MOVER LOS DISPAROS
+B 0x8933 ############################################################
+B 0x8933 Trabaja sobre la tabla 0x8F80 y, a diferencia de los enemigos,
+B 0x8933 dibuja los proyectiles como TILES con WRTVRM, no como sprites.
+B 0x8933 Hay tantas ranuras activas como municion tenga el jugador.
+L 0x8933 MUEVE_DISPAROS   Avanza los proyectiles y los pinta como tiles
+
+L 0x8885 DISPARA          Crea un proyectil: columna=(X+7)/8, fila=(Y+8)/8
+L 0x87FE CARGA_ENEMIGOS   Carga en 0x8F20 los enemigos de la pantalla, desde 0x7BA0+pantalla*16
+L 0x82BE ANIMA_JUGADOR    Motor de animacion: indexa estado*128 + paso*4; 4 bytes por fotograma y 0x80 como terminador
+L 0x8BA7 SUBE_NIVEL       Incrementa 0x8F0E (el nivel es variable propia, no se deduce de la pantalla)
+L 0x8B9D EMPIEZA_NIVEL    Prepara el nivel: resetea arma y municion
+L 0x8B09 DESPACHA_NIVEL   Elige que hacer segun el nivel al que se entra
+
+B 0x8B55 ############################################################
+B 0x8B55 NIVEL 4: EL NIVEL ACUATICO
+B 0x8B55 ############################################################
+B 0x8B55 Enciende el modo VUELO PERMANENTE al entrar en el nivel 4, que
+B 0x8B55 es lo que hace que el protagonista se convierta en pez y pueda
+B 0x8B55 flotar sin gravedad. Confirma con codigo lo que conto el
+B 0x8B55 usuario. Ademas pone BDRCLR (0xF3EB) a 12 y llama a CHGCLR,
+B 0x8B55 o sea cambia el color del BORDE de la pantalla.
+L 0x8B55 ENTRA_NIVEL4     Activa el modo acuatico: vuelo permanente y borde de otro color
+
+B 0x88E1 ############################################################
+B 0x88E1 QUIEN PUEDE DISPARAR
+B 0x88E1 ############################################################
+B 0x88E1 Impide disparar en los estados 0, 7 y 8 porque la direccion
+B 0x88E1 del tiro se saca del bit 0 del estado, y esos tres no tienen
+B 0x88E1 lado definido (quieto y los dos saltos verticales). Explica una
+B 0x88E1 rareza jugable: parado del todo no se puede disparar.
+L 0x88E1 PUEDE_DISPARAR   Comprueba si el estado actual permite disparar
+
+# =============================================================================
+# ANOTACIONES DE LA VERIFICACION ADVERSARIAL (2026-08-04)
+# =============================================================================
+# Cada linea de aqui la produjo un agente y la reviso DESPUES otro agente
+# distinto, cuyo encargo era intentar refutarla contra los bytes del binario.
+# Solo se integra lo que sobrevivio a esa revision.
+#
+# NO se integran las zonas 0x8ED5-0xB000 ni 0x8A37-0x8ED5: su verificador no
+# llego a ejecutarse, asi que ese analisis esta sin contrastar.
+
+# --- Rangos de datos ---
+D 0x8c70 0x8ca2 tabla_estado_sig  Tabla ESTADO -> ESTADO SIGUIENTE, 50 entradas, indexada por el estado actual. Se consulta en 0x830D cuando la secuencia de animacion se ha agotado. Encadena salto->caida y caida-inicial->caida-sostenida (8->7, 9->3, 10->4, 3->5, 5->5) y deja los estados de vuelo dando vueltas sobre si mismos (11->11, 12->12). Compartida con los enemigos: la llama tambien 0x8763.
+D 0x8cd4 0x8cdc ceros_init  Ocho ceros que 0x8099, 0x80A4 y 0x80AF usan como fuente para limpiar tres bloques de 8 bytes.
+
+# --- Etiquetas ---
+L 0x8141 MUEVE_JUGADOR  Avanza un fotograma la secuencia de movimiento del jugador
+L 0x81d6 COLISIONES_MAPA  Choques con el escenario, gravedad y limites de pantalla
+L 0x830d SIG_ESTADO  Tabla 0x8C70: que estado sigue cuando la secuencia se agota
+L 0x8315 OCULTA_SPRITES  Manda los 64 sprites fuera de la pantalla
+L 0x832a CHK_ABANDONAR  Comprueba CTRL+STOP y si esta pulsado abandona la partida
+L 0x8333 PON_SPRITES  Monta el par de sprites de una figura en VRAM
+L 0x837f LEE_TILE  Devuelve el tipo (0..8) del tile que hay en (C=X, A=Y)
+L 0x83a1 CLASIFICA_TILE  Entrada suelta: convierte el tile que hay en A en un tipo 0..8
+L 0x83dc COLISION_IZQ  Tipo de tile en el costado izquierdo: (X-1,Y) y (X-1,Y+15)
+L 0x83f0 COLISION_SUELO  Tipo de tile bajo los pies: (X+2,Y+16) y (X+13,Y+16)
+L 0x840a COLISION_DER  Tipo de tile en el costado derecho: (X+16,Y) y (X+16,Y+15)
+L 0x8424 COLISION_ARRIBA  Tipo de tile sobre la cabeza: (X,Y-1) y (X+15,Y-1)
+L 0x843a MAX_TIPO  Se queda con el mayor de los dos tipos leidos
+L 0x8446 REACCION_TILE  Decide que hacer con el tipo de tile que se ha tocado de lado
+L 0x8463 EVENTO_TILE  Aplica el efecto del objeto o la trampa que se ha tocado
+L 0x848e OBJETO_TIPO_7  Sigue el reparto por tipos: el 7 es terreno mortal
+L 0x8493 MUERE_JUGADOR  Animacion de muerte, resta de vida y reaparicion
+L 0x8519 COGE_VIDA  Tipo 3: vida extra
+L 0x8536 COGE_MUNICION  Tipo 4: un icono mas de municion
+L 0x8553 COGE_ARMA  Tipo 5: pasa a la siguiente arma
+L 0x856f LEE_FLAGS_ESTADO  Devuelve el byte de flags de colision del estado actual (tabla 0x8CAB)
+L 0x857a VUELO_CONTROL  Movimiento libre de 8 direcciones (nivel 4 y alitas)
+L 0x85d1 VUELO_ARRIBA  Sube 2 pixeles si el techo lo permite
+L 0x85ed VUELO_ABAJO  Baja 2 pixeles si no hay suelo debajo
+L 0x8609 VUELO_IZQUIERDA  Avanza 2 pixeles a la izquierda
+L 0x862b VUELO_DERECHA  Avanza 2 pixeles a la derecha
+L 0x864f SALE_POR_DERECHA  Sale por el borde derecho: reaparece pegado al borde izquierdo
+L 0x865a CAMBIO_PANT_NORMAL  Transicion corriente entre pantallas del mismo nivel
+L 0x8662 SALE_POR_ABAJO  Sale por el borde inferior: reaparece arriba
+L 0x8670 FIJA_REAPARICION  Guarda la posicion y el estado de entrada como punto de reaparicion
+L 0x8702 SCROLL_A_PANTALLA_SIGUIENTE  Desplaza verticalmente de una pantalla a la otra
+L 0x87b6 GIRA_ENEMIGO  Cambia el sentido de marcha de un enemigo
+L 0x87da TOCADO_ENEMIGO  Suma un impacto al enemigo y lo mata si el contador da la vuelta
+L 0x87f4 COMPRUEBA_COLISION_SPRITES  Si el VDP marca colision de sprites, mata al jugador
+L 0x8a45 APARCA_PROYECTIL  Devuelve el proyectil al deposito: velocidad 0 = hueco libre
+L 0x8a5a BUSCA_ENEMIGO_ALCANZADO  Compara el proyectil con los enemigos y aplica el impacto
+L 0x8a81 CONFIRMA_IMPACTO  Confirma el impacto comparando tambien la fila
+L 0x8aa9 VRAM_DE_CASILLA  HL = 0x1800 + fila*32 + columna
+L 0x8ace PINTA_MAPA  Vuelca el mapa de la pantalla actual al buffer de RAM
+L 0x8ae3 BORRA_OBJETO_MAPA  Quita del mapa el primer tile igual a A y repinta
+L 0x8afc VUELCA_BUFFER  Copia los 512 bytes del buffer de RAM a VRAM 0x1800
+L 0x8bf3 ESCRIBE_ROTULO  LDIRVM de 10 bytes a VRAM 0x194B (rotulos de nivel y de fin)
+L 0x8e00 CORTINILLA  Scroll horizontal entre dos pantallas, una columna por paso
+L 0x8f00 VAR_FLAGS_TMP  Copia del byte de flags del estado, la usa 0x81D6
+L 0x8f01 VAR_ATRIB_SPRITE  Buffer de 8 bytes con los atributos de los 2 sprites del jugador
+L 0x8f0c VAR_PASO_ANIM  
+L 0x8f0f VAR_DX_FRAME  
+L 0x8f10 VAR_DY_FRAME  
+L 0x8f11 VAR_MODO_VUELO  
+L 0x8f13 VAR_REAPARECE_X  
+L 0x8f14 VAR_REAPARECE_Y  
+L 0x8f15 VAR_IDX_BUCLE  Indice de trabajo compartido: numero de ranura en 0x872F, 0x8933, 0x8885, 0x87FE y 0x8698; en 0x872F vale ademas plano de sprite / 2
+L 0x8f16 VAR_CONTADOR_BUCLE2  
+L 0x8f17 VAR_MUNICION  
+L 0x8f18 VAR_ARMA  
+L 0x8f19 VAR_GATILLO_USADO  
+L 0x8f1a VAR_CONT_MUERTE  
+L 0x8f1b VAR_CONTADOR_ENEMIGO  
+L 0x8f1c VAR_REAPARECE_ESTADO  
+L 0x8f1d VAR_REAPARECE_PASO  
+L 0x8f20 VAR_ENEMIGOS  4 registros de 5 bytes (X px, Y px, estado, resistencia, paso); los siembra 0x87FE desde 0x7BA0+pantalla*16
+L 0x8f80 VAR_DISPAROS  7 registros de 4 bytes (columna, fila, direccion -1/0/+1, tile de fondo que tapan); los siembra 0x80BA desde 0x8CB8
+L 0x8fa0 VAR_ROMPIBLES  4 registros de 4 bytes (columna, fila, contador de impactos, tile que revela); los siembra 0x87FE desde 0x79C0+pantalla*16
+L 0xc800 MAPA_FINAL  
+L 0xc960 TEXTO_FINAL  
+L 0xca00 BLOQUE_MUERTO  
+L 0xd015 SND_SET_CANAL_LIBRE  Variante que busca canal libre si el pedido esta ocupado. CODIGO MUERTO: la palabra 0xD015 no aparece en ningun sitio del binario, nadie la llama
+L 0xd20e SND_RESET_ENV_VOL  Recarga las 2 fases de la envolvente de volumen desde el instrumento
+L 0xd226 SND_RESET_ENV_TONO  Recarga las 3 fases de la envolvente de tono desde el instrumento
+L 0xd23e SND_RESET_ENV_RUIDO  Recarga las 2 fases de la envolvente global de ruido
+L 0xd25a SND_CMD_80_VOLUMEN  0x80 nn: volumen base del canal
+L 0xd263 SND_CMD_83_DURACION  0x83 nn: duracion de nota = nn * tempo
+L 0xd278 SND_CMD_81_MEZCLA  0x81 nn: mezclador del canal, bit0 tono y bit3 ruido
+L 0xd283 SND_CMD_8B_FIN  0x8B: fin del canal. Sin operando
+L 0xd2a8 SND_CMD_85_TEMPO  0x85 nn: tempo. 0xD532 = 3000 / (nn*16)
+L 0xd2c2 SND_CMD_88_RUIDOPER  0x88 nn: periodo base de ruido = nn and 0x1F, y reinicia su envolvente
+L 0xd2d6 SND_CMD_84_SILENCIO  0x84: consume una duracion de nota con el canal callado. Sin operando
+L 0xd2da SND_CMD_82_BUCLE  0x82: vuelve al principio de los datos del canal. Sin operando
+L 0xd2e9 SND_CMD_86_DURSUMA  0x86 n b1..bn: duracion compuesta, suma de n valores por el tempo
+L 0xd30c SND_CMD_8A_REPETIR  0x8A nn: activa la repeticion de envolventes. bit0 volumen, bit1 tono, bit2 ruido
+L 0xd320 SND_CMD_87_INSTRUM  0x87 nn: carga el instrumento nn (15 bytes de 0xD5DF+nn*15) en +16..+24
+L 0xd369 SND_CMD_89_RUIDOENV  0x89 nn: carga la envolvente de ruido nn (6 bytes de 0xD60C+nn*6) en la estructura global
+L 0xd3a3 SND_MIXER  Mete en el registro 7 los bits de tono y ruido de este canal
+L 0xd3c0 SND_CMD_8C_LLAMADA  0x8C nn: llama a la frase nn de la tabla 0xD612, estilo GOSUB
+L 0xd3dc SND_CMD_8D_RETORNO  0x8D: vuelve de la frase. Sin operando
+L 0xd3ed SND_CMD_8E_TRANSPON  0x8E nn: transposicion del canal en semitonos, se suma al codigo de nota
+L 0xd3f7 SND_PTR_TRANSP  HL = 0xD5DC + canal: la transposicion de este canal
+L 0xd417 SND_DIV  Division de 16 bits: BC entre DE, cociente en BC
+L 0xd43e SND_VUELCA_PSG  Vuelca los 11 registros de 0xD533 al PSG por los puertos 0xA0/0xA1
+L 0xdb00 SFX_FRAME  Motor de efectos de sonido; una pasada por frame
+L 0xddab VAR_SFX_FRAMES  
+L 0xddac VAR_SFX_PASO  
+L 0xddad VAR_SFX_SALTO  
+L 0xddae VAR_SFX_DISPARO  
+L 0xddaf VAR_SFX_MUERTE  
+L 0xddb0 VAR_SFX_IMPACTO  
+L 0xddb1 VAR_SFX_ROTURA  
+L 0xddb2 VAR_SFX_RECOGER  
+L 0xddb3 VAR_SFX_RUIDO_VUELO  
+
+# --- Cabeceras de bloque ---
+B 0x8141 ############################################################
+B 0x8141 MOVIMIENTO DEL JUGADOR: maquina de estados
+B 0x8141 ############################################################
+B 0x8141 El jugador no se mueve con formulas sino ejecutando una
+B 0x8141 SECUENCIA de fotogramas sacada de la tabla de 0x60C0.
+B 0x8141 0x8F0B = estado (que secuencia se esta ejecutando)
+B 0x8141 0x8F0C = paso dentro de la secuencia
+B 0x8141 Cada fotograma trae su propio dX y dY, asi que la fisica
+B 0x8141 entera (impulso del salto, aceleracion de la caida, inercia)
+B 0x8141 es DATO, no codigo.
+B 0x8141 
+B 0x8141 Estados del jugador, deducidos de la tabla de direcciones
+B 0x8141 0x8CA2, de la de transiciones 0x8C70 y de los propios datos:
+B 0x8141 0 parado          1 andar derecha     2 andar izquierda
+B 0x8141 3 caer derecha    4 caer izquierda    (fase de arranque)
+B 0x8141 5 caer derecha    6 caer izquierda    (bucle, en bucle)
+B 0x8141 7 caida vertical  8 salto vertical
+B 0x8141 9 salto derecha  10 salto izquierda
+B 0x8141 11 volar derecha  12 volar izquierda  13 morir
+B 0x8141 El 13 lo comparten los enemigos: 0x87DA les pone ese mismo
+B 0x8141 estado cuando se les agota la resistencia.
+B 0x8141 
+B 0x8141 LA INERCIA DEL MANUAL: en 0x8182 se comprueba 'estado >= 3'
+B 0x8141 y si lo es NO SE LEE EL CONTROL aqui. Todos los estados
+B 0x8141 aereos son >= 3, o sea que mientras estas en el aire el mando
+B 0x8141 no hace nada y el dX de la secuencia de caida te sigue
+B 0x8141 arrastrando de lado. (La excepcion es el modo vuelo: los
+B 0x8141 estados 11 y 12 tambien son >= 3, pero ahi el control lo lee
+B 0x8141 antes 0x857A desde el bucle principal.) Ademas el control
+B 0x8141 solo se lee cuando la secuencia entera termina, nunca a
+B 0x8141 mitad, asi que el paso minimo andando son los 4 fotogramas
+B 0x8141 x 2 px = 8 px.
+B 0x81d6 ############################################################
+B 0x81d6 COLISIONES CONTRA EL MAPA: paredes, suelo, objetos
+B 0x81d6 ############################################################
+B 0x81d6 Toda la rutina se gobierna con un BYTE DE FLAGS que depende
+B 0x81d6 del estado del jugador (tabla 0x8CAB, la lee 0x856F):
+B 0x81d6 bit 0 -> comprobar la pared IZQUIERDA
+B 0x81d6 bit 1 -> comprobar el SUELO
+B 0x81d6 bit 2 -> comprobar la pared DERECHA
+B 0x81d6 bits 3-5 -> estado al que se pasa si NO hay suelo
+B 0x81d6 bits 6-7 -> estado al que se pasa al pisar suelo solido
+B 0x81d6 
+B 0x81d6 AQUI ESTA LA GRAVEDAD, y es puramente tabular: si no hay
+B 0x81d6 suelo bajo los pies se conmuta al estado de caida que diga
+B 0x81d6 el propio byte de flags. Ningun estado aereo lleva el bit 1,
+B 0x81d6 asi que mientras dura un salto o un vuelo no se mira el suelo
+B 0x81d6 (flags: 8 = 0x00, 9 = 0x04, 10 = 0x01, 11 y 12 = 0x00). Lo
+B 0x81d6 que hace que el vuelo no acabe cayendo no es solo eso, sino
+B 0x81d6 que 0x8C70 encadena 11->11 y 12->12 y que sus fotogramas
+B 0x81d6 tienen dX = dY = 0. No existe ningun 'si nivel == 4 no
+B 0x81d6 apliques gravedad': el nivel (0x8F0E) no se lee en ninguna
+B 0x81d6 parte de la fisica, solo en el marcador y al cambiar de nivel.
+B 0x82be Entra E = numero de animacion, A = fotograma, B/C = X/Y actuales.
+B 0x82be Sale HL = 0x60C0 + E*128 + A*4, con la entrada de 4 bytes:
+B 0x82be +0 dx  +1 dy  +2 figura de sprite  +3 colores empaquetados
+B 0x82be Si dx vale 0x80 la secuencia ha terminado y vuelve con Z.
+B 0x82be ############################################################
+B 0x82be MOTOR DE ANIMACION Y MOVIMIENTO (tabla de 0x60C0)
+B 0x82be ############################################################
+B 0x82be Entra:  B = X, C = Y, E = estado, A = paso
+B 0x82be Sale:   B,C = posicion ya desplazada; D = patron; A = colores
+B 0x82be Z si la secuencia se ha terminado (dX == 0x80)
+B 0x82be La usan tanto el jugador (0x8178) como los enemigos (0x874A).
+B 0x82be Cuidado al tocar la salida: los flags con los que vuelve por
+B 0x82be el camino normal son los del 'add a,c' de 0x8304, asi que si
+B 0x82be la Y resultante fuese 0 devolveria Z y el llamador creeria
+B 0x82be que la secuencia se ha agotado. En la practica no pasa porque
+B 0x82be la Y nunca baja de 3.
+B 0x8315 Escribe 0xD1 en la coordenada Y de las 64 entradas de la
+B 0x8315 tabla de atributos. 0xD1 deja el sprite por debajo de la
+B 0x8315 pantalla y, a diferencia de 0xD0, no le dice al VDP que deje
+B 0x8315 de dibujar sprites a partir de esa entrada.
+B 0x8333 El jugador se dibuja con DOS sprites superpuestos de 16x16,
+B 0x8333 truco clasico del MSX1 para tener dos colores. El byte de
+B 0x8333 color de la tabla de animacion trae los dos empaquetados.
+B 0x8333 En los estados 0..12 vale siempre 0x9F (blanco delante,
+B 0x8333 rojo claro detras); el estado 13, el de morir, va alternando
+B 0x8333 0xAF, 0xA9 y 0x68 fotograma a fotograma para que parpadee.
+B 0x837f ############################################################
+B 0x837f QUE HAY EN ESTE PUNTO DEL ESCENARIO
+B 0x837f ############################################################
+B 0x837f Entra A = coordenada Y en pixeles, C = coordenada X en
+B 0x837f pixeles. Sale A = tipo de tile, de 0 a 8.
+B 0x837f El mapa de la pantalla actual vive en 0x7D80: 16 filas de 32
+B 0x837f columnas, un byte por casilla. Lo rellena 0x8ACE desde
+B 0x837f 0x9000 + pantalla*512 y 0x8AFC lo vuelca a VRAM 0x1800.
+B 0x837f 
+B 0x837f Clasificacion (los cortes salen de las comparaciones de aqui
+B 0x837f abajo y el efecto de cada tipo, de 0x8446 y 0x8463):
+B 0x837f tipo 0  tile < 0xA9    fondo, se atraviesa
+B 0x837f tipo 1  tile = 0xA9    tampoco hace nada
+B 0x837f tipo 2  tile = 0xAA    ALITAS: activan el modo vuelo
+B 0x837f tipo 3  tile = 0xAB    VIDA EXTRA
+B 0x837f tipo 4  tile = 0xAC    MUNICION
+B 0x837f tipo 5  tile = 0xAD    ARMA
+B 0x837f tipo 6  0xAE..0xEC    SOLIDO: pared y suelo
+B 0x837f tipo 7  0xED..0xF6    MATA de un toque
+B 0x837f tipo 8  >= 0xF7       frena de lado pero no cuenta como suelo
+B 0x83dc Las cuatro rutinas que siguen leen DOS tiles cada una, los
+B 0x83dc dos extremos del lado del sprite que toca comprobar, y
+B 0x83dc devuelven el MAYOR de los dos tipos (0x843A). Como los tipos
+B 0x83dc estan ordenados de menos a mas importante, gana siempre lo
+B 0x83dc mas peligroso: si un pie pisa aire y el otro un pincho, mata.
+B 0x8424 Solo la llama la rutina de vuelo (0x85D1): en el juego
+B 0x8424 normal nunca hace falta mirar hacia arriba porque el salto
+B 0x8424 no comprueba techos.
+B 0x8463 ############################################################
+B 0x8463 OBJETOS Y TRAMPAS
+B 0x8463 ############################################################
+B 0x8463 Punto unico por el que pasan todos los objetos: lo llaman
+B 0x8463 las cuatro rutinas de vuelo y el sondeo del suelo (0x826B),
+B 0x8463 y ademas se entra por salto desde 0x8446 en los laterales,
+B 0x8463 siempre con A = tipo del tile en el que ha entrado el jugador.
+B 0x8493 ############################################################
+B 0x8493 MUERTE Y REAPARICION DEL JUGADOR
+B 0x8493 ############################################################
+B 0x8493 La animacion de morir son 10 vueltas de dos fotogramas, y la
+B 0x8493 secuencia 0x0D de la tabla de 0x60C0 tiene exactamente 10
+B 0x8493 pasos: dX y dY a cero y el sprite alternando cuatro patrones
+B 0x8493 (0x12, 0x14, 0x16, 0x18) con cambios de color. Los enemigos y
+B 0x8493 los proyectiles siguen moviendose durante toda la muerte y
+B 0x8493 toda la espera.
+B 0x856f ############################################################
+B 0x856f MASCARA DE SONDEOS DEL TERRENO
+B 0x856f ############################################################
+B 0x856f Devuelve el byte de 0x8CAB indexado por la secuencia en curso.
+B 0x856f Ese byte lo consume 0x81D6 y esta empaquetado asi:
+B 0x856f bit 0    hay que sondear a la IZQUIERDA
+B 0x856f bit 1    hay que sondear ABAJO (suelo)
+B 0x856f bit 2    hay que sondear a la DERECHA
+B 0x856f bits 3-5 secuencia a la que pasar si NO hay suelo (caer)
+B 0x856f bits 6-7 secuencia a la que pasar al pisar suelo (aterrizar)
+B 0x856f Comprobado: secuencia 1 (andar dcha) -> 0x5E = abajo+dcha,
+B 0x856f cae a la 3 y aterriza en la 1; secuencia 2 (andar izq) ->
+B 0x856f 0xA3 = izq+abajo, cae a la 4 y aterriza en la 2. Las
+B 0x856f secuencias de vuelo 0x0B y 0x0C dan mascara 0: en vuelo no
+B 0x856f se sondea nada aqui, lo hace 0x857A por su cuenta.
+B 0x857a ############################################################
+B 0x857a MODO VUELO: las 8 direcciones libres, sin gravedad
+B 0x857a ############################################################
+B 0x857a El bucle principal solo llama aqui si 0x8F11 no es 0.
+B 0x857a Ese flag se pone a 1 en dos sitios:
+B 0x857a 0x8469  al coger las alitas (tile 0xAA)
+B 0x857a 0x8B62  al salir de la pantalla 20, o sea al entrar en la
+B 0x857a 21, que es la primera del NIVEL 4
+B 0x857a y se apaga en 0x8B37 al entrar en el nivel 3 y en 0x80EF al
+B 0x857a empezar partida; 0x8493/0x84F1 lo apilan y lo restauran al
+B 0x857a morir, asi que en el nivel 4 se sigue nadando tras perder una
+B 0x857a vida. Es decir, el nivel 4 no tiene fisica propia: reutiliza
+B 0x857a el mismo modo de las alitas, pero encendido de entrada. Ahi
+B 0x857a el estado se fuerza a 11, que en 0x8C70 se encadena consigo
+B 0x857a mismo y cuyos fotogramas tienen dX = dY = 0, de modo que el
+B 0x857a jugador solo se mueve por lo que haga esta rutina. Ninguna
+B 0x857a instruccion de la fisica consulta el numero de nivel (0x8F0E).
+B 0x857a Aqui el movimiento es directo, 2 pixeles por eje y por VUELTA
+B 0x857a del bucle (que son dos frames de VDP), sin tabla de animacion
+B 0x857a ni inercia ninguna.
+B 0x857a ############################################################
+B 0x857a MOVIMIENTO LIBRE EN 8 DIRECCIONES (modo VUELO)
+B 0x857a ############################################################
+B 0x857a Solo se llama desde 0x8135, y solo si 0x8F11 != 0, o sea
+B 0x857a cuando el jugador lleva las alitas (tile 0xAA) o esta en el
+B 0x857a nivel 4, donde 0x8B55 enciende el vuelo permanente. Aqui no
+B 0x857a hay gravedad: el mando mueve directamente 2 pixeles por eje.
+B 0x857a Las secuencias 0x0B/0x0C (volar) solo animan el sprite, su
+B 0x857a dX y dY son 0, por eso el desplazamiento lo hace esta rutina.
+B 0x864f ############################################################
+B 0x864f CAMBIO DE PANTALLA
+B 0x864f ############################################################
+B 0x864f Dos puntos de entrada, uno por borde de salida. Los llama
+B 0x864f 0x82B0 / 0x82BA, que vigilan si el jugador ha rebasado
+B 0x864f X >= 0xF0 (borde derecho) o Y >= 0x70 (borde inferior).
+B 0x8670 Cola comun de las dos entradas: aqui se fija el PUNTO DE
+B 0x8670 REAPARICION. Al morir, 0x84D8 copia estas cuatro variables
+B 0x8670 de vuelta, o sea que el jugador revive exactamente donde
+B 0x8670 entro en la pantalla, con la misma animacion. Ojo: la rutina
+B 0x8670 no tiene RET, CAE dentro del marcador de 0x8698, que por eso
+B 0x8670 se pinta dos veces (ya se llamo en 0x868F).
+B 0x8702 ############################################################
+B 0x8702 TRANSICION CON DESPLAZAMIENTO VERTICAL
+B 0x8702 ############################################################
+B 0x8702 Efecto de scroll al salir por abajo: 17 volcados de 512 bytes
+B 0x8702 a la misma direccion de VRAM, avanzando el origen 32 bytes
+B 0x8702 (una fila) cada vez. Como los mapas estan consecutivos en
+B 0x8702 memoria, el ultimo volcado ya es entero el de la pantalla
+B 0x8702 siguiente: la pantalla actual sube y la nueva entra por abajo.
+B 0x87b6 Rebote. Solo dejan pasar al enemigo los tipos 0, 2, 3, 4 y 5.
+B 0x87b6 El tipo 1 NO: el tile 0xA9, cuyo glifo esta completamente en
+B 0x87b6 blanco, hace rebotar al enemigo aunque el jugador lo
+B 0x87b6 atraviesa sin enterarse. Son PAREDES INVISIBLES para acotar
+B 0x87b6 la zona de patrulla: hay 406 tiles 0xA9 en los 28 mapas y
+B 0x87b6 dibujados forman columnas verticales.
+B 0x87f4 ############################################################
+B 0x87f4 COLISION JUGADOR-ENEMIGO
+B 0x87f4 ############################################################
+B 0x87f4 No se calcula nada: el juego delega en el VDP. 0xF3E7 es
+B 0x87f4 STATFL, la copia del registro de estado del VDP que guarda
+B 0x87f4 la BIOS en cada interrupcion, y su bit 5 es el flag de
+B 0x87f4 colision entre sprites. El jugador ocupa los planos 0-1 y
+B 0x87f4 los enemigos del 6 al 13; de ahi que se muera de un solo
+B 0x87f4 impacto. (?) No esta comprobado que dos enemigos solapandose
+B 0x87f4 entre si no disparen tambien esta muerte.
+B 0x87fe ############################################################
+B 0x87fe CARGA LOS ENEMIGOS Y LOS COFRES DE LA PANTALLA
+B 0x87fe ############################################################
+B 0x87fe Dos tablas paralelas, 16 bytes por pantalla cada una:
+B 0x87fe 0x7BA0 enemigos: 4 registros de 4 bytes (X, Y, secuencia,
+B 0x87fe resistencia). Se expanden a 5 bytes en 0x8F20
+B 0x87fe anadiendo el paso, que arranca a 0.
+B 0x87fe 0x79C0 cofres/calaveras: 4 registros de 4 bytes (columna,
+B 0x87fe fila, impactos, tile que aparece al romperlo).
+B 0x87fe Se copian tal cual a 0x8FA0.
+B 0x8885 ############################################################
+B 0x8885 DISPARO
+B 0x8885 ############################################################
+B 0x8885 Las armas 2 y 3 disparan solas mientras se aguanta el boton,
+B 0x8885 las 0 y 1 obligan a soltarlo entre tiro y tiro. Es la
+B 0x8885 'autorrepeticion' del manual.
+B 0x89b1 Coincide la columna con un cofre; falta confirmar la fila.
+B 0x89b1 Si la fila no cuadra se abandona el barrido y se pasa al
+B 0x89b1 terreno, o sea que no se prueban los cofres siguientes.
+B 0x8a45 Devuelve el proyectil al deposito. La casilla (2,21) no es
+B 0x8a45 casual: 0x8AA9 la traduce a la VRAM 0x1AA2, que es justo la
+B 0x8a45 primera casilla de la tira de municion del marcador. Como
+B 0x8a45 despues de aparcar se salta a 0x89FC, cada proyectil
+B 0x8a45 disponible repinta ahi su icono. (?) Que ese sea el proposito
+B 0x8a45 y no un aparcadero cualquiera es interpretacion.
+B 0x8aa9 ############################################################
+B 0x8aa9 UTILIDADES DEL MAPA DE LA PANTALLA
+B 0x8aa9 ############################################################
+B 0x8aa9 El juego mantiene una COPIA DE TRABAJO del mapa de la
+B 0x8aa9 pantalla en 0x7D80 (512 bytes, 16 filas x 32 columnas).
+B 0x8aa9 Toda la fisica lee de ahi, nunca de la VRAM. La constante
+B 0x8aa9 0x6580 que aparece por todas partes es simplemente
+B 0x8aa9 0x7D80 - 0x1800: convierte una direccion de VRAM en la
+B 0x8aa9 casilla equivalente de la copia en RAM. Ojo: solo vale para
+B 0x8aa9 las filas 0-15; con la fila 21 del marcador se sale del mapa.
+B 0x8ae3 Busca en el mapa el PRIMER tile igual a A y lo pone a 0.
+B 0x8ae3 Asi desaparece un objeto al recogerlo. Ojo: busca desde el
+B 0x8ae3 principio del mapa, no en la casilla del jugador, asi que si
+B 0x8ae3 una pantalla repite el mismo objeto se borra el primero en
+B 0x8ae3 orden de barrido. Pasa en la pantalla 16, que lleva dos tiles
+B 0x8ae3 0xAC pegados en la fila 10, columnas 7 y 8: se borra el de la
+B 0x8ae3 izquierda toques el que toques.
+B 0x8e00 0x8F15 = paso (1..0x20), 0x8F16 = fila (0..0x0F). Por cada fila se redibuja
+B 0x8e00 lo que queda de la pantalla vieja desplazado `paso` columnas a la izquierda
+B 0x8e00 y se mete por la derecha ese mismo numero de columnas de la pantalla nueva.
+B 0xb000 ############################################################
+B 0xb000 MAPAS DE PANTALLA: 512 bytes cada uno (32x16)
+B 0xb000 ############################################################
+B 0xb000 Direccion del mapa N = 0x9000 + N*512. Tres rutinas lo usan:
+B 0xb000 0x8ACE  carga el mapa de la pantalla actual en el buffer
+B 0xb000 de trabajo 0x7D80 (ld hl,09000h / add hl,de / ldir)
+B 0xb000 0x8702  transicion por SCROLL vertical: vuelca 512 bytes a
+B 0xb000 VRAM 17 veces subiendo HL de 32 en 32, con lo que la
+B 0xb000 pantalla siguiente entra por abajo. Solo funciona
+B 0xb000 porque los mapas estan contiguos y en orden de juego.
+B 0xb000 0x8E00  la otra transicion, que lee de 0x9200+pantalla*512,
+B 0xb000 o sea el mapa de la pantalla SIGUIENTE (0x8F0D aun no
+B 0xb000 se ha incrementado: eso pasa luego, en 0x868C).
+B 0xd041 ############################################################
+B 0xd041 FORMATO DE UN CANAL: 46 bytes (0x2E)
+B 0xd041 ############################################################
+B 0xd041 Los tres canales estan en 0xD53E, 0xD56C y 0xD59A.
+B 0xd041 +00,+01  puntero al INICIO de los datos (lo usa el comando 0x82)
+B 0xd041 +02,+03  puntero de lectura ACTUAL
+B 0xd041 +04,+05  ticks que faltan para el siguiente evento (16 bits)
+B 0xd041 +06,+07  duracion de nota vigente; recarga de +04/+05
+B 0xd041 +08      mascara de mezclador: bit0 tono, bit3 ruido (cmd 0x81)
+B 0xd041 +09      volumen base (cmd 0x80); el resultado se recorta a 4 bits
+B 0xd041 +0A,+0B  periodo de la nota, sacado de la tabla 0xD453
+B 0xd041 +0C,+0D  envolvente de VOLUMEN: contador de espera, fases 0 y 1
+B 0xd041 +0E,+0F  envolvente de VOLUMEN: pasos que quedan, fases 0 y 1
+B 0xd041 +10..+12 envolvente de TONO: contador de espera, fases 0,1,2
+B 0xd041 +13..+15 envolvente de TONO: pasos que quedan, fases 0,1,2
+B 0xd041 +16,+17  INSTRUMENTO: pasos totales de las 2 fases de volumen
+B 0xd041 +18..+1A INSTRUMENTO: pasos totales de las 3 fases de tono
+B 0xd041 +1B,+1C  INSTRUMENTO: incremento de volumen por paso (con signo)
+B 0xd041 +1D..+1F INSTRUMENTO: incremento de tono por paso (con signo)
+B 0xd041 +20,+21  INSTRUMENTO: velocidad de las 2 fases de volumen
+B 0xd041 +22..+24 INSTRUMENTO: velocidad de las 3 fases de tono
+B 0xd041 +25..+29 sin usar: ninguna instruccion los toca
+B 0xd041 +2A      desplazamiento de volumen que lleva acumulado la envolvente
+B 0xd041 +2B,+2C  desplazamiento de tono acumulado (12 bits, se enmascara)
+B 0xd041 +2D      bit0 repetir envolvente de volumen, bit1 la de tono
+B 0xd041 Los campos +16..+24 son los 15 bytes que copia el comando 0x87 de
+B 0xd041 golpe desde la tabla de instrumentos; +0C..+15 son su estado vivo.
+B 0xd25a ############################################################
+B 0xd25a LOS 15 COMANDOS DEL REPRODUCTOR (0x80..0x8E)
+B 0xd25a ############################################################
+B 0xd25a La tabla de saltos de 0xD513 tiene 15 entradas justas (la 16a ya
+B 0xd25a es basura), y 0xD08D separa nota de comando con cp 080h.
+B 0xd25a Verificados ademas decodificando con esta gramatica las 11
+B 0xd25a frases y las 3 melodias: las 14 secuencias terminan EXACTAMENTE
+B 0xd25a en el byte anterior a la siguiente, cada una con su 0x8D de
+B 0xd25a retorno o su 0x82 / 0x8B final. Si el numero de operandos de un
+B 0xd25a solo comando estuviera mal, todas se desalinearian.
+B 0xd25a Contrastado tambien contra la RAM viva: en dump/running_full.bin
+B 0xd25a (menu sonando) 0xD5D6 = 0xD794 y 0xD5D8 = 0xD8BB, justo detras
+B 0xd25a de los 0x8C de 0xD792 y 0xD8B9.
+B 0xdb00 ############################################################
+B 0xdb00 MOTOR DE EFECTOS DE SONIDO: una pasada por interrupcion
+B 0xdb00 ############################################################
+B 0xdb00 CORRIGE la suposicion anterior de que esto volcaba sprites o
+B 0xdb00 tocaba el VDP. En los 680 bytes del bloque las unicas llamadas
+B 0xdb00 que existen son 39 a WRTPSG (0x0093) y 19 a RDPSG (0x0096); no
+B 0xdb00 hay ni una a la BIOS de video, ni un OUT, ni una referencia a
+B 0xdb00 VRAM. El bloque acaba en el RET de 0xDDA7.
+B 0xdb00 
+B 0xdb00 Lo llaman cuatro sitios, siempre justo detras de un halt: el
+B 0xdb00 bucle principal en 0x811B y 0x811F, y el bucle de la animacion
+B 0xdb00 de muerte en 0x84B4 y 0x84B8. O sea, corre una vez por frame.
+B 0xdb00 
+B 0xdb00 Durante la partida el reproductor tipo tracker de 0xD000 NO
+B 0xdb00 corre: a 0xDA00 (menu) solo se llega desde 0x80C5, y al salir
+B 0xdb00 0xDA4E devuelve el hook H.TIMI a como estaba.
+B 0xdb00 Verificado en los volcados de RAM de openMSX:
+B 0xdb00 dump/running_full.bin  (menu)    0xFD9F = C3 00 D0, 0xDDAB = 00
+B 0xdb00 dump/pcsample_full.bin (partida) 0xFD9F = C9,       0xDDAB = B3
+B 0xdb00 dump/scr25.ram         (partida) 0xFD9F = C9,       0xDDAB = 16
+B 0xdb00 dump/poketest.ram      (partida) 0xFD9F = C9,       0xDDAB = AD
+B 0xdb00 O sea: en el menu suena el tracker, en la partida solo esto.
+B 0xdb00 
+B 0xdb00 Ocho efectos, uno por byte de 0xDDAC..0xDDB3. Cada byte es a la
+B 0xdb00 vez el 'esta sonando' y el contador de frames que le quedan. Se
+B 0xdb00 recorren siempre en el mismo orden, asi que si dos comparten
+B 0xdb00 canal manda el ultimo. Se programan los registros 0,1,3,4,5,6,
+B 0xdb00 7,8,9 y 10 del PSG; el registro 2 (byte bajo del tono B) no se
+B 0xdb00 escribe NUNCA, ni los 11..13 (envolvente por hardware). El
+B 0xdb00 registro 2 vale 0 en partida: el menu, al apagar los canales en
+B 0xdb00 0xDA3B, deja toda la sombra 0xD533..0xD53D a cero salvo el 7.
+B 0xdb00 OJO al leer los periodos: los registros 1, 3 y 5 del PSG solo
+B 0xdb00 tienen 4 bits utiles, los otros cuatro se pierden.
+
+# --- Comentarios de linea ---
+C 0x807e Deja los 64 sprites fuera de pantalla antes de pintar nada
+C 0x8099 Pone a cero las 8 ranuras de efectos de sonido (0x8CD4 son 8 bytes a cero)
+C 0x80a4 Limpia 16 bytes mas en 0x8F34 y 0x8F3C, justo detras de los 4 registros de enemigos (0x8F20+4*5 = 0x8F34): el barrido de 0x8A5A recorre 8 ranuras y estas cuatro sobran (?)
+C 0x80ba Siembra las 7 ranuras de disparo (7 registros de 4 bytes)
+C 0x80c5 Menu de presentacion: no vuelve hasta que pulsan disparo
+C 0x80c8 BIOS GICINI: reinicia el PSG, o sea corta la musica del menu
+C 0x80cb Vuelve a esconder los sprites: empieza la partida
+C 0x80ce X inicial del jugador, en pixeles
+C 0x80d3 La misma X en la copia de REAPARICION: al morir se vuelve aqui
+C 0x80d6 Y inicial del jugador
+C 0x80db La misma Y en la copia de reaparicion
+C 0x80e0 Estado 0 = PARADO (su unico fotograma es dX=0, dY=0)
+C 0x80e3 Estado de reaparicion, tambien parado
+C 0x80e6 Paso 0 dentro de la secuencia de animacion
+C 0x80ec Modo de movimiento NORMAL (con gravedad). A 1 seria modo vuelo
+C 0x80f1 Nivel = 0xFF porque 0x8B9D lo incrementa antes de empezar: acaba en 0 y se pinta como NIVEL 1
+C 0x80f6 Igual con la pantalla; luego 0x8114 la deja en 0
+C 0x80fb 9 vidas iniciales: el marcador solo tiene un digito
+C 0x8100 Un solo icono de municion al empezar
+C 0x8105 Arma tipo 0, la mas basica
+C 0x810a Gatillo marcado como YA PULSADO: hay que soltar el boton antes de poder disparar la primera vez
+C 0x810f Entra en el nivel 1 (incrementa el nivel y pinta el rotulo NIVEL:1)
+C 0x8117 BIOS BREAKX: si han pulsado CTRL+STOP, abandona la partida
+C 0x8125 Mueve y dibuja los DISPAROS (tabla 0x8F80): son tiles escritos en la tabla de nombres, no sprites
+C 0x8128 Mueve y dibuja los ENEMIGOS de la pantalla (tabla 0x8F20, 4 registros de 5 bytes)
+C 0x812b Comprueba el flag de COLISION DE SPRITES del VDP; si toca, mata al jugador
+C 0x8135 Movimiento libre de 8 direcciones: solo en modo vuelo
+C 0x8138 Avanza un fotograma la animacion/movimiento del jugador
+C 0x813b Colisiones con el escenario, gravedad y limites de la pantalla
+C 0x8141 Estado actual
+C 0x8146 Estado 0 (parado): no suena nada
+C 0x814e Estados 1 y 2 (andando)
+C 0x8156 Estados 3..10 (en el aire); del 11 en adelante tampoco suena
+C 0x815e Arranca el efecto de SALTO/CAIDA: estados 3..10 de 0x8F0B. Dura un frame y se repone en cada vuelta de 0x8141
+C 0x8166 Arranca el efecto de PASO, 8 frames: estados 1 y 2 de 0x8F0B, o sea andando a derecha o a izquierda
+C 0x8169 B = X del jugador
+C 0x816d C = Y del jugador
+C 0x8171 E = estado
+C 0x8175 A = paso dentro de la secuencia
+C 0x8178 Lee el fotograma de la tabla y le suma el desplazamiento a B y C
+C 0x817b Z quiere decir que la secuencia se ha agotado (dX = 0x80)
+C 0x817d Secuencia agotada: se vuelve al paso 0 de la que venga ahora
+C 0x8182 Estados 3 en adelante = jugador EN EL AIRE...
+C 0x8187 ...y en el aire el control no se lee aqui: cero control aereo, esa es la inercia
+C 0x818a BIOS GTSTCK con A=1: joystick del puerto 1
+C 0x8190 BIOS GTSTCK con A=0: teclas de cursor
+C 0x8195 OR de los dos: no hay que elegir control en ningun menu
+C 0x81a0 el juego no tiene agacharse, asi que las tres cuentan como centro
+C 0x81b6 (asi es como el salto pasa a caida y la caida corta a caida larga)
+C 0x81bc Vuelve a entrar: ya con el estado nuevo se ejecuta su primer fotograma
+C 0x81bf El jugador ocupa las entradas 0 y 1 de la tabla de atributos de sprites
+C 0x81c3 X ya desplazada
+C 0x81c7 Y ya desplazada
+C 0x81cb Escribe los atributos de los dos sprites en la VRAM
+C 0x81d1 Siguiente paso de la secuencia
+C 0x81d6 Byte de flags del estado actual
+C 0x81d9 Bit 0: hay que mirar a la izquierda
+C 0x81e5 Lee los dos tiles pegados al costado izquierdo del sprite
+C 0x81e8 Y decide: pared que frena, objeto que se coge o nada
+C 0x81eb Bit 2: hay que mirar a la derecha
+C 0x81fe Lee los dos tiles pegados al costado derecho
+C 0x8204 Byte de flags otra vez...
+C 0x8207 ...y se guarda entero porque hacen falta sus bits altos
+C 0x820a Bit 1: hay que mirar el suelo
+C 0x8218 Tipo de los dos tiles que hay justo bajo los pies
+C 0x821b Tipos 0 y 1 = aire: NO HAY SUELO
+C 0x821f Bits 3..5 del byte de flags = estado de caida de este estado
+C 0x822f Si ya esta en ese estado no se toca nada (no reinicia la caida)
+C 0x8235 Empieza a caer...
+C 0x8239 ...desde el primer fotograma de la secuencia
+C 0x8241 Tipo 6 = suelo/pared solida. El tipo 8 frena de lado pero no sostiene
+C 0x8245 Bits 6..7 = estado al que se aterriza (1 andar derecha, 2 izquierda, 0 parado)
+C 0x8258 Si ya estaba en ese estado, seguir sin mas
+C 0x826b Cualquier otro tipo de tile: es un objeto o una trampa
+C 0x826e Estados 0..2 = con los pies en el suelo...
+C 0x8275 ...y entonces la Y se cuadricula a multiplo de 8 para que ande pegado al tile
+C 0x827d El borde IZQUIERDO de la pantalla es un muro: no se puede salir por ahi
+C 0x8284 X minima 4 pixeles
+C 0x8289 Tocando el techo (Y por debajo de 3)
+C 0x8290 En modo vuelo el techo no rebota...
+C 0x8297 ...simplemente se queda pegado a Y=4 y puede flotar ahi
+C 0x829e Modo normal: se deshace el desplazamiento vertical del fotograma
+C 0x82a9 X >= 0xF0: se ha salido por la derecha
+C 0x82b0 Cambio de pantalla lateral
+C 0x82b3 Y >= 0x70: se ha caido por debajo del escenario
+C 0x82ba Cambio de pantalla hacia abajo (0x8702 hace el scroll de 17 filas)
+C 0x82be Los siete desplazamientos siguientes hacen DE = estado * 128
+C 0x82c0 Siete desplazamientos: DE = animacion * 128 (una ranura por animacion)
+C 0x82dc A*4 porque cada fotograma ocupa 4 bytes
+C 0x82e4 Base de la tabla de animaciones
+C 0x82f0 Byte 0 del fotograma: desplazamiento en X
+C 0x82f3 Deja el dx del fotograma en 0x8F0F, que usa el codigo de colisiones
+C 0x82f6 0x80 no es un desplazamiento valido: marca el final de la secuencia
+C 0x82fc dx se suma a la X que traia el llamante
+C 0x82fe Byte 1: desplazamiento en Y
+C 0x8301 Y el dy queda en 0x8F10 antes de sumarse a la Y
+C 0x8304 Y += dY
+C 0x8306 D = figura, A = colores; los usa 0x8333 para montar los sprites
+C 0x8309 Byte 3: los dos colores del sprite, un nibble cada uno
+C 0x8318 0xD1: por debajo del borde inferior
+C 0x831d Cuatro bytes por entrada de la tabla de atributos
+C 0x8322 Hasta 0x1C00, o sea las 64 entradas
+C 0x832b BIOS BREAKX: devuelve carry si CTRL+STOP esta pulsado
+C 0x832e Confirma lo que dice el manual: se abandona con CTRL+STOP
+C 0x8333 Buffer de 8 bytes = 2 entradas de la tabla de atributos
+C 0x8337 Coordenada Y, la misma para los dos sprites
+C 0x833d Coordenada X, tambien compartida
+C 0x8343 La figura se multiplica por 4: es el numero de patron de un sprite 16x16
+C 0x834a El segundo sprite va 4 patrones despues: cada bicho son dos capas superpuestas
+C 0x8352 Nibble bajo = color del plano E, que al ser el de numero menor va delante
+C 0x8358 Nibble alto = color del plano E+1, el de detras
+C 0x8365 DE = numero de sprite * 4 = desplazamiento en la tabla de atributos
+C 0x836f Atributos de sprite en VRAM 0x1B00, 8 bytes = planos E y E+1
+C 0x837b BIOS LDIRVM: sube las dos entradas de golpe
+C 0x837f Columna = X / 8 (C trae la X)
+C 0x8385 A trae la Y: quitandole los 3 bits bajos queda fila*8...
+C 0x838a ...y multiplicado por 4 da fila*32, porque el mapa tiene 32 columnas
+C 0x8392 Buffer del mapa de la pantalla actual
+C 0x8397 Suma la columna
+C 0x839a Codigo del tile
+C 0x839c Secuencia muerta: el push af / pop af restaura tambien los flags, asi que estas cuatro instrucciones no hacen absolutamente nada
+C 0x83a1 A partir de aqui, una escalera de comparaciones que traduce el codigo de tile a tipo
+C 0x8446 Tipo 0: aire, nada que hacer
+C 0x8449 Tipo 1: tampoco
+C 0x844c Tipos 6 y 8 son solidos: frenan
+C 0x8454 El resto son objetos o trampas
+C 0x8456 dX del fotograma que se acaba de aplicar...
+C 0x845d ...se le resta a la X, o sea se deshace el paso contra la pared
+C 0x8463 Tipo 2 = las ALITAS (tile 0xAA)
+C 0x8467 Activa el MODO VUELO...
+C 0x8469 Enciende el modo VUELO (?): 0x812E llama a 0x857A mientras esto valga 1, y 0x857A lee GTSTCK para mover al jugador arriba y abajo a voluntad
+C 0x846c ...y pasa al estado 11, que se encadena consigo mismo y no comprueba suelo: se flota
+C 0x8476 Borra del mapa el tile de las alitas (0x8AE3 lo busca con CPIR y lo pone a 0) para que no se pueda coger dos veces
+C 0x8478 Borra las alitas del mapa
+C 0x847d Ruido pulsante de 115 frames al recoger el objeto de tipo 2: 0x8AE3 le acaba de borrar el tile 0xAA de la pantalla y 0x8F11 queda a 1. NO es la muerte: aqui no se pierde vida
+C 0x8482 El mismo barrido ascendente que los otros tres objetos: es una recogida mas
+C 0x8488 Cuadricula la Y a par para que el vuelo no quede a medio pixel
+C 0x848e Tipo 7 = tile mortal (0xED..0xF6)
+C 0x8493 Guarda el modo de vuelo: al reaparecer se recupera tal cual, asi que en el nivel 4 se sigue nadando
+C 0x8497 Efecto de sonido de la muerte (ranura 3)
+C 0x8499 Trino de MUERTE del jugador en el canal B, 20 frames. Se llega aqui desde 0x87F4, que mira el bit de colision de sprites de STATFL, y 20 instrucciones despues 0x84C9 quita la vida
+C 0x84a1 Estado 13 = animacion de morir
+C 0x84a6 Diez pasadas de esa animacion antes de descontar la vida
+C 0x84ab Solo se anima y se pinta: durante la muerte no se leen ni control ni colisiones
+C 0x84ae Los enemigos siguen a lo suyo mientras el jugador muere
+C 0x84b7 Dos fotogramas por vuelta, igual que el bucle principal
+C 0x84d8 Reaparicion: se restauran X, Y, estado y paso guardados al entrar en la pantalla (0x8670)
+C 0x84de Reaparicion: Y de entrada a la pantalla
+C 0x84e4 Reaparicion: secuencia con la que entro
+C 0x84ea Reaparicion: paso de esa secuencia
+C 0x84f0 Y tambien el modo vuelo que se habia apilado
+C 0x84f4 Rellena con 0xC0 cinco bytes desde 0x1B00: pisa las dos coordenadas Y (0x1B00 y 0x1B04) y con eso esconde los dos sprites del jugador
+C 0x84ff Se queda pintando la pantalla hasta que pulsen disparo para seguir
+C 0x8507 GTTRIG: no se revive hasta que se vuelve a pulsar disparo
+C 0x8509 GTTRIG con A=0: barra espaciadora
+C 0x850f GTTRIG con A=1: boton del joystick
+C 0x8519 Tipo 3 = VIDA EXTRA (tile 0xAB)
+C 0x851e Efecto de sonido de recogida
+C 0x8520 Barrido ascendente: vida extra recogida
+C 0x8523 Borra del mapa el tile 0xAB
+C 0x8525 Borra el tile del mapa
+C 0x852b Una vida mas...
+C 0x8536 Tipo 4 = MUNICION (tile 0xAC)
+C 0x853d Barrido ascendente: municion recogida
+C 0x8540 Borra del mapa el tile 0xAC
+C 0x8545 Numero de proyectiles que pueden volar a la vez
+C 0x8548 Un icono mas de municion; al llegar a 7 no se guarda, o sea tope real 6
+C 0x8549 Tope 6: si llegara a 7 no lo guarda
+C 0x8553 Tipo 5 = ARMA (tile 0xAD)
+C 0x8558 Barrido ascendente: arma nueva recogida
+C 0x855b Borra del mapa el tile 0xAD
+C 0x8560 Tipo de arma
+C 0x8563 Siguiente tipo de arma; al llegar a 4 no se guarda, o sea tope real 3
+C 0x8564 Cuatro armas, de la 0 a la 3
+C 0x856f Indice: la secuencia de movimiento que ejecuta el jugador
+C 0x8572 Tabla de mascaras, un byte por secuencia (solo indices 0x00-0x0C)
+C 0x857a GTSTCK con A=1 (joystick)...
+C 0x857c GTSTCK joystick
+C 0x8580 ...y con A=0 (cursores); se hace OR de los dos
+C 0x8582 GTSTCK cursores
+C 0x8589 Arriba
+C 0x8591 Arriba-derecha: se combinan las dos rutinas de un eje cada una
+C 0x859c Derecha
+C 0x85a4 Abajo-derecha
+C 0x85af Abajo: en modo vuelo el abajo SI vale, al contrario que andando
+C 0x85b7 Abajo-izquierda
+C 0x85c2 Izquierda
+C 0x85ca Lo que queda es arriba-izquierda
+C 0x85d9 Tile sobre la cabeza; solo aqui se usa la comprobacion de arriba
+C 0x85dc Tipo 6: pared solida, no se sube. Aqui el tipo 8 no frena, al contrario que de lado
+C 0x85e1 Si es un objeto se recoge al pasar, y si es mortal mata
+C 0x85e7 Dos pixeles por vuelta
+C 0x85f5 Sondea las dos esquinas de abajo del sprite
+C 0x8609 Estado 12 = sprite mirando a la izquierda
+C 0x8616 Sondea el lateral izquierdo
+C 0x861c Tipos 6 y 8 frenan igual que andando
+C 0x862b Estado 11 = sprite mirando a la derecha
+C 0x864f X = 2: entra por el lado izquierdo de la pantalla nueva
+C 0x8654 Esconde todos los sprites poniendo Y = 0xD1, fuera de pantalla
+C 0x8657 Filtro de fin de nivel: mira si esta pantalla cierra un nivel
+C 0x865a GICINI: reinicia el PSG y corta el efecto que estuviera sonando
+C 0x865d Dibuja la pantalla nueva con su efecto de entrada
+C 0x8662 Y = 4: entra por la parte de arriba de la pantalla nueva
+C 0x866d Transicion con desplazamiento vertical
+C 0x8670 X actual -> X de reaparicion
+C 0x8676 Y actual -> Y de reaparicion
+C 0x867c Secuencia actual -> secuencia de reaparicion
+C 0x8682 Paso actual -> paso de reaparicion
+C 0x8688 Contador global de pantalla, 0..27 de un tiron; el NIVEL es aparte, 0x8F0E
+C 0x868f Repinta el marcador (el numero de pantalla ha cambiado)
+C 0x8692 Carga enemigos y cofres de la pantalla nueva
+C 0x8695 Copia el mapa de la pantalla nueva a la zona de trabajo 0x7D80
+C 0x86d9 A partir de aqui: la tira de iconos de municion del marcador
+C 0x86de Primera casilla de la tira, VRAM 0x1AA2 (fila 21, columna 2)
+C 0x86e1 Tipo de arma actual (0..3)
+C 0x86e4 Cada arma ocupa dos tiles (mirando a dcha y a izq)...
+C 0x86e6 ...asi que el icono del arma N es el tile 0xF7+2*N
+C 0x86f4 Se pintan tantos iconos como proyectiles simultaneos permitidos
+C 0x86fd Siguiente casilla de la tira
+C 0x8702 Numero de pantalla (todavia sin incrementar: lo hace 0x8688 despues)
+C 0x8708 *2 en el byte alto = *512, que es lo que ocupa un mapa
+C 0x870a Base de los 28 mapas del juego
+C 0x870e 17 pasos: 16 filas de la zona de juego mas una
+C 0x8713 512 bytes = las 16 filas visibles de juego
+C 0x871e Avanza el origen una fila (32 casillas)
+C 0x8721 Avanza una fila de 32 casillas: eso es lo que sube la imagen
+C 0x8722 Un fotograma por paso: el scroll dura 17 frames
+C 0x8731 El contador tambien hace de numero de plano de sprite (3..6)
+C 0x8734 Registros de enemigo en 0x8F20, 5 bytes cada uno (X, Y, animacion, impactos, fotograma)
+C 0x8738 Una X de 0 corta la lista: los enemigos de una pantalla van seguidos
+C 0x873b X=0 marca el final de la lista: esta pantalla tiene menos de 4
+C 0x8744 El byte +2 del registro ES el numero de animacion de la tabla 0x60C0
+C 0x874a Avanza un paso de la secuencia; Z = la secuencia se ha acabado
+C 0x874d Con Z se acabo la secuencia: reinicia el fotograma y encadena la siguiente
+C 0x874f Secuencia agotada: vuelve al paso 0
+C 0x8757 El tipo 0x0D es el enemigo ya muerto: se lo lleva a Y=0xC0, fuera de pantalla
+C 0x875b ...y al acabarla se manda al enemigo a Y=0xC0, fuera de la pantalla
+C 0x8763 Tabla de encadenado: que secuencia sigue a la que acaba de terminar
+C 0x8769 Reintenta el mismo enemigo con la secuencia nueva
+C 0x876c Guarda la posicion nueva que ha devuelto 0x82BE
+C 0x8773 El mismo contador da el plano de sprite: E = contador*2, o sea planos 6, 8, 10 y 12
+C 0x8776 Cada enemigo ocupa 2 planos de sprite: planos 6, 8, 10 y 12
+C 0x877a Vuelca los 8 bytes de atributos a la VRAM
+C 0x8787 Un enemigo muerto ya no rebota contra las paredes
+C 0x8792 Sondea la pared de su izquierda...
+C 0x879e ...y la de su derecha
+C 0x87ab 4 enemigos (los contadores van del 3 al 6)
+C 0x87ae 5 bytes por enemigo
+C 0x87b6 Tipo 0 = fondo; 2..5 son objetos: el enemigo los atraviesa
+C 0x87c8 Las animaciones van emparejadas: la de mirar a la derecha esta 0x11 ranuras despues
+C 0x87cc Por debajo de 0x21 se suma 17 para pasar a la version espejo...
+C 0x87d3 ...y por encima se resta, que es volver a la original
+C 0x87da Contador de resistencia; el valor de la tabla es 256 menos los tiros que aguanta
+C 0x87de El byte +3 cuenta hacia arriba hasta desbordar: aguanta 256 menos su valor inicial; 0x00 o 0x01 = indestructible
+C 0x87e1 Solo muere cuando el contador desborda a cero
+C 0x87e4 Muerto: pasa a la animacion 0x0D (la explosion de 0x6740)
+C 0x87ee Efecto de sonido de la explosion, el mismo que usa la muerte del jugador en 0x8497
+C 0x87f0 Segundo disparador del mismo trino: una entidad de la tabla de 0x8F20 (8 entradas de 5 bytes) agota su contador y pasa al estado 0x0D
+C 0x87f4 STATFL: copia del registro de estado del VDP
+C 0x87f7 Bit 5 = colision de sprites
+C 0x87fa Ha tocado a un enemigo: a morir
+C 0x8804 Numero de pantalla
+C 0x8808 Cuatro desplazamientos de 16 bits: DE = pantalla*16
+C 0x8818 Enemigos: 0x7BA0 + pantalla*16, cuatro registros de 4 bytes
+C 0x881e Cuatro enemigos por pantalla
+C 0x8823 Se expanden a 5 bytes en 0x8F20 anadiendo el contador de fotograma
+C 0x883f El paso dentro de la secuencia siempre empieza a 0
+C 0x8844 El registro de la tabla mide 4 bytes...
+C 0x8849 ...pero el de RAM mide 5, por eso el INC E
+C 0x885a (?) Con IX ya en 0x8F34 esto escribe 0x8F39, la X del hueco 5, no la del 4
+C 0x885e Objetos disparables: 0x79C0 + pantalla*16, se copian tal cual a 0x8FA0
+C 0x887b 16 bytes = los 4 cofres de la pantalla, sin reformatear
+C 0x8885 GTTRIG con A=0 (barra espaciadora)...
+C 0x888c ...y con A=1 (boton del joystick)
+C 0x8893 GTTRIG devuelve 0xFF pulsado, 0x00 suelto
+C 0x8898 Boton suelto: se rearma el disparo y ya esta
+C 0x889e Tipo de arma
+C 0x88a1 Las armas 2 y 3 tienen autorrepeticion: no hay que soltar el boton
+C 0x88a9 Las demas exigen soltar el boton entre disparo y disparo
+C 0x88b2 Marca el gatillo como ya usado
+C 0x88bc Array de proyectiles
+C 0x88c0 Velocidad 0 = hueco libre
+C 0x88d7 No hay hueco libre: ya vuelan todos los permitidos
+C 0x88e1 Secuencia actual del jugador
+C 0x88e4 Quieto, cayendo en vertical o saltando en vertical: no se puede disparar
+C 0x88ed Efecto de sonido del disparo
+C 0x88ef Efecto de DISPARO, 15 frames, al crear el proyectil
+C 0x88f2 El proyectil arranca en la casilla del jugador...
+C 0x88f5 ...columna = (X+7)/8, o sea redondeando hacia arriba
+C 0x8904 ...y fila = (Y+8)/8, la del centro vertical del sprite
+C 0x8916 HL = casilla de VRAM
+C 0x8919 Sumando 0x6580 se pasa de la VRAM a la copia del mapa en 0x7D80
+C 0x891e Guarda el tile que habia debajo para poder restaurarlo
+C 0x8921 La secuencia del jugador es impar mirando a la derecha (0x0B)...
+C 0x8927 ...asi que par = izquierda, velocidad -1
+C 0x892d ...e impar = derecha, velocidad +1
+C 0x8938 Array de proyectiles
+C 0x8943 Casilla de VRAM donde esta ahora
+C 0x8946 Restaura el tile que tapaba: asi se borra el proyectil
+C 0x8950 Avanza una casilla en el sentido de la velocidad
+C 0x8959 Los 4 cofres/calaveras de la pantalla
+C 0x8963 Se mira la casilla siguiente, no la actual: el impacto se adelanta un paso
+C 0x8974 Probados los cuatro cofres sin acertar
+C 0x8983 No ha dado a ningun cofre: toca mirar el terreno
+C 0x898c Copia del mapa en RAM
+C 0x8991 Apunta el tile que va a tapar en la casilla nueva
+C 0x8994 Clasifica el tile en un tipo 0..8
+C 0x8997 Tipo 6 = pared: el proyectil se estrella
+C 0x899c Tipo 7 = terreno mortal: tambien lo para
+C 0x89a1 Columna 0 o 32: se ha salido de la pantalla
+C 0x89b1 Se admite el impacto si la fila coincide exactamente
+C 0x89bc Efecto de sonido de impacto
+C 0x89be Efecto de IMPACTO del disparo, 2 frames
+C 0x89c3 Velocidad 0: el proyectil se consume
+C 0x89c8 Vuelve a la casilla (2,21) del marcador; ver 0x8A45
+C 0x89d0 Suma un impacto al cofre; solo se rompe cuando el contador desborda
+C 0x89dd Efecto de OBJETO DESTRUIDO (?), 28 frames
+C 0x89ed Byte +3 del cofre: lo que aparece al romperlo (0xAA..0xAD, y 0xF4 en la pantalla 26)
+C 0x89f0 Lo escribe en el mapa, donde el jugador ya podra recogerlo
+C 0x89f1 Repinta la pantalla entera para que se vea el cambio
+C 0x89f6 Fila 25: saca el cofre de la lista, ya no puede recibir mas tiros
+C 0x89fc Pinta el proyectil en su casilla nueva
+C 0x8a05 Cada arma tiene dos tiles consecutivos...
+C 0x8a0c ...el primero es el tile 0xF7+2*arma
+C 0x8a11 El 'rr a' baja el bit 1 de la velocidad al bit 0: 0xFF -> segundo tile (mira a la izq)
+C 0x8a19 Comprueba si el proyectil ha alcanzado a algun enemigo
+C 0x8a1c Se procesan tantos proyectiles como iconos de municion tenga el jugador
+C 0x8a37 El arma 3 es la unica que atraviesa paredes y terreno mortal
+C 0x8a47 Columna 2...
+C 0x8a4c ...fila 21, o sea la VRAM 0x1AA2, primer icono de la tira de municion
+C 0x8a5a Array de enemigos
+C 0x8a63 Pasa la posicion en pixeles del enemigo a columna y fila
+C 0x8a76 Recorre 8 huecos aunque solo se carguen 4 enemigos por pantalla
+C 0x8a88 Vale la misma fila...
+C 0x8a8d ...o la de justo debajo: el enemigo mide 16 pixeles de alto
+C 0x8a93 Le suma un impacto y, si se le acaba la resistencia, lo mata
+C 0x8a9c Borra el proyectil de la pantalla restaurando el tile que tapaba
+C 0x8aa5 Y devuelve el proyectil al deposito
+C 0x8ab1 C*32: 32 casillas por fila
+C 0x8ac5 Tabla de nombres de la pantalla
+C 0x8ace Numero de pantalla global (0..28)
+C 0x8ad2 Cada mapa ocupa 512 bytes (32x16 casillas), asi que el indice se multiplica por 2 en la parte alta
+C 0x8ad6 Los mapas empiezan en 0x9000, FUERA de la zona de datos de 0x4000-0x8000
+C 0x8ada Copia de trabajo desde la que se lee todo el terreno
+C 0x8add 512 bytes = 32 columnas x 16 filas
+C 0x8ae9 CPIR: busca el tile por todo el mapa
+C 0x8aeb Deshace el contador de CPIR para sacar el desplazamiento del tile
+C 0x8af6 Casilla vacia
+C 0x8aff Filas 0..15 de la tabla de nombres; de la 16 a la 23 esta el marcador
+C 0x8b77 Carga el mapa nº 28: la pantalla de final de juego
+C 0x8e0a Origen de lo que queda de la pantalla vieja: el buffer de RAM, `paso` columnas adentro
+C 0x8e35 Longitud de lo que sobrevive de la fila vieja: 0x21 menos el paso
+C 0x8e5e 0x9200 = 0x9000 + 512: el mapa de la pantalla SIGUIENTE, la que esta entrando
+C 0xd017 Del numero de canal solo se usan los 7 bits bajos
+C 0xd031 Ocupado: recorre los tres canales buscando uno con el puntero a cero
+C 0xd072 Numero del canal que se esta procesando; lo leen el mezclador, la transposicion y los comandos de frase
+C 0xd07e Silencia el canal antes de montar el evento nuevo
+C 0xd09d HL = 0xD5DC + canal: la transposicion de este canal
+C 0xd0a1 Nota + transposicion = indice en la tabla cromatica
+C 0xd0af Cola comun a nota y percusion: aplica mezclador, reinicia envolventes y recarga la duracion
+C 0xd0c7 Guarda el puntero de lectura y arranca la cuenta atras de la nota
+C 0xd0ee Envolvente de VOLUMEN: dos fases, IY va recorriendo ix+0 e ix+1
+C 0xd120 Agotadas las dos fases, si el bit 0 de +2D esta puesto la envolvente se repite
+C 0xd12f Envolvente de TONO: tres fases, IY recorre ix+0, ix+1 e ix+2
+C 0xd14a Incremento negativo: se resta en lugar de sumarse
+C 0xd15f El desplazamiento de tono se queda en 12 bits, que es lo que admite el PSG
+C 0xd18b Agotadas las tres fases, si el bit 1 de +2D esta puesto la envolvente se repite
+C 0xd195 Volumen final = volumen base + lo que lleve la envolvente, recortado a 4 bits
+C 0xd19e Periodo final = periodo de la nota + desplazamiento de la envolvente de tono
+C 0xd1af Siguiente canal: 46 bytes mas alla
+C 0xd1bc Envolvente GLOBAL del periodo de ruido; es una sola para los tres canales
+C 0xd1fe Registro 6 del PSG = periodo base de ruido + su envolvente
+C 0xd265 El tempo vigente esta en 0xD532
+C 0xd27a Solo valen los bits 0 y 3; el resto se tira
+C 0xd287 Borra los 46 bytes: con el volumen base a cero y el puntero nulo el canal queda mudo para siempre
+C 0xd293 Si este canal era el dueno del ruido, borra tambien la estructura global (pero no el periodo base de 0xD5D3)
+C 0xd2b1 Dividendo 3000; el cociente son los ticks que dura una unidad de duracion
+C 0xd2ba Con nn = 0x64, que es lo que usa la musica del menu, sale 1 tick por unidad
+C 0xd2c5 El generador de ruido del PSG solo tiene 5 bits de periodo
+C 0xd2cf Si el bit 7 del operando esta puesto sigue leyendo comandos; si no, el comando cuenta como golpe y dispara el evento. Asi se escriben percusiones sin tono
+C 0xd2d6 Salta directo a 0xD0C7, saltandose el mezclador: el canal se quedo mudo en 0xD07E
+C 0xd30f Solo hace OR: los bits los quitan los comandos 0x87 y 0x89
+C 0xd315 El operando entero cae tambien en la variable global del ruido, pero de ella solo se mira el bit 2 (en 0xD1F6)
+C 0xd321 Al cambiar de instrumento se quitan los dos bits de repeticion
+C 0xd346 Y se ponen a cero los contadores de espera y los desplazamientos acumulados
+C 0xd36d Cargar una envolvente nueva le quita la repeticion
+C 0xd39a Apunta que canal se ha quedado con el generador de ruido
+C 0xd3a6 0x09 = tono + ruido del canal 0; se desplaza tantas veces como canal sea
+C 0xd3b9 Primero apaga los dos bits del canal y luego enciende los que pedia A
+C 0xd3ce Guarda la direccion de retorno en 0xD5D6 + canal*2
+C 0xd3d1 Tabla de 11 punteros a frases. Solo hay un nivel: una frase no puede llamar a otra
+C 0xdb00 Contador de frames libre; solo se incrementa, nunca se reinicia. Los efectos lo usan para dividir la frecuencia
+C 0xdb07 EFECTO 1 - PASO (canal A). 0 = apagado
+C 0xdb12 El paso solo suena en 1 de cada 8 frames: de ahi el 'toc' seco
+C 0xdb1e Bit 0 a cero en el registro 7: habilita el TONO del canal A
+C 0xdb26 Volumen 11 en el canal A
+C 0xdb2d Registro 1 (afinacion gruesa de A) = 0x10, pero el PSG solo usa 4 bits: se queda en 0
+C 0xdb34 Con el 0x10 truncado el periodo real es 0x064 = 100, unos 2,2 kHz: un tic corto y agudo
+C 0xdb43 Los otros 7 frames de cada 8 el canal A calla
+C 0xdb4b Gasta un frame del efecto
+C 0xdb5c Al agotarse deja el tono A apagado
+C 0xdb64 EFECTO 2 - SALTO / CAIDA (canal A)
+C 0xdb71 Habilita el tono del canal A
+C 0xdb79 Volumen 11
+C 0xdb80 Y del jugador: el tono del salto depende de la altura a la que este
+C 0xdb86 DE = Y*8 con tres desplazamientos; como Y cabe en un byte, el byte alto nunca pasa de 7 y no lo trunca el PSG
+C 0xdb92 Periodo del canal A = Y*8: cuanto mas abajo, mas grave
+C 0xdb9d Efecto de un solo frame: se autoborra. Mientras se salta, 0x8141 lo repone cada vuelta
+C 0xdba5 Solo apaga el tono A si el efecto de paso tampoco esta sonando
+C 0xdbba EFECTO 3 - DISPARO (canal B)
+C 0xdbc7 Bit 1 a cero en el registro 7: habilita el TONO del canal B
+C 0xdbcf El complemento del contador: segun baja el contador sube el periodo, o sea barrido descendente
+C 0xdbd6 Byte alto del periodo del canal B. El byte bajo (registro 2) no se toca en toda la rutina y vale 0 en partida
+C 0xdbdb Los ultimos 6 frames bajan el volumen de 11 a 6: desvanecido final
+C 0xdbf0 15 frames de duracion (el valor que pone 0x88EF)
+C 0xdbfc Apaga el tono del canal B
+C 0xdc09 EFECTO 4 - MUERTE (canal B). Lo disparan 0x8499 (muere el jugador) y 0x87F0 (muere una entidad de 0x8F20)
+C 0xdc11 Trino: suena un frame si y otro no, segun la paridad del contador
+C 0xdc23 Complemento y mitad: el periodo va bajando, el trino sube de tono
+C 0xdc48 Este contador cuenta hacia ARRIBA: con 0xEC (0x8499) son 20 frames
+C 0xdc61 EFECTO 5 - IMPACTO DEL DISPARO (canal C)
+C 0xdc7d Byte alto del periodo del canal C = contador; con 2 (0x89BE) dura uno o dos frames (?), ver el sbc de abajo
+C 0xdc86 Decrementa con sbc y no con sub: el acarreo es el que deje WRTPSG, o sea puede restar 1 o 2 (?)
+C 0xdca0 EFECTO 6 - OBJETO DESTRUIDO (?) (canal C); lo dispara 0x89DD cuando el objetivo agota sus impactos
+C 0xdcb5 Periodo fijo 0x0101 en el canal C: unos 870 Hz
+C 0xdcc3 Volumen = contador/2; si llegase a 15 o mas se fijaria en 12, pero arrancando en 28 el maximo real es 14. Se va apagando solo
+C 0xdcd8 Con 0x1C (0x89DD) son 28 frames
+C 0xdcf1 EFECTO 7 - RECOGER OBJETO (canal C). Lo usan los cuatro objetos: 0x8482, 0x8520, 0x853D y 0x8558
+C 0xdd14 Complemento del contador: el periodo cae de 0x0401 a 0x0001, barrido ascendente
+C 0xdd1e Solo avanza 1 de cada 4 frames: con 0xFB son 5 pasos, 20 frames
+C 0xdd42 EFECTO 8 - RUIDO PULSANTE (canal A). Unico disparador: 0x847D, al recoger el objeto que activa el vuelo. NO es la muerte
+C 0xdd4f Pone RUIDO en el canal A (bit 3 a cero) y le quita el TONO (bit 0 a uno)
+C 0xdd59 Periodo de ruido; el PSG solo mira 5 bits, 0xC8 and 0x1F = 8
+C 0xdd60 Cada 8 frames vuelve a golpear
+C 0xdd6f Entre golpe y golpe el volumen baja de dos en dos
+C 0xdd71 Si el volumen ha dado la vuelta por debajo de cero se queda en 0
+C 0xdd86 Frame de golpe: volumen 11 otra vez
+C 0xdd8e Con 0x73 (0x847D) son 115 frames, unos 2,3 segundos a 50 Hz
+C 0xdd9a Apaga el ruido del canal A
+
+# =============================================================================
+# ESTRUCTURA DE NIVELES  (verificado por mi contra el binario, 2026-08-04)
+# =============================================================================
+
+B 0x8ACE ############################################################
+B 0x8ACE CARGAR EL MAPA DE LA PANTALLA ACTUAL
+B 0x8ACE ############################################################
+B 0x8ACE Los mapas son 29 bloques de 512 bytes seguidos desde 0x9000.
+B 0x8ACE Aqui se ve la aritmetica: D = pantalla, SLA D y E=0 dejan
+B 0x8ACE DE = pantalla*512, se suma a 0x9000 y se copian 512 bytes al
+B 0x8ACE buffer 0x7D80.
+L 0x8ACE CARGA_MAPA       Copia el mapa de la pantalla actual al buffer de 0x7D80
+C 0x8ACE A = numero de pantalla
+C 0x8AD2 DE = pantalla * 512 (SLA D con E=0 multiplica por 512)
+C 0x8AD6 Base de la tabla de mapas
+C 0x8ADA Buffer del mapa en RAM
+C 0x8ADD 512 bytes = 32 columnas x 16 filas
+
+B 0x8B09 ############################################################
+B 0x8B09 FIN DE PANTALLA: ¿toca cambiar de nivel?
+B 0x8B09 ############################################################
+B 0x8B09 Aqui esta la prueba en codigo de que el juego son 4 niveles de
+B 0x8B09 7 pantallas: compara el contador de pantalla con 6, 13, 20 y 27,
+B 0x8B09 que son exactamente las ultimas de cada nivel.
+B 0x8B09     nivel 1 -> pantallas  0..6
+B 0x8B09     nivel 2 -> pantallas  7..13
+B 0x8B09     nivel 3 -> pantallas 14..20
+B 0x8B09     nivel 4 -> pantallas 21..27   (y la 28 es la de victoria)
+L 0x8B09 FIN_DE_PANTALLA  Decide si al pasar de pantalla hay ademas cambio de nivel
+C 0x8B09 A = pantalla que se acaba de terminar
+C 0x8B0C Ultima del nivel 2: entra al nivel 3
+C 0x8B11 Ultima del nivel 3: entra al nivel 4, el acuatico
+C 0x8B16 Ultima del nivel 4: se acabo el juego
+C 0x8B1B Ultima del nivel 1: entra al nivel 2
+C 0x8B20 Pantalla normal: solo avanzar
+
+B 0x8B29 ############################################################
+B 0x8B29 ENTRADA AL NIVEL 3
+B 0x8B29 ############################################################
+B 0x8B29 Recarga el banco de sprites: mete 0x4C0 bytes desde 0x5800 en
+B 0x8B29 la VRAM 0x3B40, o sea cambia el aspecto de los enemigos.
+L 0x8B29 ENTRA_NIVEL3     Cambia el banco de sprites y recoloca al jugador
+C 0x8B29 Banco alternativo de sprites
+C 0x8B37 Apaga el modo flotar por si venia activo
+C 0x8B3C Estado 9 = salto hacia la derecha
+C 0x8B44 X de entrada, tambien guardada como punto de reaparicion
+C 0x8B4C Y de entrada, idem
+
+C 0x8B58 Borde de color 12 para el nivel acuatico
+C 0x8B62 FLAG DE FLOTAR = 1: se acabo la gravedad, esto es el nivel del pez
+C 0x8B67 Estado 0x0B = animacion de nadar mirando a la derecha
+
+B 0x8B6D ############################################################
+B 0x8B6D FINAL DEL JUEGO
+B 0x8B6D ############################################################
+B 0x8B6D Avanza a la pantalla 28, que es el mapa de victoria con el
+B 0x8B6D texto "ALELUYA, OH FRAY ARNULFO...", y se queda en un bucle
+B 0x8B6D infinito: el juego no vuelve al menu.
+L 0x8B6D FINAL_JUEGO      Pantalla de victoria y bucle final
+C 0x8B6D Avanza a la pantalla 28 (la de victoria)
+C 0x8B77 Carga su mapa como el de cualquier otra pantalla
+
+B 0x8B80 ############################################################
+B 0x8B80 EL CASTIGO POR HACER TRAMPAS
+B 0x8B80 ############################################################
+B 0x8B80 Si la variable 0x8F1E no es cero, en vez de dejar disfrutar la
+B 0x8B80 pantalla final le escribe encima, en la ULTIMA LINEA del area
+B 0x8B80 de juego (VRAM 0x19E0 = fila 15), los 32 caracteres de
+B 0x8B80 "POR QUE NO PRUEBAS SIN POKES" que hay en 0x7F94.
+B 0x8B80
+B 0x8B80 O sea que no es un mensaje cualquiera: es un castigo reservado
+B 0x8B80 para el que se termina el juego haciendo trampas.
+B 0x8B80
+B 0x8B80 Pero NINGUNA instruccion del binario escribe jamas en 0x8F1E,
+B 0x8B80 asi que en el juego original no salta nunca. Topo lo dejo
+B 0x8B80 armado para que saltara si alguien pokeaba ese byte.
+L 0x8B80 CASTIGO_TRAMPAS  Afea la pantalla final si se detecto trampa
+C 0x8B85 Limpia: final normal
+C 0x8B88 El texto del reproche
+C 0x8B8B Ultima linea del area de juego (0x1800 + 15*32)
+L 0x8B94 BUCLE_FINAL      Bucle infinito del final: solo mueve los enemigos
+C 0x8B94 Sigue animando los enemigos de la pantalla final
+C 0x8B9A El juego acaba aqui: no se vuelve al menu
+
+# =============================================================================
+# COLOR DE FONDO DE LA PANTALLA
+# =============================================================================
+# En el TMS9918 el color 0 no es negro: es TRANSPARENTE, y por debajo se ve el
+# color de fondo del VDP. El juego lo aprovecha para cambiar la ambientacion sin
+# tocar un solo tile:
+#     0x805E  pone BDRCLR (0xF3EB) = 1  (negro)  al empezar cada pantalla
+#     0x8B5A  lo cambia a 12 (verde)             al entrar en el nivel 4
+# Por eso el nivel acuatico se ve con el agua verde de fondo aunque los tiles
+# sean los mismos. Lo detecto el usuario al mirar los mapas renderizados: salian
+# casi todos en negro porque el renderizador trataba el color 0 como negro.
+C 0x8061 Fondo negro: es el valor normal de todas las pantallas
+C 0x8B5A Fondo VERDE: aqui empieza el agua del nivel 4
+
+# =============================================================================
+# LOS ULTIMOS HUECOS  (resueltos con el debugger de openMSX, 2026-08-04)
+# =============================================================================
+# Metodo: watchpoints de lectura y escritura sobre cada hueco mientras el juego
+# corre de verdad (tools/omsx_huecos.tcl). Con vidas infinitas y empujando al
+# jugador contra el borde derecho se recorrio la partida entera: el experimento
+# termino en la PANTALLA 27, o sea que paso por los cuatro niveles y por las tres
+# transiciones de nivel.
+#
+# Lo que no registro ni un solo acceso en ese recorrido queda documentado como
+# bytes muertos. Cuidado con la fuerza de esa afirmacion: prueba que no se usan
+# en una partida completa, no que sean inalcanzables en cualquier circunstancia.
+
+D 0x856E 0x856F ret_huerfano_1  Un RET (0xC9) que no se alcanza por ningun camino: la rutina de antes ya cierra con el RET de 0x856D. Ningun acceso en una partida completa.
+D 0x8A36 0x8A37 ret_huerfano_2  Otro RET inalcanzable, entre la rutina que acaba en 0x8A33 y la que empieza en 0x8A37. Ningun acceso en una partida completa.
+D 0xD015 0xD041 muerto_D015     44 bytes entre el manejador de interrupcion y la rutina de asignar melodia, sin un solo acceso en una partida completa.
+
+
+# =============================================================================
+# SEGUNDA RONDA DE VERIFICACION ADVERSARIAL (2026-08-04)
+# =============================================================================
+# Seis agentes analizaron las zonas que faltaban y otros seis intentaron
+# refutarles; un ultimo agente arbitro las contradicciones entre ellos. De aqui
+# salieron ademas tres BUGS del juego original, verificados despues a mano:
+#   - el tope de vidas real es 9, no 10 (0x852C sale sin guardar)
+#   - 0x8AE3 borra del mapa el objeto equivocado
+#   - el game over reinicia sin reponer la pila y la va perdiendo
+# =============================================================================
+
+# =============================================================================
+# SINTESIS ADVERSARIAL 2026-08-04 (2a ronda): tablas por pantalla, mapas uno a
+# uno, huecos muertos y reproductor PSG.
+# =============================================================================
+# AVISO DE INTEGRACION: las lineas marcadas [SUSTITUYE] llevan la MISMA direccion
+# de anclaje que una linea ya existente. mkasm.py hace dict[addr]=..., o sea que la
+# ultima gana: hay que BORRAR la vieja o dejarla antes, nunca duplicarla.
+# --- 0x79C0 / 0x7BA0: las dos tablas por pantalla -------------------------
+B 0x79C0 ############################################################
+B 0x79C0 PUNTOS OCULTOS: COMO FUNCIONAN DE VERDAD
+B 0x79C0 ############################################################
+B 0x79C0 Verificado en 0x8933-0x89F9 y contra los bytes de la tabla:
+B 0x79C0 el disparo compara SU CASILLA con la columna y la fila de cada
+B 0x79C0 una de las 4 entradas de la pantalla. Si coinciden, incrementa
+B 0x79C0 el tercer byte (0x89D0); cuando ese byte desborda a 0 se escribe
+B 0x79C0 el cuarto byte como tile en el buffer (0x89ED) y se repinta.
+B 0x79C0 O sea que el tercer byte es un contador NEGATIVO, igual que la
+B 0x79C0 resistencia de los enemigos: disparos necesarios = 0x100 - byte.
+B 0x79C0 En la pantalla 0 los bytes son 04 0A FF AC / 14 05 FE AD, o sea
+B 0x79C0 un punto de 1 disparo que da municion y otro de 2 que da arma.
+B 0x79C0 Al soltar el premio, 0x89F4 mete 0x19 (fila 25, imposible) en el
+B 0x79C0 byte de fila para desactivar la entrada.
+B 0x79C0 LO IMPORTANTE: el mecanismo va por COORDENADAS y no mira que
+B 0x79C0 tile hay debajo. De las 30 entradas reales (pantallas 0 a 27),
+B 0x79C0 solo 17 caen sobre una calavera (0xD0) o un cofre (0xCA); las
+B 0x79C0 otras 13 son puntos invisibles en el aire o sobre decorado, como
+B 0x79C0 el (20,4) de la pantalla 7 o el (19,14) de la 10, que estan los
+B 0x79C0 dos sobre tile de fondo y son los DOS UNICOS puntos de todo el
+B 0x79C0 juego que dan las alitas 0xAA (el tile 0xAA no aparece ni una
+B 0x79C0 sola vez en los 29 mapas: solo se puede conseguir disparando).
+B 0x79C0 Rarezas de los datos: la pantalla 26 esconde un premio 0xF4, que
+B 0x79C0 es un tile MORTAL, o sea una trampa para el que dispara a todo;
+B 0x79C0 y las tres entradas de la pantalla 27 llevan premio 0x00 sobre
+B 0x79C0 tiles 0xD5, o sea que ahi no sale nada: son bloques que solo se
+B 0x79C0 rompen para abrir paso.
+D 0x79C0 0x7BA0 tabla_puntos_ocultos  29 grupos de 16 bytes indexados como 0x79C0 + pantalla*16, cuatro entradas de 4 bytes cada uno: columna, fila, contador de impactos NEGATIVO (disparos necesarios = 0x100 menos el byte) y tile del premio. Una entrada a ceros esta vacia. Los datos utiles acaban en 0x7B90 (29*16); de 0x7B90 a 0x7BA0 ya es el relleno 00/EB que llena todos los huecos del binario, y las cuatro entradas de la pantalla 28 (0x7B80) son igual de inertes: la primera tiene fila 0x42 y las otras tres son ese mismo relleno. [SUSTITUYE a la D 0x79C0 anterior: el tercer byte NO es 'impactos que aguanta' sin mas, es el complemento a 256]
+D 0x7BA0 0x7D80 tabla_enemigos  29 grupos de 16 bytes indexados como 0x7BA0 + pantalla*16, cuatro entradas de 4 bytes: X en pixeles, Y en pixeles, numero de animacion de la tabla de 0x60C0 y resistencia (tambien negativa: aguanta 0x100 menos el byte). Una X y una Y a cero cortan la lista, por eso hay pantallas de 2 y de 3 enemigos. Los datos acaban en 0x7D70 y de ahi a 0x7D80 hay relleno 00/FF. OJO con el ultimo grupo: 0x7D60 son los CUATRO enemigos de la pantalla de victoria (20 20 0E 64 / D8 20 0E 64 / 40 50 0E 64 / A8 50 0E 64), animacion 0x0E y resistencia 0x64; existen de verdad y son los que anima el bucle infinito de 0x8B94. [SUSTITUYE a la D 0x7BA0 anterior]
+# --- 0x852C: el tope real de vidas ----------------------------------------
+C 0x852C Compara con 10 y sale SIN GUARDAR, asi que las vidas se quedan clavadas en 9: con 9 el INC A da 10, salta el RET Z y no se escribe nada. El tope real es 9, no 10 [SUSTITUYE]
+# --- 0x8AE3: el CPIR borra el objeto equivocado ---------------------------
+B 0x8ae3 Ampliacion: ademas de los dos 0xAC de la pantalla 16, la 27
+B 0x8ae3 lleva SEIS tiles 0xAB de vida extra, asi que ahi el fallo se ve
+B 0x8ae3 seis veces seguidas: cojas el que cojas desaparece siempre el
+B 0x8ae3 primero en orden de barrido.
+B 0x8ae3 Y hay un segundo fallo encadenado: los cuatro llamadores borran
+B 0x8ae3 la casilla ANTES de comprobar el tope (0x8523 antes de 0x8528,
+B 0x8ae3 0x8540 antes de 0x8545, 0x855B antes de 0x8560), asi que un
+B 0x8ae3 objeto cogido con 9 vidas, con 6 disparos o con el arma 3 se
+B 0x8ae3 pierde del mapa sin dar absolutamente nada.
+# --- 0x8B23-0x8B94: cambio de nivel y final del juego ---------------------
+L 0x8B23 CEREMONIA_NIVEL  Cola comun del cambio de nivel (rotulo + punto de reaparicion); llegan aqui la pantalla 6 directamente y la 13 por el 'jp 08b23h' de 0x8B52
+C 0x8B74 Carga las tablas de la pantalla 28: la pantalla de victoria SI tiene cuatro enemigos (0x7D60, animacion 0x0E), y son los que mueve el bucle final
+C 0x8B7D Rehace el decorado de arranque completo, no solo enciende la pantalla: 0x805E pone el borde a 1 (adios al 12 del agua) y recarga los 0x800 bytes de sprites originales de 0x5000 sobre VRAM 0x3800, con lo que el pez vuelve a ser el monje [SUSTITUYE]
+C 0x8B80 Bandera de tramposo; nadie la enciende en el binario original (no existe ningun LD (08F1Eh),A). Dato que refuerza que lo que hay ahi es relleno y no una inicializacion: 0x8F1E es el UNICO byte a cero de todo el tramo 0x8F00-0x8F40 [SUSTITUYE]
+B 0x8b94 Este bucle no tiene salida y no lee el teclado: son un CALL a
+B 0x8b94 0x872F, tres HALT y un JP hacia atras. Ni siquiera CTRL+STOP
+B 0x8b94 vale, porque BREAKX solo se consulta en 0x832A y aqui no se
+B 0x8b94 llama. Terminado el juego hay que resetear la maquina.
+# --- 0x8C1E: el game over pierde pila cada partida ------------------------
+B 0x8c1e ############################################################
+B 0x8c1e EL GAME OVER NO DESHACE LA PILA
+B 0x8c1e ############################################################
+B 0x8c1e Aqui no se llega con un RET desde el bucle, se llega saltando
+B 0x8c1e desde dentro de rutinas anidadas, y al final 0x8C43 hace
+B 0x8c1e 'jp 08076h', o sea reinicia la partida SIN reponer SP. En todo
+B 0x8c1e el binario solo hay dos 'ld sp': el de 0x8000 (0xEFFF) y el de
+B 0x8c1e 0x8058 (0x8FFF), y los dos quedan por delante de 0x8076.
+B 0x8c1e Cuenta exacta del camino de CTRL+STOP: 0x832A hace PUSH AF (2),
+B 0x8c1e 0x832E hace 'call c,08c1eh' que apila su retorno (2) y nunca
+B 0x8c1e vuelve, y el propio 'call 0832ah' del bucle principal deja otros
+B 0x8c1e 2. Son 6 bytes de pila perdidos por cada partida abandonada, y
+B 0x8c1e se acumulan: el suelo de la pila baja 6 bytes cada vez.
+B 0x8c1e Por el camino de quedarse sin vidas pasa lo mismo (el 'jp z' de
+B 0x8c1e 0x84CF sale de una cadena de CALL sin desapilar), pero ahi no he
+B 0x8c1e contado los bytes exactos. (?)
+C 0x8C43 Reinicia la partida entrando por INIT_PRINCIPAL, o sea que se vuelve a ver el menu; pero como no se pasa por el 'ld sp,08fffh' de 0x8058, la pila arranca donde la dejo la partida anterior
+L 0x8C46 CASILLA_DE_ENEMIGO  Pasa la posicion en pixeles de un enemigo a casilla: B = (iy+0)/8 y C = (iy+1)/8, a base de tres SRL cada uno
+C 0x8C56 Este ultimo SRL deja en el ACARREO el bit 2 de la Y del enemigo, y ese acarreo sobrevive hasta el SBC de 0x8A69 y el de 0x8A87: la caja de impacto del disparo se corre media casilla segun donde caiga el enemigo dentro de la suya
+# --- 0x8C60 / 0x8C70: tablas del arranque ---------------------------------
+B 0x8c60 ############################################################
+B 0x8c60 LOS CUATRO SPRITES DE LA PANTALLA DE PRESENTACION
+B 0x8c60 ############################################################
+B 0x8c60 Orden del arranque, instruccion a instruccion: 0x807E llama a
+B 0x8c60 0x8315 y manda los 64 sprites fuera de pantalla; 0x8081 vuelca
+B 0x8c60 la presentacion entera (0x5CC0 -> VRAM 0x1800, 0x300 bytes);
+B 0x8c60 0x808D-0x8096 copia estos 16 bytes a la tabla de atributos
+B 0x8c60 (VRAM 0x1B00) y 0x80C5 entra en el menu de 0xDA00. Al salir del
+B 0x8c60 menu, 0x80CB vuelve a llamar a 0x8315 y los borra: por eso estos
+B 0x8c60 cuatro sprites solo se ven en la portada y jamas en la partida.
+D 0x8c60 0x8c70 attr_sprites_portada  Cuatro entradas (Y, X, patron, color) de la tabla de atributos de sprite: 29 61 04 0F / 29 7E 04 0F / 28 52 04 0F / 29 9E 04 0F. Las cuatro llevan el patron 4 y el color 0x0F (blanco). Como el juego trabaja con sprites de 16x16 (0x8003 escribe 0xF2 en el registro 1 del VDP, con el bit SIZE a 1), el patron 4 sale de 0x5020. Por las coordenadas caen las cuatro sobre la banda del logo del titulo, o sea que son adorno de la portada (?). [SUSTITUYE a la D 0x8c60 init_sprites]
+B 0x8c70 La tabla ocupa 50 bytes (0x8C70-0x8CA1) pero la tabla de
+B 0x8c70 animacion de 0x60C0 solo tiene 49 ranuras de 128 bytes:
+B 0x8c70 (0x7940-0x60C0)/128 = 49, y de 0x790D en adelante ya es relleno.
+B 0x8c70 La entrada 49 (0x8CA1, valor 0x31) no la alcanza ningun estado.
+B 0x8c70 De los estados de enemigo (16 en adelante) casi todos apuntan a
+B 0x8c70 si mismos, o sea que su secuencia se repite en bucle. Solo hay
+B 0x8c70 tres excepciones: el 20 y el 21 se alternan en ping-pong (0x15
+B 0x8c70 y 0x14), el 37 y el 38 igual (0x26 y 0x25), y el 34 salta al 17.
+# --- 0x8CD4-0x8E00: ceros sobrantes y relleno -----------------------------
+D 0x8cdc 0x8cea ceros_sobrantes  Cola de la reserva de ceros que empieza en 0x8CD4: hay 23 bytes a cero seguidos (0x8CD4-0x8CEA) y el codigo solo usa los 8 primeros, con los tres LDIR de BC=8 de 0x8099, 0x80A4 y 0x80AF. Estos 14 no los referencia ninguna instruccion. Que los emitio el ensamblador y no son el relleno de los huecos se ve en que en los 919 bytes de relleno localizados en el binario la racha mas larga de ceros es de solo 2 bytes. [SUSTITUYE a la D 0x8CDC 0x8E00 muerto_8CDC; el resto del rango lo cubre la D 0x8cea de abajo]
+B 0x8cea ############################################################
+B 0x8cea RELLENO: NI CODIGO NI TABLA, BYTES MUERTOS
+B 0x8cea ############################################################
+B 0x8cea Prueba 1, nadie apunta aqui: barriendo los 40449 bytes en busca
+B 0x8cea de cualquier palabra entre 0x8C40 y 0x8E20, las unicas
+B 0x8cea referencias de codigo son 0x8091->0x8C60, 0x809A/0x80A5/0x80B0
+B 0x8cea ->0x8CD4, 0x80BB->0x8CB8, 0x81AB->0x8CA2, 0x830E->0x8C70,
+B 0x8cea 0x8573->0x8CAB, 0x865E->0x8E00 y cuatro a 0x8C59. Ninguna cae
+B 0x8cea entre 0x8CDC y 0x8DFF. La propia rutina de 0x8E00 solo usa el
+B 0x8cea buffer 0x7D80, la VRAM 0x1800 y el mapa 0x9200.
+B 0x8cea Prueba 2, nadie escribe aqui: los cinco volcados de RAM con el
+B 0x8cea juego corriendo (running_full, scr25, poketest, pcsample_full y
+B 0x8cea full_at_8000) coinciden byte a byte con la cinta en todo el
+B 0x8cea tramo 0x8C60-0x8F00. Cero diferencias.
+B 0x8cea Prueba 3, es el mismo material que rellena TODOS los huecos del
+B 0x8cea binario: 0x8CEA-0x8DFF, 0x8ED5-0x9000, 0x7B90-0x7BA0,
+B 0x8cea 0x7D70-0x7D80, 0xDA5C-0xDB00, 0xDDC7-0xDE00 y 0xCED5-0xD000, y
+B 0x8cea ademas la cola sin usar de CADA ranura de 128 bytes de la tabla
+B 0x8cea de animacion de 0x60C0 (las 50 acaban en la misma firma: 88 44
+B 0x8cea 9C 44 98 FF, 88 40 98 40 98 FF, 88 40 98 40 98 F7...). CUIDADO:
+B 0x8cea eso es lo que hace que a primera vista parezca 'de la misma
+B 0x8cea familia' que la columna de colores empaquetados de la tabla de
+B 0x8cea animacion; no lo es, es el relleno asomando entre las ranuras.
+B 0x8cea Firma medida: en 919 bytes de relleno solo salen 56 valores
+B 0x8cea distintos de 256, y los bytes se emparejan por la PARIDAD de la
+B 0x8cea direccion. En la mayor parte, las direcciones pares llevan el
+B 0x8cea bit 7 a 1 el 97-100% de las veces (valor tipico 0xFF) y las
+B 0x8cea impares lo llevan a 0 el 94-97% con el nibble bajo a 4 (0x44,
+B 0x8cea 0x54, 0x74), frente al 4% de la fuente del juego y el 8% de un
+B 0x8cea mapa. Hay dos tramos con la polaridad invertida: 0x8CEA-0x8D00
+B 0x8cea (00 en par, FF en impar) y 0x790D-0x7960 (00 en par, EF en
+B 0x8cea impar). Ningun formato de datos se comporta asi.
+B 0x8cea DE DONDE SALE es hipotesis: encaja con RAM dinamica sin
+B 0x8cea inicializar de la maquina donde se monto la cinta, y a favor
+B 0x8cea esta que todos estos huecos mueren justo en frontera de pagina
+B 0x8cea (0x8E00, 0x8F00, 0x9000, 0xDB00), como si el autor usara ORG
+B 0x8cea redondos y el volcado se tragara los intervalos. Con los bytes
+B 0x8cea no se puede demostrar. (?)
+B 0x8cea CUIDADO con un argumento que NO vale y que ya se uso mal: los
+B 0x8cea 535 bytes de 0x8CEA-0x8F01 son identicos a 0xCCEA-0xCF01, pero
+B 0x8cea ese tramo identico incluye la rutina VIVA de 0x8E00-0x8ED4. Lo
+B 0x8cea unico que demuestra la coincidencia es que el bloque muerto es
+B 0x8cea una copia literal de este trozo de memoria, NO que estos bytes
+B 0x8cea sean basura.
+B 0x8cea Descartado ademas: no es grafico (renderizado como tiles de 8x8
+B 0x8cea solo salen rayas verticales de ruido), no es mapa de pantalla,
+B 0x8cea no es texto con la fuente del juego, y la firma 0x8D00-0x8D20
+B 0x8cea no se repite en ningun otro sitio salvo en su copia de 0xCD00.
+D 0x8cea 0x8e00 relleno_ram_sucia  278 bytes de relleno que el volcado a cinta se llevo dentro. Ni codigo ni tabla: nadie los lee y nadie los escribe.
+# --- 0x8ED2-0x8F00 --------------------------------------------------------
+C 0x8ED2 Fin del codigo de verdad: salto incondicional, no se cae hacia el relleno de 0x8ED5
+D 0x8ed5 0x8f00 relleno_ram_sucia_2  43 bytes del mismo relleno, entre el final de la cortinilla (0x8ED4) y el bloque de variables. Cuatro pruebas independientes de que estan muertos: 0x8ED2 es un JP incondicional a 0x8E05, asi que no se cae aqui; en todo el binario solo hay dos palabras cuyo valor cae en 0x8ED5-0x8F00 y las dos son falsas (la de 0x7C17 es un dato de la tabla de enemigos y la de 0xD1A9, que vale 0x8EDD, son los bytes DD 8E de un ADC A,(IX+2Ch) real); en el codigo trazado no hay ni un IX/IY con desplazamiento negativo, el mayor es +0x2D; y los cuatro volcados de RAM con el juego corriendo los dejan intactos. Son byte a byte iguales a 0xCED5-0xCF00. OJO: no es relleno de alineacion del ensamblador, es el mismo relleno de RAM sucia descrito en 0x8CEA, y continua sin corte hasta 0x8FFF, donde ya lo pisan las variables y la pila. [SUSTITUYE a la D 0x8ED5 muerto_8ED5]
+# --- 0x8FA0-0x9000: rompibles y pila --------------------------------------
+C 0x8878 Destino de los rompibles de esta pantalla: 16 bytes justos en 0x8FA0-0x8FAF, pegados por debajo de la pila [SUSTITUYE]
+C 0x8979 Salta al siguiente rompible; con el tope de 4 que impone el CP de 0x8974 el barrido toca 0x8FA0, 0x8FA4, 0x8FA8 y 0x8FAC y ni un byte mas
+D 0x8fa0 0x8fb0 objetos_activos  Los cuatro puntos ocultos de la pantalla en curso, 4 registros de 4 bytes. Los siembra el LDIR de 0x887E copiando 16 bytes desde 0x79C0 + pantalla*16 (el origen se calcula en 0x8863-0x8877 con cuatro SLA E/RL D). VERIFICADO con el juego corriendo: en dump/scr25.ram y dump/poketest.ram, parados en la pantalla 0, los 16 bytes valen 04 0A FF AC 14 05 FE AD y ocho ceros, identicos a 0x79C0-0x79CF; en dump/running_full.bin, volcado en el menu, todavia se ven los bytes de la cinta porque el LDIR aun no ha corrido. Aqui NO sobra nada: de 0x8FB0 en adelante ya es pila. [SUSTITUYE a la D 0x8FA0 0x9000 pila; la pila la declara la D de abajo]
+B 0x8fb0 ############################################################
+B 0x8fb0 ESPACIO DE PILA
+B 0x8fb0 ############################################################
+B 0x8fb0 Ninguna instruccion del binario nombra esta zona salvo el
+B 0x8fb0 'ld sp,08fffh' de 0x8058. Las otras dos palabras del binario que
+B 0x8fb0 valen 0x8Fxx son falsas: la de 0xD619 cae a caballo entre dos
+B 0x8fb0 punteros de la tabla de saltos que empieza en 0xD612, y la de
+B 0x8fb0 0xDC1B son los bytes CB 8F de un RES 1,A.
+D 0x8fb0 0x9000 pila  Espacio de pila. SP arranca en 0x8FFF (0x8058) y crece hacia abajo. Como lo que se empuja se queda escrito aunque luego se haga POP, un volcado ensena la marca de agua de toda la ejecucion: en dump/scr25.ram los 46 bytes de 0x8FD1 a 0x8FFE estan cambiados TODOS respecto a la cinta, sin una sola coincidencia, y 0x8FB0-0x8FD0 sigue tal cual venia. O sea 46 bytes de pila usados de verdad, unos 23 niveles con las interrupciones incluidas, y 33 de colchon hasta los rompibles de 0x8FA0. 0x8FFF no cambia nunca, como corresponde a SP=0x8FFF: el primer PUSH ya escribe en 0x8FFE. OJO: esos 33 bytes son la holgura OBSERVADA en volcados de menu y de pantalla 0, no un limite demostrado, y ademas cada partida abandonada pierde 6 bytes de pila (ver 0x8C1E), asi que el colchon se come solo. (?)
+C 0x8058 Pila definitiva en 0x8FFF, justo debajo de los mapas de 0x9000; crece hacia abajo y en la practica no baja de 0x8FD1. NO llega hasta 0x8FA0: ahi viven los cuatro puntos ocultos de la pantalla, que serian lo primero en corromperse [SUSTITUYE]
+# --- 0x9000-0xCA00: los 29 mapas, uno a uno -------------------------------
+B 0x9000 ############################################################
+B 0x9000 RECUENTO REAL DE LOS 29 MAPAS (14848 bytes)
+B 0x9000 ############################################################
+B 0x9000 El tile mas alto que aparece en toda la tabla es 0xF6, o sea que
+B 0x9000 la clase 8 del clasificador (>= 0xF7) NUNCA se alcanza leyendo
+B 0x9000 el mapa: 0xF7-0xFE son los ocho patrones del proyectil y 0xFF el
+B 0x9000 tile en blanco. El tile 0xAA (alitas) tampoco aparece ni una vez:
+B 0x9000 solo sale de los dos puntos ocultos de las pantallas 7 y 10.
+B 0x9000 Cuentas del resto: 406 tiles 0xA9 (las paredes invisibles de los
+B 0x9000 enemigos, ver 0x87B6), 10 tiles 0xAB de vida, 8 de 0xAC, 3 de
+B 0x9000 0xAD, 16 calaveras 0xD0, 3 cofres 0xCA y 98 bloques 0xD5.
+B 0x9000 Verificado ademas que la tabla es de solo lectura: los cuatro
+B 0x9000 volcados de RAM con el juego corriendo no cambian ni un byte
+B 0x9000 entre 0x9000 y 0xCA00. Lo que se modifica al recoger objetos es
+B 0x9000 el buffer 0x7D80, nunca esto.
+D 0x9000 0x9200 mapa_p00 Pantalla 0 (nivel 1, marcador 1/7). 2 enemigos, 1 calavera. Puntos ocultos: (4,10) a 1 disparo da 0xAC sobre la calavera; (20,5) a 2 disparos da 0xAD en el aire. [SUSTITUYE a la D 0x9000 0xCA00 mapas_pantalla: las 29 D de aqui cubren el rango entero]
+D 0x9200 0x9400 mapa_p01 Pantalla 1 (nivel 1, marcador 2/7). 3 enemigos, un 0xAC a la vista, sin puntos ocultos.
+D 0x9400 0x9600 mapa_p02 Pantalla 2 (nivel 1, marcador 3/7). 2 enemigos, un 0xAB a la vista, sin puntos ocultos.
+D 0x9600 0x9800 mapa_p03 Pantalla 3 (nivel 1, marcador 4/7). 3 enemigos, 1 calavera. Puntos ocultos: (13,14) a 5 disparos da 0xAC sobre la calavera; (1,7) a 2 disparos da 0xAB en el aire.
+D 0x9800 0x9A00 mapa_p04 Pantalla 4 (nivel 1, marcador 5/7). 3 enemigos, sin recogibles ni puntos ocultos.
+D 0x9A00 0x9C00 mapa_p05 Pantalla 5 (nivel 1, marcador 6/7). 3 enemigos, 1 calavera con 0xAD a los 4 disparos en (6,11).
+D 0x9C00 0x9E00 mapa_p06 Pantalla 6 (nivel 1, marcador 7/7). 4 enemigos, nada que recoger. Ultima del nivel 1: el 'cp 006h' de 0x8B09 salta desde aqui al cambio de nivel.
+D 0x9E00 0xA000 mapa_p07 Pantalla 7 (nivel 2, marcador 1/7). 4 enemigos. Un solo punto oculto, (20,4) a 3 disparos, y da las ALITAS 0xAA; esta en el aire, no sobre cofre ni calavera.
+D 0xA000 0xA200 mapa_p08 Pantalla 8 (nivel 2, marcador 2/7). 3 enemigos, 56 casillas mortales, un 0xAC y un 0xAD a la vista, sin puntos ocultos.
+D 0xA200 0xA400 mapa_p09 Pantalla 9 (nivel 2, marcador 3/7). 3 enemigos, 72 casillas mortales, 1 cofre en (28,10) que suelta 0xAD a un solo disparo.
+D 0xA400 0xA600 mapa_p10 Pantalla 10 (nivel 2, marcador 4/7). 4 enemigos, 3 calaveras. Puntos ocultos: (14,10) a 7 disparos, el mas duro del juego, da 0xAC sobre calavera; (19,14) a 2 disparos da las ALITAS 0xAA sobre decorado (tile 0x8A).
+D 0xA600 0xA800 mapa_p11 Pantalla 11 (nivel 2, marcador 5/7). 4 enemigos, 1 calavera. Puntos ocultos: (26,2) a 5 disparos da 0xAD sobre la calavera; (28,7) a 4 disparos da 0xAC en el aire.
+D 0xA800 0xAA00 mapa_p12 Pantalla 12 (nivel 2, marcador 6/7). 4 enemigos, 1 calavera y 1 cofre. Puntos ocultos: (12,6) a 5 disparos da 0xAC sobre la calavera; (11,11) a 5 disparos da 0xAB sobre el cofre.
+D 0xAA00 0xAC00 mapa_p13 Pantalla 13 (nivel 2, marcador 7/7). 4 enemigos, nada que recoger. Ultima del nivel 2: el 'cp 00dh' de 0x8B09 entra al nivel 3, que de paso recarga 0x4C0 bytes de patrones de sprite desde 0x5800 a VRAM 0x3B40.
+D 0xAC00 0xAE00 mapa_p14 Pantalla 14 (nivel 3, marcador 1/7). 3 enemigos, 1 calavera, 10 casillas mortales, un 0xAD a la vista. Puntos ocultos: (10,5) a 1 disparo da 0xAC sobre la calavera; (20,6) a 6 disparos da 0xAB en el aire.
+D 0xAE00 0xB000 mapa_p15 Pantalla 15 (nivel 3, marcador 2/7). 4 enemigos, 1 calavera, un 0xAB y un 0xAC a la vista. Puntos ocultos: (30,11) a 6 disparos da 0xAD sobre la calavera; (16,7) a 6 disparos da 0xAB en el aire.
+D 0xB000 0xB200 mapa_p16 Pantalla 16 (nivel 3, marcador 3/7). 4 enemigos, 1 cofre, 63 casillas mortales y DOS tiles 0xAC a la vista: al coger uno, 0x8AE3 borra siempre el primero. Puntos ocultos: (2,14) a 1 disparo da 0xAB sobre el cofre; (21,5) a 2 disparos da 0xAD en el aire.
+D 0xB200 0xB400 mapa_p17 Pantalla 17 (nivel 3, marcador 4/7). 4 enemigos, 1 calavera, 6 casillas mortales, un 0xAB a la vista. Punto oculto: (10,14) a 6 disparos da 0xAC sobre la calavera.
+D 0xB400 0xB600 mapa_p18 Pantalla 18 (nivel 3, marcador 5/7). 3 enemigos, 1 calavera, 11 casillas mortales. Punto oculto: (9,8) a 3 disparos da 0xAC sobre la calavera.
+D 0xB600 0xB800 mapa_p19 Pantalla 19 (nivel 3, marcador 6/7). 4 enemigos, 1 calavera, un 0xAB a la vista. Punto oculto: (2,10) a 2 disparos da 0xAD sobre la calavera.
+D 0xB800 0xBA00 mapa_p20 Pantalla 20 (nivel 3, marcador 7/7). 4 enemigos, 19 casillas mortales, sin puntos ocultos. Ultima del nivel 3: el 'cp 014h' de 0x8B09 salta a 0x8B55, que enciende el modo flotar.
+D 0xBA00 0xBC00 mapa_p21 Pantalla 21 (nivel 4, marcador 1/7). 3 enemigos, 2 calaveras, un 0xAC a la vista y 126 casillas mortales, la mas hostil del juego. Puntos ocultos: (11,9) a 6 disparos da 0xAD y (15,8) a 2 disparos da 0xAC, los dos sobre calavera.
+D 0xBC00 0xBE00 mapa_p22 Pantalla 22 (nivel 4, marcador 2/7). 3 enemigos, 125 casillas mortales, un 0xAC y un 0xAD a la vista. Punto oculto: (9,10) a 6 disparos da 0xAC sobre un tile 0xCB de decorado.
+D 0xBE00 0xC000 mapa_p23 Pantalla 23 (nivel 4, marcador 3/7). 4 enemigos, sin recogibles ni puntos ocultos.
+D 0xC000 0xC200 mapa_p24 Pantalla 24 (nivel 4, marcador 4/7). 3 enemigos, un 0xAC a la vista, sin puntos ocultos.
+D 0xC200 0xC400 mapa_p25 Pantalla 25 (nivel 4, marcador 5/7). 3 enemigos, 16 casillas mortales. Punto oculto: (5,5) a 6 disparos da 0xAB en el aire.
+D 0xC400 0xC600 mapa_p26 Pantalla 26 (nivel 4, marcador 6/7). 4 enemigos, 1 calavera y 37 casillas mortales. La calavera de (3,4) es una TRAMPA: a los 6 disparos suelta el tile 0xF4, que es de clase 7 y mata al tocarlo.
+D 0xC600 0xC800 mapa_p27 Pantalla 27 (nivel 4, marcador 7/7). 4 enemigos y SEIS tiles 0xAB de vida a la vista, el atracon final. Sus tres puntos ocultos (8,12), (10,10) y (9,8) llevan premio 0x00 sobre tiles 0xD5: no dan nada, son bloques que se rompen de un disparo para abrir paso. Ultima jugable: el 'cp 01bh' de 0x8B09 pasa a la pantalla de victoria.
+D 0xC800 0xCA00 mapa_p28 Pantalla 28: la de VICTORIA. La carga la misma 0x8ACE despues de que 0x8B6D incremente 0x8F0D a 28, y 0x8B74 le carga ademas sus cuatro enemigos decorativos. Arriba hay arcos dibujados con tiles; el texto del final empieza EXACTAMENTE en 0xC962 (de 0xC93B a 0xC961 son tiles 0x00, o sea la linea en blanco anterior): la direccion 0xC93B que da docs/CONTEXTO.md apunta al hueco, no al texto.
+# --- 0xCA00: que es de verdad el bloque muerto ----------------------------
+B 0xca00 AFINA lo que dice docs/CONTEXTO.md: este bloque no es 'codigo
+B 0xca00 ensamblado para correr en 0xCAxx'. Los 535 bytes de 0xCCEA-0xCF01
+B 0xca00 son identicos byte a byte a 0x8CEA-0x8F01 (unica coincidencia de
+B 0xca00 mas de 32 bytes del binario consigo mismo desplazado 0x4000), y
+B 0xca00 la copia sigue saltando a las direcciones VIVAS: en 0xCEC4 hay un
+B 0xca00 'jp nz,08e0ah' y en 0xCED2 un 'jp 08e05h', no 0xCE0A ni 0xCE05.
+B 0xca00 O sea que es una IMAGEN de la zona 0x8Cxx-0x9000 que quedo
+B 0xca00 grabada 0x4000 mas arriba, y arrastra tambien el relleno muerto,
+B 0xca00 lo que prueba que ese relleno ya estaba en la memoria del autor
+B 0xca00 antes del montaje final de la cinta.
+B 0xca00 Antes de eso el bloque lleva DOS copias seguidas de la rutina
+B 0xca00 HL+=A y de sus tablas (0xCBF3-0xCC68 = 0x8C42-0x8CB7, y
+B 0xca00 0xCC6C-0xCCCA = 0x8C59-0x8CB7) y ya no lleva la plantilla de
+B 0xca00 disparos de 0x8CB8, lo que encaja con una version anterior del
+B 0xca00 programa (?)
+# --- 0xD015-0xD041: la entrada muerta del reproductor ---------------------
+# OJO INTEGRACION: 0xD015-0xD041 esta declarado hoy como rango de DATOS
+# (D 0xD015 0xD041 muerto_D015). Para que estas C se vean hay que sembrar
+# 0xD015 en game.entries y quitar esa D; si no, dejad fuera este sub-bloque.
+B 0xD015 ############################################################
+B 0xD015 ENTRADA MUERTA DE LA LIBRERIA DE SONIDO
+B 0xD015 ############################################################
+B 0xD015 Es codigo real y bien formado (la pila cuadra por los dos
+B 0xD015 caminos y encadena con la cola de 0xD04D), pero no lo llama
+B 0xD015 nadie: la palabra 15 D0 no aparece ni una sola vez, ni en los
+B 0xD015 40449 bytes de la cinta ni en NINGUNO de los volcados de 64 KB
+B 0xD015 con el juego vivo (turbo1_ram, full_at_8000, full_at_88B8,
+B 0xD015 running_full, scr25, poketest, pcsample_full), ROM incluida.
+B 0xD015 El unico salto indirecto de todo el reproductor es el 'jp (hl)'
+B 0xD015 de 0xD09B (el unico byte E9 entre 0xD000 y 0xD460) y va por la
+B 0xD015 tabla de 15 comandos de 0xD513, cuyos destinos estan todos
+B 0xD015 identificados. Y 0xD014 es un RET, asi que tampoco se cae aqui
+B 0xD015 por arrastre. El juego entra siempre por 0xD041.
+C 0xD017 Descarta el bit 7 del numero de canal. Para que servia ese bit no hay forma de saberlo: no existe ni una sola llamada real a esta rutina (?)
+C 0xD019 46 bytes ocupa la estructura de cada canal
+C 0xD01C HL = A*46, el desplazamiento del canal pedido
+C 0xD01F Base de las tres estructuras de canal
+C 0xD024 Canal libre = palabra 0 a cero. Lo confirman los dos sitios que la ponen a cero: el comando 0x8B (0xD283) borra los 46 bytes al acabar la melodia, y el menu llama a 0xD041 con DE=0 (0xDA3D) para callar [SUSTITUYE]
+C 0xD027 Si el canal que han pedido esta libre, se usa tal cual
+C 0xD029 Ocupado: recorre las tres estructuras buscando una con la palabra 0 a cero
+C 0xD035 Hay uno libre y HL ya apunta a el
+C 0xD03B Aqui se llega por DOS caminos: porque el canal pedido estaba libre (el JR Z de 0xD027) o porque el bucle no encontro ninguno. En los dos casos se acaba usando el canal que pidieron, robandolo si hace falta [SUSTITUYE: la nota anterior solo contaba el segundo camino]
+C 0xD03E Tira el canal pedido y se queda con el libre que encontro
+C 0xD041 La otra entrada, y la unica que el juego usa de verdad: machaca el canal A sin mirar si esta sonando
+C 0xD04D Cola comun de 0xD015 y 0xD041: borra los 46 bytes de la estructura y siembra en ella el puntero de melodia, dos copias [SUSTITUYE]
+C 0xD057 Palabra 0 = puntero de arranque; el comando 0x82 (0xD2DA) lo copia sobre la palabra 2 para repetir la melodia desde el principio [SUSTITUYE]
+C 0xD05B Palabra 2 = puntero de lectura, el que avanza; 0xD082 lo carga en BC y 0xD08D lee por el el siguiente byte del flujo
+C 0xD068 DE recorre la sombra R0..R5 (periodos de tono), dos bytes por canal; 0xD1A5 y 0xD1AD lo van adelantando
+C 0xD06B HL recorre la sombra R8..R10 (volumenes), un byte por canal; 0xD1B7 lo adelanta
+# --- 0xD0A2 / 0xD453: la tabla de periodos estaba una octava alta ---------
+C 0xD0A2 Tabla de 96 periodos; con el reloj REAL del PSG del MSX (1789772,5 Hz) el indice 0 es un DO de 32,70 Hz, no de 65,4 [SUSTITUYE: la nota anterior usaba el reloj sin dividir entre 2]
+C 0xD209 Unica llamada a 0xD43E en todo el binario: la sombra sale al chip una sola vez por vuelta del reproductor, aqui al final [SUSTITUYE]
+C 0xD402 HL = A * DE por sumas y desplazamientos, preservando BC; si A es cero devuelve HL=0. La usan el offset de canal, la duracion de nota y el tempo
+C 0xD43E Los unicos dos OUT a los puertos 0xA0/0xA1 de todo el binario estan aqui (0xD447 y 0xD44A), pero no son la unica via de escribir el PSG: el motor de efectos de 0xDB00 lo hace por la BIOS, con 39 llamadas a WRTPSG
+D 0xd453 0xd513 tabla_periodos  Tabla de periodos de nota del PSG: 96 palabras little-endian, estrictamente decrecientes, del indice 0 (periodo 3421) al 95 (periodo 14). Con el reloj REAL del PSG del MSX, que es 3579545/2 = 1789772,5 Hz, y f = reloj/(16*periodo), el indice 45 vale 254 = 440,4 Hz: la tabla esta afinada a LA4 = 440 Hz y el indice 0 es un DO de 32,70 Hz, o sea DO1. Cada octava es exactamente la mitad de periodo que la anterior redondeada, comprobadas las 84 parejas w[i+12] frente a w[i] sin una sola excepcion. Por debajo del indice 60 la desafinacion frente al temperamento igual no pasa de 4,2 centesimas; de ahi arriba el periodo entero se queda corto y llega a 37 centesimas en el indice 87, el peor de los 96. La indexa un unico sitio, 0xD0A2, y acaba justo donde empieza la tabla de comandos. [SUSTITUYE a la D 0xd453 anterior, que daba 65,4 Hz: estaba una octava alta por usar 3579545/16 en vez de 1789772,5/16]
+D 0xd531 0xd532 snd_canal_actual  Canal que el reproductor esta procesando (0, 1 o 2). Lo escribe solo 0xD072, dentro del bucle de tres vueltas de 0xD060, y lo leen 0xD28D, 0xD39A, 0xD3A8, 0xD3C0, 0xD3DC y 0xD3F7 para saber sobre que canal actua cada comando. En la imagen de cinta trae un 02, pero da igual: lo primero que hace el bucle es reescribirlo. [SUSTITUYE a la D 0xd531 0xd533 psg_control, que se parte en dos]
+D 0xd532 0xd533 snd_ticks_unidad  Duracion en ticks de interrupcion de la unidad de tiempo, o sea el tempo ya convertido. Lo fija el comando 0x85 (0xD2A8) como 3000/(tempo*16) y lo leen los comandos 0x83 (0xD265) y 0x86 (0xD2F2), que multiplican por el la duracion escrita en la melodia. El 3000 es 50*60, coherente con un tempo en negras por minuto a 50 Hz y 16 unidades de duracion por negra (?). Los dos lectores hacen ld de,(0xD532), que se trae de propina 0xD533 en D, y lo tiran acto seguido con ld d,0.
+D 0xd533 0xd53e snd_regs_psg  Sombra en RAM de los 11 registros del PSG, R0 en 0xD533 y R10 en 0xD53D, en el mismo orden que el chip: R0-R5 periodos de tono A/B/C, R6 periodo de ruido, R7 mezclador y R8-R10 los tres volumenes. Verificada registro a registro: 0xD068 y 0xD06B reparten los punteros por canal, 0xD206 escribe R6, 0xD3A3-0xD3BB manipula R7 y 0xD43E la vuelca entera. Solo sale al chip una vez por vuelta de 0xD060, desde 0xD209. En la imagen de cinta esta todo a cero salvo 0xD53A = 0x3F, que es justo el mezclador con tono y ruido callados en los tres canales. [SUSTITUYE]
+# --- 0xDA5C-0xDB00: hueco entre el menu y el motor de efectos -------------
+B 0xda5c ############################################################
+B 0xda5c HUECO ENTRE EL MENU Y EL MOTOR DE EFECTOS: ESPACIO MUERTO
+B 0xda5c ############################################################
+B 0xda5c 164 bytes que no son codigo ni datos. El menu termina limpio en
+B 0xda5c el RET de 0xDA5B y la rutina siguiente arranca en 0xDB00, que es
+B 0xda5c frontera de pagina.
+B 0xda5c VERIFICADO con partida real en openMSX (savestate tempt_boot,
+B 0xda5c 120 s, watchpoints de lectura y escritura sobre todo el rango y
+B 0xda5c una condicion sobre PC): 0 lecturas, 0 escrituras, 0 ejecuciones.
+B 0xda5c La prueba no estaba muerta: el control de la misma tirada dio
+B 0xda5c 5861 lecturas de 0xDDAB desde 0xDB00, 5861 escrituras desde
+B 0xda5c 0xDB04, y 5861 lecturas de 0xDDAC-0xDDB3 desde cada uno de los
+B 0xda5c nueve manejadores (0xDB07, 0xDB64, 0xDBA5, 0xDBBA, 0xDC09,
+B 0xda5c 0xDC61, 0xDCA0, 0xDCF1, 0xDD42) mas 8 escrituras desde el LDIR
+B 0xda5c de 0x80A2. PC al terminar: 0x811F, dentro del bucle de juego.
+B 0xda5c Tampoco hay referencias estaticas: el listado no contiene ni un
+B 0xda5c operando 0xDA5C..0xDAFF. Las apariciones de esos bytes en el
+B 0xda5c binario son casualidades a caballo de dos instrucciones (0xD08F
+B 0xda5c es el 0x80 de un 'cp 080h', 0x8A93 el 0xDA de un 'call 087dah')
+B 0xda5c o caen en los mapas o en el codigo muerto de 0xCD83.
+B 0xda5c AVISO para no equivocarse: 0xDAC0 cae aqui dentro y es de donde
+B 0xda5c SLOTS copia 100 bytes a 0xDEA8, pero esa copia se hace ANTES de
+B 0xda5c cargar el juego, asi que estos bytes del binario no llegan nunca
+B 0xda5c al mecanismo de parcheo.
+D 0xda5c 0xda80 relleno_00ff  36 bytes de 00 FF alternado, sin una sola desviacion. Es el mismo patron exacto que ocupa otras zonas no inicializadas: 0xD900-0xD9FA (250 bytes, 0 desviaciones, justo detras de la melodia del canal 2) y el buffer de mapa 0x7D82-0x7F80 (510 bytes, 0,2%). Sirve de huella para reconocer los demas huecos. [SUSTITUYE a la D 0xDA5C 0xDB00 muerto_DA5C, que queda repartida entre esta y la siguiente]
+D 0xda80 0xdb00 ram_sin_iniciar  128 bytes del mismo patron 00/FF pero con bits sueltos cambiados: 18,9% de bits desviados del ideal. Aqui los bytes bajos solo toman siete valores (00 04 14 40 44 54 74) y los altos trece (ff fb fc f5 fa eb de db ca bf bb ba aa); los bits que se desvian son sobre todo el 2, el 4 y el 6 (75, 28 y 61 cambios, frente a 2, 3 y 4 en los bits 1, 3 y 7). Mismo tipo de patron, con porcentajes parecidos, en la zona de pila 0x8FA0-0x9000 (15,5%) y en los huecos 0x8CEB-0x8E00 (31,6%) y 0x8ED5-0x8F00 (23,5%), aunque OJO: ahi los bits que se desvian no son los mismos (la pila cambia sobre todo los bits 0, 2 y 4 y deja el 6 casi intacto), asi que no es 'exactamente el mismo aspecto'. No admite ninguna lectura coherente como codigo, texto con la fuente del juego, grafico ni musica.
+# --- 0xDDA8-0xDE01: cola del binario --------------------------------------
+D 0xdda8 0xddab sfx_hueco  Tres bytes a cero de alineacion, delante del contador de frames. Ninguna instruccion los referencia (las palabras 0xDDA8..0xDDAA no aparecen en el binario) y en openMSX, con watchpoints de lectura y escritura durante 120 s de partida, no los toca nadie: cero impactos. [SUSTITUYE]
+D 0xddab 0xddac sfx_contador  Contador de frames libre del motor de efectos: 0xDB00 lo lee, 0xDB03 lo incrementa y 0xDB04 lo reescribe una vez por frame, y no lo reinicia jamas. Los efectos lo usan de divisor con un AND: 0xDB0F hace 'and 007h / cp 004h' (actua 1 de cada 8 frames) y 0xDD1E hace 'and 003h / cp 003h' (1 de cada 4). VERIFICADO en openMSX: 5861 lecturas desde 0xDB00 y 5861 escrituras desde 0xDB04 en 120 s de partida. Es ademas el unico byte de 0xDDA8-0xDDB4 que cambia entre volcados: 0x00 en la cinta y en el menu, y 0xB3 / 0x16 / 0xAD / 0xE5 en cuatro partidas distintas. [SUSTITUYE]
+B 0xddb4 ############################################################
+B 0xddb4 COLA DEL BINARIO: 77 BYTES QUE NO USA NADIE
+B 0xddb4 ############################################################
+B 0xddb4 El motor de efectos acaba en el RET de 0xDDA7 y nada salta ni lee
+B 0xddb4 mas alla: el listado no tiene ni un operando en 0xDDB4..0xDE00.
+B 0xddb4 VERIFICADO en openMSX igual que 0xDA5C: 0 lecturas, 0 escrituras
+B 0xddb4 y 0 ejecuciones en 120 s de partida, con el control disparando.
+B 0xddb4 NO es truncamiento del volcado: extracted/11_raw_10.bin mide
+B 0xddb4 40451 bytes = 1 de sincronismo + 40449 de datos + 1 de checksum,
+B 0xddb4 el cuerpo coincide byte a byte con dump/turbo2_ram.bin y el XOR
+B 0xddb4 de datos mas checksum da 0. La cinta acaba en '... fb ff 21 F3',
+B 0xddb4 con 0xDE00 = 0x21 como ultimo byte de datos y 0xF3 de checksum.
+B 0xddb4 O sea: estos 77 bytes se grabaron, simplemente no sirven de nada.
+D 0xddb4 0xddbb resto_epilogo_irq  Siete bytes, D9 F1 C1 D1 E1 FB C9 = exx / pop af / pop bc / pop de / pop hl / ei / ret, identicos al final de la rutina de interrupcion 0xD00E-0xD014, que es el tramo que desapila lo que mete la BIOS antes de llamar a H.TIMI. La secuencia aparece exactamente DOS veces en los 40449 bytes: alli y aqui. Que sean el resto de una version anterior en la que el motor de efectos colgaba de H.TIMI, en vez de llamarse desde el bucle principal como ahora, encaja con que la rutina actual acabe en un RET pelado, pero no se puede probar con los bytes (?) [SUSTITUYE a la D 0xddb4 0xde01 sfx_restos, que se parte en tres]
+D 0xddbb 0xddc7 ceros_cola  Doce bytes a cero, sin ninguna referencia. Que esten a cero limpio y no con el patron 00/FF de los huecos apunta a que si los emitio el ensamblado, igual que los ceros de 0xDDA8-0xDDAA (?)
+D 0xddc7 0xde01 ram_sin_iniciar_cola  58 bytes del mismo patron degradado que 0xDA80: alternancia 00/FF con bits sueltos cambiados (20,7% de desviacion), bytes bajos 04 21 44 54 74 y altos ff fb cb. El ultimo byte del juego, 0xDE00 = 0x21, no significa nada: es un byte mas de este relleno.
+# --- Estas dos van en src/slots.notes, NO en game.notes -------------------
+C 0xC590 Copia 100 bytes de 0xDAC0 a 0xDEA8 ANTES de cargar el juego (el LDIR esta en 0xC599 y la carga del bloque en 0xC5E4): 0xDAC0 cae dentro de lo que la carga 0x4000-0xDE00 va a machacar y 0xDEA8 no. Sirve para poner a salvo una tabla de parches que se haya dejado en 0xDAC0 antes de arrancar (?)
+C 0xC5F4 Formato de la tabla: tres 0xC9 de marca en 0xDEA8-0xDEAA, un byte de contador y luego repeticiones de (direccion baja, direccion alta, valor) que se aplican con 'ld (de),a'. Los 100 bytes copiados dan justo para 3 + 1 + 32*3, o sea sitio para 32 parches, pero el codigo NO comprueba el contador: con uno mayor leeria mas alla de lo copiado. Ojo: lo que decide si hay marca es lo que el BASIC dejara en 0xDAC0 al arrancar, no el contenido del juego, que en ese momento aun no esta cargado; no consta ningun cargador ni entrenador publicado que use esta tabla
+
+# =============================================================================
+# 0x8F1E: NO ES UNA TRAMPA DELIBERADA, ES UN OLVIDO CON SUERTE
+# =============================================================================
+# Correccion de la interpretacion anterior, a raiz de una pregunta del usuario
+# ("0x8F1E es parte del codigo?").
+#
+# El arranque inicializa quince variables seguidas: 0x8F09, 0x8F0A, 0x8F0B,
+# 0x8F0C, 0x8F0D, 0x8F0E, 0x8F11, 0x8F12, 0x8F13, 0x8F14, 0x8F17, 0x8F18,
+# 0x8F19, 0x8F1C y 0x8F1D. Se salta justo 0x8F1E: es la UNICA variable que el
+# juego lee y nunca inicializa.
+#
+# Que valga 0 no es una decision: la zona 0x8F00-0x8FA0 viene llena de RELLENO
+# (bytes sobrantes de las tablas de animacion, reconocibles porque alternan
+# valores de patron con bytes de color del tipo 0x04/0x14/0x34), y de esos 160
+# bytes solo TRES valen cero: 0x8F1E, 0x8F67 y 0x8F6F. Uno cae ahi por azar.
+#
+# Consecuencia: si el relleno hubiera dejado otro valor, el castigo saltaria
+# SIEMPRE y todo el que se pasara el juego veria el reproche sin haber hecho
+# trampa. No es astucia, es un olvido que salio bien.
+C 0x8F1E Bandera del castigo por trampas. El arranque NUNCA la inicializa: vale 0 solo porque el relleno de la cinta dejo un 0 justo aqui (3 de 160 bytes de esta zona son cero)

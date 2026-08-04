@@ -1,0 +1,100 @@
+<title>Herramientas — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="COMO-EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="BUGS.html">Bugs</a><a href="HERRAMIENTAS.html" style=color:var(--tinta)>Herramientas</a><a href="pantallas.html">Pantallas</a></nav>
+<h1>Herramientas</h1>
+<p>Qué hace cada programa del proyecto. Todas son Python 3 sin dependencias externas, salvo las de openMSX que son scripts TCL.</p>
+<h2>El camino principal</h2>
+<p>Esto es lo que <code>make</code> ejecuta, en orden:</p>
+<h3><code>tsx_parse.py</code> — abrir la cinta</h3>
+<pre><code>python3 tools/tsx_parse.py cinta.tsx extracted</code></pre>
+<p>Lee el fichero TSX, identifica sus bloques y saca los programas que contiene. Reconoce las cabeceras de fichero del MSX, así que sabe decirte que un bloque es &quot;un binario llamado SLOTS que se carga en 0xC350 y se ejecuta en 0xC58F&quot;.</p>
+<p>También escribe un manifiesto para poder reconstruir la cinta después.</p>
+<h3><code>z80trace.py</code> — separar el código de los datos</h3>
+<pre><code>python3 tools/z80trace.py juego.bin 0x4000 entradas.txt salida [zonas.nocode]</code></pre>
+<p>Éste es el corazón del proyecto. Desensamblar 40 KB de corrido no funciona: en cuanto te topas con un gráfico, los píxeles se interpretan como instrucciones y a partir de ahí todo queda desalineado.</p>
+<p>Así que en vez de leer de corrido, <b>sigue el flujo del programa</b>: empieza en un punto de entrada conocido, decodifica cada instrucción, y sigue los saltos y las llamadas. Lo que se alcanza así es código; el resto, datos.</p>
+<p>Tiene dos particularidades que costaron sangre:</p>
+<ul><li>**<code>HALT</code> no corta el flujo.** Parece que sí —el procesador se detiene— pero cuando llega la interrupción sigue en la instrucción siguiente. Tratarlo como fin de rutina dejaba el análisis en el 2%.</li><li><b>Zonas prohibidas.</b> Se le puede dar una lista de rangos que sabemos que son datos, y no entra en ellos. Sin eso, un solo destino mal deducido mete al trazador en los gráficos y desde ahí no para.</li></ul>
+<p>Los saltos indirectos (<code>JP (HL)</code>, tablas de punteros) no se pueden seguir sin ejecutar el programa. El trazador los marca como <b>punto ciego</b> y los lista, para que se resuelvan a mano.</p>
+<h3><code>mkasm.py</code> — montar el listado comentado</h3>
+<pre><code>python3 tools/mkasm.py juego.bin 0x4000 trazado.json notas.txt simbolos.sym salida.asm &quot;Titulo&quot;</code></pre>
+<p>Junta el binario, el mapa de código/datos y las anotaciones, y produce el <code>.asm</code>.</p>
+<p>Usa <code>z80dasm</code> solo para los mnemónicos. Las etiquetas de la BIOS las añade él como comentario, y <b>solo en instrucciones de salto</b>: si se dejara a <code>z80dasm</code> poner símbolos, convertiría cualquier número que coincidiera con una dirección conocida, y salían cosas como <code>ld bc,CHRGTR</code> donde el código dice en realidad <code>ld bc,0x0010</code> — una longitud, no una dirección.</p>
+<h3><code>verify_build.sh</code> — la comprobación que lo sostiene todo</h3>
+<pre><code>./tools/verify_build.sh listado.asm original.bin 0x4000</code></pre>
+<p>Ensambla el listado y compara con el binario original. Si no salen idénticos, algo se ha interpretado mal.</p>
+<h3><code>check_trace.py</code> — cazar la cobertura falsa</h3>
+<pre><code>python3 tools/check_trace.py trazado.json zonas.nocode</code></pre>
+<p>Comprueba que las zonas que sabemos que son datos no hayan quedado marcadas como código.</p>
+<p>Existe porque hizo falta. Al sembrar el trazador con destinos sacados de un detector automático, la cobertura saltó del 13% al 80% y pareció un éxito. Era contaminación: había marcado como código el 100% de la tabla de colores y de los textos del final. Y lo peor es que <code>verify_build.sh</code> <b>no lo detecta</b>, porque los bytes no cambian, solo su interpretación.</p>
+<h3><code>coverage.py</code> — el presupuesto de bytes</h3>
+<pre><code>python3 tools/coverage.py trazado.json notas.txt 40449 0x4000</code></pre>
+<p>Cuenta cuántos bytes están explicados —o como código trazado, o dentro de un rango de datos identificado— y lista los huecos que quedan.</p>
+<p>Es la métrica que de verdad mide el avance. El porcentaje de código no sirve: este juego es 87% datos, así que &quot;12,9% de código&quot; suena a desensamblado a medias cuando en realidad está completo.</p>
+<h2>Para mirar el juego</h2>
+<h3><code>render_maps.py</code> — dibujar las pantallas</h3>
+<pre><code>python3 tools/render_maps.py juego.bin docs/mapas</code></pre>
+<p>Dibuja los 29 mapas como PNG, usando la fuente y los colores del propio juego. Escribe los PNG a mano con <code>zlib</code>, sin librerías.</p>
+<p>Sirve de comprobación visual: si el formato de mapa estuviera mal interpretado, saldría ruido.</p>
+<p>Respeta un detalle del hardware que es fácil pasar por alto: <b>el color 0 del MSX no es negro, es transparente</b>, y por debajo se ve el color de fondo. Por eso el nivel 4 se dibuja sobre verde y el resto sobre negro.</p>
+<h3><code>render_vram.py</code> — dibujar lo que se ve ahora mismo</h3>
+<pre><code>python3 tools/render_vram.py volcado.vram salida.png</code></pre>
+<p>Igual que el anterior, pero partiendo de un volcado de la memoria de vídeo del emulador: es lo que está literalmente en pantalla en ese instante.</p>
+<h3><code>charset.py</code> — leer los textos</h3>
+<pre><code>python3 tools/charset.py juego.bin 0x4000 8</code></pre>
+<p>El juego no usa ASCII. Esto tiene su tabla de caracteres y busca cadenas con ella.</p>
+<h3><code>inventario.py</code>, <code>make_gallery.py</code></h3>
+<p>Generan el listado de rutinas identificadas y la galería de pantallas.</p>
+<h2>Para verificar de verdad: los scripts de openMSX</h2>
+<p>Aquí está la diferencia entre suponer y saber. En vez de deducir qué hace una rutina leyéndola, se pone el juego a correr y se observa.</p>
+<pre><code>TEMPT_TSX=&quot;$PWD/cinta.tsx&quot; TEMPT_OUT=&quot;$PWD/dump&quot; \
+  openmsx -machine Philips_VG_8020-20 -script tools/omsx_load.tcl</code></pre>
+<table><tr><th>Script</th><th>Para qué</th></tr><tr><td><code>omsx_load.tcl</code></td><td>Carga la cinta entera y vuelca la memoria en cada etapa. Sirvió para <b>usar el cargador original del juego como decodificador</b>: en vez de reimplementar el turbo loader, se deja que él haga el trabajo y se captura el resultado.</td></tr><tr><td><code>omsx_run.tcl</code></td><td>Guarda un savestate justo cuando arranca el juego. A partir de ahí las pruebas son instantáneas en vez de esperar siete minutos.</td></tr><tr><td><code>omsx_watch.tcl</code></td><td><b>Watchpoints</b>: dice qué código lee o escribe una dirección. Así se identificó el contador de vidas: no por deducción, sino viendo que solo una rutina lo lee y que esa rutina lo pinta en la casilla exacta del marcador.</td></tr><tr><td><code>omsx_pcsample.tcl</code></td><td>Muestrea el contador de programa mientras el juego corre. Cada dirección capturada es código <b>ejecutado de verdad</b>.</td></tr><tr><td><code>omsx_huecos.tcl</code></td><td>Vigila varios rangos a la vez. Con esto se resolvieron los últimos 642 bytes sin explicar.</td></tr><tr><td><code>omsx_screen.tcl</code></td><td>Vuelca la memoria de vídeo para ver qué hay en pantalla.</td></tr><tr><td><code>omsx_poke.tcl</code></td><td>Escribe en memoria durante la partida, para probar hipótesis.</td></tr><tr><td><code>omsx_testpoke.tcl</code></td><td>Prueba el POKE de vidas infinitas forzando la rutina de morir con y sin el parche.</td></tr><tr><td><code>omsx_final.tcl</code></td><td>Fuerza la pantalla final, opcionalmente con la trampa anti-tramposos activada.</td></tr><tr><td><code>omsx_fugapila.tcl</code></td><td>Provoca varios game over seguidos y mide cómo se pierde la pila.</td></tr><tr><td><code>omsx_demo.tcl</code></td><td>Lanza el juego para jugarlo, acelerando la carga ×10.</td></tr></table>
+<h2>Reconstruir la cinta</h2>
+<pre><code>python3 tools/build_tape.py build build/Temptations_rebuild.tsx</code></pre>
+<p>Ensambla los listados, remonta los bloques con sus cabeceras y checksums, y escribe un TSX nuevo. El resultado es idéntico byte a byte al original.</p>
+<p><code>tsx_build.py</code> hace la parte de bajo nivel: reconstruir el fichero desde el manifiesto.</p>
+<h2>Auxiliares</h2>
+<table><tr><th></th><th></th></tr><tr><td><code>gen_msx_syms.py</code></td><td>Saca la tabla de rutinas de la BIOS del MSX de los headers de MSXgl, en vez de escribirla de memoria</td></tr><tr><td><code>dasm_slice.py</code></td><td>Desensambla por secciones con orígenes distintos. Hace falta para <code>SLOTS</code>, que se copia a sí mismo a otras direcciones antes de ejecutarse</td></tr><tr><td><code>find_tables.py</code></td><td>Busca tablas de punteros. <b>Da falsos positivos</b>: sirve para decidir dónde mirar, no como fuente de verdad. Fue lo que provocó el episodio de la cobertura falsa</td></tr></table>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

@@ -1,0 +1,114 @@
+<title>Bugs del juego original — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="COMO-EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="BUGS.html" style=color:var(--tinta)>Bugs</a><a href="HERRAMIENTAS.html">Herramientas</a><a href="pantallas.html">Pantallas</a></nav>
+<h1>Bugs del juego original</h1>
+<p>Fallos que tiene <em>Temptations</em> desde 1988. No son errores del desensamblado: están en el código tal y como salió a la venta.</p>
+<p>Cada uno con el código que lo produce y, cuando se ha podido, la comprobación en el emulador. Van de menos a más grave.</p>
+<hr>
+<h2>1. El tope de vidas es 9, aunque el código pretenda que sean 10</h2>
+<p>La rutina que te da una vida extra:</p>
+<pre><code>DA_VIDA:
+    ld a,(08f12h)   ; A = vidas actuales
+    inc a           ; una mas
+    cp 00ah         ; ¿ha llegado a 10?
+    ret z           ; SI -&gt; se va... SIN GUARDAR
+    ld (08f12h),a   ; NO -&gt; guarda el valor nuevo
+    call PINTA_MARCADOR
+    ret</code></pre>
+<p>El <code>ret z</code> está <b>antes</b> del <code>ld</code> que guarda. Así que si tienes 9 vidas y coges otra, el <code>inc a</code> da 10, salta el <code>ret z</code>, y la vida se pierde por el camino.</p>
+<p>Nunca verás 10 en el marcador. <b>El tope real es 9.</b></p>
+<p>Puede ser intencionado —el marcador solo tiene un dígito, y la rutina que lo pinta también recorta a 9— pero entonces la comparación tendría que ser con 10 y el orden de las instrucciones al revés. Tal y como está, el código dice una cosa y hace otra.</p>
+<hr>
+<h2>2. Al coger un objeto desaparece otro</h2>
+<p>Ésta se ve jugando.</p>
+<p>Cuando recoges un objeto, el juego tiene que borrarlo del mapa. Lo hace así:</p>
+<pre><code>BORRA_OBJETO_MAPA:
+    ld hl,07d80h    ; SIEMPRE desde el principio del mapa
+    ld bc,00200h    ; los 512 bytes de la pantalla
+    cpir            ; busca el primer byte igual a A
+    ...
+    ld (hl),000h    ; y lo borra</code></pre>
+<p><code>CPIR</code> busca desde el <b>principio del buffer</b>, no desde donde está el jugador. Encuentra el primer tile de ese tipo que haya en la pantalla, sea el que sea.</p>
+<p>En una pantalla con un solo objeto de cada clase no se nota. Pero:</p>
+<table><tr><th>Pantalla</th><th>Objetos repetidos</th></tr><tr><td>16</td><td><b>2</b> de munición</td></tr><tr><td>27</td><td><b>6</b> de vida extra</td></tr></table>
+<p>En la pantalla 27, con seis vidas extra a la vista, cojas la que cojas desaparecerá siempre la primera en orden de barrido — arriba a la izquierda. Si coges la última, verás desaparecer una que está al otro lado de la pantalla, mientras la que acabas de tocar sigue dibujada.</p>
+<h3>Y hay un segundo fallo encadenado</h3>
+<p>Las rutinas que recogen objetos borran la casilla <b>antes</b> de comprobar si tienes el marcador al tope. Es decir: si coges una vida extra teniendo ya 9, o munición teniendo el máximo, o el arma que ya llevas, el objeto <b>desaparece del mapa sin darte nada</b>.</p>
+<hr>
+<h2>3. Cada partida perdida se come un trozo de pila</h2>
+<p>Éste es el más serio, y tarda en manifestarse.</p>
+<p>El juego coloca la pila una sola vez, durante el arranque:</p>
+<pre><code>GAME_START:
+    ld sp,0efffh    ; pila provisional
+    ...
+    ld sp,08fffh    ; pila definitiva del juego   &lt;- 0x8058
+    jp INIT_PRINCIPAL</code></pre>
+<p>Pero cuando pierdes la última vida, el game over termina así:</p>
+<pre><code>    call 08bfdh
+    jp 08076h       ; reinicia... entrando DESPUES del ld sp</code></pre>
+<p><code>0x8076</code> es la inicialización principal, que está <b>por debajo</b> de la instrucción que coloca la pila. Así que la partida nueva arranca con el puntero de pila donde lo dejó la anterior.</p>
+<h3>Medido en el emulador</h3>
+<p>Provocando ocho game overs seguidos y anotando dónde quedaba la pila en cada reinicio:</p>
+<table><tr><th>Reinicio</th><th>Puntero de pila</th></tr><tr><td>1</td><td><code>0x8FFF</code></td></tr><tr><td>2</td><td><code>0x8FFF</code></td></tr><tr><td>3</td><td><code>0x8FFD</code></td></tr><tr><td>4</td><td><code>0x8FFB</code></td></tr><tr><td>5</td><td><code>0x8FF9</code></td></tr><tr><td>6</td><td><code>0x8FDB</code></td></tr><tr><td>7</td><td><code>0x8FD9</code></td></tr><tr><td>8</td><td><code>0x8FD7</code></td></tr></table>
+<p>Baja y no vuelve a subir.</p>
+<p>La pila crece hacia abajo desde <code>0x8FFF</code>, y las variables del juego empiezan en <code>0x8F00</code>. O sea que hay unos 255 bytes de margen: tras suficientes partidas perdidas seguidas <b>sin resetear la máquina</b>, la pila acabaría escribiendo encima de las variables del juego, con lo que eso supone.</p>
+<p>En 1988, jugando en una cinta que tardaba siete minutos en cargar, era difícil que alguien encadenase tantas partidas de una sentada. Hoy, con un emulador y carga instantánea, es trivial llegar ahí.</p>
+<p><b>Arreglo:</b> cambiar el destino del salto de <code>0x8076</code> a una dirección que recoloque la pila antes de continuar.</p>
+<hr>
+<h2>4. El final no tiene salida</h2>
+<p>Cuando te pasas el juego, la pantalla de victoria entra en este bucle:</p>
+<pre><code>BUCLE_FINAL:
+    call MUEVE_ENEMIGOS
+    halt
+    halt
+    halt
+    jp BUCLE_FINAL</code></pre>
+<p>No lee el teclado. Ni siquiera CTRL+STOP funciona, porque el juego solo consulta esa combinación desde la rutina de partida, y aquí no se llama.</p>
+<p>Terminado el juego, la única forma de volver es <b>resetear la máquina</b>. No es exactamente un bug —puede ser deliberado, para que la pantalla final se quede puesta— pero conviene saberlo.</p>
+<hr>
+<h2>Una rareza que no es un bug</h2>
+<p>En la pantalla 26 hay un punto oculto cuyo premio es un tile <b>mortal</b>.</p>
+<p>Los puntos ocultos son casillas que sueltan un objeto al dispararles. Casi todos dan munición, armas o vidas. Ése no: te mata.</p>
+<p>Está en los datos tal cual, así que es intencionado: una trampa para quien vaya disparando a todo lo que se mueve. Muy en el espíritu de un juego que además guarda un reproche para los tramposos en la pantalla final.</p>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

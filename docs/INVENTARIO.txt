@@ -1,0 +1,184 @@
+==============================================================================
+ RUTINAS IDENTIFICADAS: 135
+==============================================================================
+  0x8000  GAME_START             Punto de entrada del juego
+  0x805e  INIT_PANTALLA          Color de borde, sprites y encender pantalla
+  0x8076  INIT_PRINCIPAL         Continuacion del arranque: prepara el menu
+  0x8117  BUCLE_PARTIDA          Bucle de juego: se repite mientras dura la par
+  0x8141  MUEVE_JUGADOR          Avanza un fotograma la secuencia de movimiento
+  0x818c  LEE_CONTROL            Lee joystick + cursores y traduce a codigo de 
+  0x81d6  COLISIONES_MAPA        Choques con el escenario, gravedad y limites d
+  0x82be  ANIMA_JUGADOR          Motor de animacion: indexa estado*128 + paso*4
+  0x830d  SIG_ESTADO             Tabla 0x8C70: que estado sigue cuando la secue
+  0x8315  OCULTA_SPRITES         Manda los 64 sprites fuera de la pantalla
+  0x832a  CHK_ABANDONAR          Comprueba CTRL+STOP y si esta pulsado abandona
+  0x8333  PON_SPRITES            Monta el par de sprites de una figura en VRAM
+  0x837f  LEE_TILE               Devuelve el tipo (0..8) del tile que hay en (C
+  0x83a1  CLASIFICA_TILE         Entrada suelta: convierte el tile que hay en A
+  0x83dc  COLISION_IZQ           Tipo de tile en el costado izquierdo: (X-1,Y) 
+  0x83f0  COLISION_SUELO         Tipo de tile bajo los pies: (X+2,Y+16) y (X+13
+  0x840a  COLISION_DER           Tipo de tile en el costado derecho: (X+16,Y) y
+  0x8424  COLISION_ARRIBA        Tipo de tile sobre la cabeza: (X,Y-1) y (X+15,
+  0x843a  MAX_TIPO               Se queda con el mayor de los dos tipos leidos
+  0x8446  REACCION_TILE          Decide que hacer con el tipo de tile que se ha
+  0x8463  EVENTO_TILE            Aplica el efecto del objeto o la trampa que se
+  0x848e  OBJETO_TIPO_7          Sigue el reparto por tipos: el 7 es terreno mo
+  0x8493  MUERE_JUGADOR          Animacion de muerte, resta de vida y reaparici
+  0x84c9  QUITA_VIDA             Resta una vida y salta a game over si no queda
+  0x8519  COGE_VIDA              Tipo 3: vida extra
+  0x8528  DA_VIDA                Suma una vida (tope 10)
+  0x8536  COGE_MUNICION          Tipo 4: un icono mas de municion
+  0x8553  COGE_ARMA              Tipo 5: pasa a la siguiente arma
+  0x856f  LEE_FLAGS_ESTADO       Devuelve el byte de flags de colision del esta
+  0x857a  VUELO_CONTROL          Movimiento libre de 8 direcciones (nivel 4 y a
+  0x85d1  VUELO_ARRIBA           Sube 2 pixeles si el techo lo permite
+  0x85ed  VUELO_ABAJO            Baja 2 pixeles si no hay suelo debajo
+  0x8609  VUELO_IZQUIERDA        Avanza 2 pixeles a la izquierda
+  0x862b  VUELO_DERECHA          Avanza 2 pixeles a la derecha
+  0x864f  SALE_POR_DERECHA       Sale por el borde derecho: reaparece pegado al
+  0x865a  CAMBIO_PANT_NORMAL     Transicion corriente entre pantallas del mismo
+  0x8662  SALE_POR_ABAJO         Sale por el borde inferior: reaparece arriba
+  0x8670  FIJA_REAPARICION       Guarda la posicion y el estado de entrada como
+  0x8698  PINTA_MARCADOR         Redibuja el marcador completo (vidas / pantall
+  0x8702  SCROLL_A_PANTALLA_SIGUIENTE Desplaza verticalmente de una pantalla a la ot
+  0x872f  MUEVE_ENEMIGOS         Avanza y dibuja los enemigos de la pantalla
+  0x87b6  GIRA_ENEMIGO           Cambia el sentido de marcha de un enemigo
+  0x87da  TOCADO_ENEMIGO         Suma un impacto al enemigo y lo mata si el con
+  0x87f4  COMPRUEBA_COLISION_SPRITES Si el VDP marca colision de sprites, mata al j
+  0x87fe  CARGA_ENEMIGOS         Carga en 0x8F20 los enemigos de la pantalla, d
+  0x8885  DISPARA                Crea un proyectil: columna=(X+7)/8, fila=(Y+8)
+  0x88e1  PUEDE_DISPARAR         Comprueba si el estado actual permite disparar
+  0x8933  MUEVE_DISPAROS         Avanza los proyectiles y los pinta como tiles
+  0x8a45  APARCA_PROYECTIL       Devuelve el proyectil al deposito: velocidad 0
+  0x8a5a  BUSCA_ENEMIGO_ALCANZADO Compara el proyectil con los enemigos y aplica
+  0x8a81  CONFIRMA_IMPACTO       Confirma el impacto comparando tambien la fila
+  0x8aa9  VRAM_DE_CASILLA        HL = 0x1800 + fila*32 + columna
+  0x8ace  CARGA_MAPA             Copia el mapa de la pantalla actual al buffer 
+  0x8ae3  BORRA_OBJETO_MAPA      Quita del mapa el primer tile igual a A y repi
+  0x8afc  VUELCA_BUFFER          Copia los 512 bytes del buffer de RAM a VRAM 0
+  0x8b09  FIN_DE_PANTALLA        Decide si al pasar de pantalla hay ademas camb
+  0x8b29  ENTRA_NIVEL3           Cambia el banco de sprites y recoloca al jugad
+  0x8b55  ENTRA_NIVEL4           Activa el modo acuatico: vuelo permanente y bo
+  0x8b6d  FINAL_JUEGO            Pantalla de victoria y bucle final
+  0x8b80  CASTIGO_TRAMPAS        Afea la pantalla final si se detecto trampa
+  0x8b94  BUCLE_FINAL            Bucle infinito del final: solo mueve los enemi
+  0x8b9d  EMPIEZA_NIVEL          Prepara el nivel: resetea arma y municion
+  0x8ba7  SUBE_NIVEL             Incrementa 0x8F0E (el nivel es variable propia
+  0x8bf3  ESCRIBE_ROTULO         LDIRVM de 10 bytes a VRAM 0x194B (rotulos de n
+  0x8c1e  GAME_OVER              Fin de partida
+  0x8c59  INDEXA_TABLA_B         HL = HL + A  (indexar una tabla de bytes)
+  0x8e00  CORTINILLA             Scroll horizontal entre dos pantallas, una col
+  0x8f00  VAR_FLAGS_TMP          Copia del byte de flags del estado, la usa 0x8
+  0x8f01  VAR_ATRIB_SPRITE       Buffer de 8 bytes con los atributos de los 2 s
+  0x8f09  VAR_JUGADOR_X          
+  0x8f0a  VAR_JUGADOR_Y          
+  0x8f0b  VAR_ESTADO_JUGADOR     
+  0x8f0c  VAR_PASO_ANIM          
+  0x8f0d  VAR_PANTALLA           
+  0x8f0e  VAR_NIVEL              
+  0x8f0f  VAR_DX_FRAME           
+  0x8f10  VAR_DY_FRAME           
+  0x8f11  VAR_MODO_VUELO         
+  0x8f12  VAR_VIDAS              
+  0x8f13  VAR_REAPARECE_X        
+  0x8f14  VAR_REAPARECE_Y        
+  0x8f15  VAR_IDX_BUCLE          Indice de trabajo compartido: numero de ranura
+  0x8f16  VAR_CONTADOR_BUCLE2    
+  0x8f17  VAR_MUNICION           
+  0x8f18  VAR_ARMA               
+  0x8f19  VAR_GATILLO_USADO      
+  0x8f1a  VAR_CONT_MUERTE        
+  0x8f1b  VAR_CONTADOR_ENEMIGO   
+  0x8f1c  VAR_REAPARECE_ESTADO   
+  0x8f1d  VAR_REAPARECE_PASO     
+  0x8f20  VAR_ENEMIGOS           4 registros de 5 bytes (X px, Y px, estado, re
+  0x8f80  VAR_DISPAROS           7 registros de 4 bytes (columna, fila, direcci
+  0x8fa0  VAR_ROMPIBLES          4 registros de 4 bytes (columna, fila, contado
+  0xc800  MAPA_FINAL             
+  0xc960  TEXTO_FINAL            
+  0xca00  BLOQUE_MUERTO          
+  0xd000  IRQ_HANDLER            Manejador de la interrupcion de temporizador
+  0xd015  SND_SET_CANAL_LIBRE    Variante que busca canal libre si el pedido es
+  0xd041  SND_SET_CANAL          Asigna al canal A los datos de sonido que apun
+  0xd060  SND_UPDATE             Avanza los 3 canales un tick; se llama desde l
+  0xd20e  SND_RESET_ENV_VOL      Recarga las 2 fases de la envolvente de volume
+  0xd226  SND_RESET_ENV_TONO     Recarga las 3 fases de la envolvente de tono d
+  0xd23e  SND_RESET_ENV_RUIDO    Recarga las 2 fases de la envolvente global de
+  0xd25a  SND_CMD_80_VOLUMEN     0x80 nn: volumen base del canal
+  0xd263  SND_CMD_83_DURACION    0x83 nn: duracion de nota = nn * tempo
+  0xd278  SND_CMD_81_MEZCLA      0x81 nn: mezclador del canal, bit0 tono y bit3
+  0xd283  SND_CMD_8B_FIN         0x8B: fin del canal. Sin operando
+  0xd2a8  SND_CMD_85_TEMPO       0x85 nn: tempo. 0xD532 = 3000 / (nn*16)
+  0xd2c2  SND_CMD_88_RUIDOPER    0x88 nn: periodo base de ruido = nn and 0x1F, 
+  0xd2d6  SND_CMD_84_SILENCIO    0x84: consume una duracion de nota con el cana
+  0xd2da  SND_CMD_82_BUCLE       0x82: vuelve al principio de los datos del can
+  0xd2e9  SND_CMD_86_DURSUMA     0x86 n b1..bn: duracion compuesta, suma de n v
+  0xd30c  SND_CMD_8A_REPETIR     0x8A nn: activa la repeticion de envolventes. 
+  0xd320  SND_CMD_87_INSTRUM     0x87 nn: carga el instrumento nn (15 bytes de 
+  0xd369  SND_CMD_89_RUIDOENV    0x89 nn: carga la envolvente de ruido nn (6 by
+  0xd3a3  SND_MIXER              Mete en el registro 7 los bits de tono y ruido
+  0xd3c0  SND_CMD_8C_LLAMADA     0x8C nn: llama a la frase nn de la tabla 0xD61
+  0xd3dc  SND_CMD_8D_RETORNO     0x8D: vuelve de la frase. Sin operando
+  0xd3ed  SND_CMD_8E_TRANSPON    0x8E nn: transposicion del canal en semitonos,
+  0xd3f7  SND_PTR_TRANSP         HL = 0xD5DC + canal: la transposicion de este 
+  0xd402  SND_MUL                Multiplica para calcular el offset de un canal
+  0xd417  SND_DIV                Division de 16 bits: BC entre DE, cociente en 
+  0xd431  SND_JUMPIDX            HL = puntero nº A de la tabla que apunta HL
+  0xd43e  SND_VUELCA_PSG         Vuelca los 11 registros de 0xD533 al PSG por l
+  0xda00  MENU_PRINCIPAL         Pantalla de presentacion con musica; sale al p
+  0xdb00  SFX_FRAME              Motor de efectos de sonido; una pasada por fra
+  0xddab  VAR_SFX_FRAMES         
+  0xddac  VAR_SFX_PASO           
+  0xddad  VAR_SFX_SALTO          
+  0xddae  VAR_SFX_DISPARO        
+  0xddaf  VAR_SFX_MUERTE         
+  0xddb0  VAR_SFX_IMPACTO        
+  0xddb1  VAR_SFX_ROTURA         
+  0xddb2  VAR_SFX_RECOGER        
+  0xddb3  VAR_SFX_RUIDO_VUELO    
+
+==============================================================================
+ RANGOS DE DATOS IDENTIFICADOS: 40
+==============================================================================
+  0x4000..0x4800   2048 B  fuente                 Tabla de PATRONES: 256 glifos de 8
+  0x4800..0x5000   2048 B  colores                Tabla de COLORES de los patrones, 
+  0x5000..0x5800   2048 B  sprites                Patrones de SPRITES. Se copian a V
+  0x5800..0x5cc0   1216 B  grafdesc               Datos graficos sin identificar tod
+  0x5cc0..0x5fc0    768 B  pantalla_menu          Tabla de NOMBRES de la pantalla de
+  0x5fc0..0x8000   8256 B  datos_juego            Datos del juego sin identificar to
+  0x79c0..0x7ba0    480 B  objetos_pantalla       Objetos rompibles de cada pantalla
+  0x7ba0..0x7d80    480 B  enemigos_pantalla      Enemigos de cada pantalla: 16 byte
+  0x7d80..0x7f80    512 B  buffer_mapa            Buffer del mapa de la pantalla act
+  0x856e..0x856f      1 B  ret_huerfano_1         Un RET (0xC9) que no se alcanza po
+  0x8a36..0x8a37      1 B  ret_huerfano_2         Otro RET inalcanzable, entre la ru
+  0x8c60..0x8c70     16 B  init_sprites           16 bytes que el arranque (0x8090) 
+  0x8c70..0x8ca2     50 B  tabla_estado_sig       Tabla ESTADO -> ESTADO SIGUIENTE, 
+  0x8ca2..0x8cab      9 B  tabla_direccion        Direccion del stick (0..8) -> codi
+  0x8cab..0x8cb8     13 B  tabla_flags            Flags por estado del jugador, inde
+  0x8cb8..0x8cd4     28 B  plantilla_disparos     Plantilla de los 7 registros de pr
+  0x8cd4..0x8cdc      8 B  ceros_init             Ocho ceros que 0x8099, 0x80A4 y 0x
+  0x8cdc..0x8e00    292 B  muerto_8CDC            292 bytes que NADIE lee ni escribe
+  0x8ed5..0x8f00     43 B  muerto_8ED5            43 bytes sin un solo acceso en una
+  0x8f00..0x8f30     48 B  vars_juego             Variables del juego. Las identific
+  0x8f20..0x8f80     96 B  enemigos_activos       Enemigos en juego: 4 registros de 
+  0x8f80..0x8fa0     32 B  disparos_activos       Proyectiles en vuelo: 7 registros,
+  0x8fa0..0x9000     96 B  pila                   LA PILA. El juego la fija en 0x8FF
+  0x9000..0xca00  14848 B  mapas_pantalla         29 mapas de 512 bytes (32x16 tiles
+  0xca00..0xd000   1536 B  codigo_muerto          Codigo de OTRA COMPILACION que que
+  0xd015..0xd041     44 B  muerto_D015            44 bytes entre el manejador de int
+  0xd453..0xd513    192 B  tabla_periodos         Tabla cromatica de 96 periodos de 
+  0xd513..0xd531     30 B  tabla_cmd_sonido       Tabla de saltos de los 15 comandos
+  0xd531..0xd533      2 B  psg_control            0xD531 = canal que se esta procesa
+  0xd533..0xd53e     11 B  psg_shadow             Copia en RAM de los registros 0..1
+  0xd53e..0xd5c8    138 B  canales_psg            Estructuras de los 3 canales del P
+  0xd5c8..0xd760    408 B  datos_psg              Tablas del reproductor PSG (period
+  0xd760..0xd891    305 B  melodia_canal0         Datos de la melodia del menu, cana
+  0xd891..0xd8f8    103 B  melodia_canal1         Datos de la melodia del menu, cana
+  0xd8f8..0xda00    264 B  melodia_canal2         Datos de la melodia del menu, cana
+  0xda5c..0xdb00    164 B  muerto_DA5C            164 bytes entre el menu y la rutin
+  0xdda8..0xddab      3 B  sfx_hueco              Tres bytes a cero; ninguna instruc
+  0xddab..0xddac      1 B  ranura_sonido_0        Ranura de efecto de sonido. SI se 
+  0xddac..0xddb4      8 B  ranuras_sonido         8 ranuras de efecto de sonido. 0xD
+  0xddb4..0xde01     77 B  sfx_restos             Cola del binario. 0xDDB4..0xDDBA s
+
+  codigo trazado: 5214 bytes en 8 regiones

@@ -1,0 +1,15 @@
+# (VACIO A PROPOSITO)
+#
+# Aqui hubo semillas sacadas de tools/find_tables.py (0xCA00, 0xCA04, 0xCA14,
+# 0xCA40, 0xCA44, 0xCB00, 0xCB10, 0xCB12, 0xCB21, 0xCB23, 0xCB5F) que se
+# retiraron el 2026-08-04 tras la verificacion adversarial.
+#
+# Por que estaban mal, aunque a primera vista pareciera codigo correcto:
+#   - 0xCA00-0xD000 es codigo de OTRA COMPILACION que quedo en el binario y al
+#     que no se llega nunca. Desensambla bien porque es codigo de verdad, pero
+#     no forma parte del juego que se ejecuta: presentarlo como tal enganaria.
+#   - 0xCA40 ademas cae DENTRO de un 'call 08A4Bh', o sea desalineado, y generaba
+#     cuatro bloques de codigo inventado en el listado.
+#
+# Leccion: que un trozo desensamble de forma coherente no prueba que se ejecute.
+# El detector de tablas sirve para decidir donde mirar, no como fuente de verdad.

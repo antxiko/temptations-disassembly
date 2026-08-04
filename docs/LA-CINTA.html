@@ -1,0 +1,104 @@
+<title>La cinta — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="COMO-EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html" style=color:var(--tinta)>La cinta</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="BUGS.html">Bugs</a><a href="HERRAMIENTAS.html">Herramientas</a><a href="pantallas.html">Pantallas</a></nav>
+<h1>La cinta</h1>
+<p>Cómo se carga <em>Temptations</em> desde un casete, y por qué tarda siete minutos.</p>
+<h2>Qué hay dentro del fichero</h2>
+<p>El formato <b>TSX</b> es la versión para MSX del TZX, un formato de preservación que no guarda audio sino la <em>descripción</em> de los pulsos que había en la cinta, más metadatos. Eso lo hace mucho más pequeño y exacto que un WAV.</p>
+<p>Nuestro fichero tiene 12 bloques:</p>
+<table><tr><th></th><th>Contenido</th></tr><tr><td>3 bloques</td><td>Metadatos: quién la volcó, el comando de carga, el nombre TOSEC</td></tr><tr><td>1 bloque</td><td>Ficha del juego: título, editor, año, idioma</td></tr><tr><td>6 bloques</td><td>Los tres primeros programas, en pares de cabecera + datos</td></tr><tr><td>2 bloques</td><td>Los dos bloques grandes, en formato turbo</td></tr></table>
+<p>Los bloques de tipo <b>KCS</b> (<code>0x4B</code>, la extensión propia del MSX) traen los bytes <b>ya desmodulados</b>. O sea que no hace falta decodificar audio: la extracción es exacta, sin margen de error.</p>
+<h2>Los cuatro programas</h2>
+<table><tr><th>Nombre</th><th>Carga en</th><th>Ejecuta en</th><th>Tamaño</th><th>Qué es</th></tr><tr><td><code>TEMPT</code></td><td>—</td><td>—</td><td>256 B</td><td>Cargador BASIC</td></tr><tr><td><code>TOPO</code></td><td>0x9470</td><td>0x9470</td><td>4.254 B</td><td>El logo de Topo Soft</td></tr><tr><td><code>SLOTS</code></td><td>0xC350</td><td>0xC58F</td><td>700 B</td><td>Buscador de RAM + cargador turbo</td></tr><tr><td><em>(turbo 1)</em></td><td>0x88B8</td><td>0x88B8</td><td>12.388 B</td><td>La pantalla de portada</td></tr><tr><td><em>(turbo 2)</em></td><td>0x4000</td><td><b>0x8000</b></td><td>40.449 B</td><td>El juego</td></tr></table>
+<p>El cargador BASIC es de una simplicidad desarmante:</p>
+<pre><code>10 COLOR 1,1,1:SCREEN 2
+20 BLOAD&quot;cas:&quot;,R
+30 BLOAD&quot;cas:&quot;,R</code></pre>
+<p>Pone la pantalla en negro sobre negro (para que no se vea el desorden mientras carga), pasa a modo gráfico, y carga los dos programas siguientes ejecutándolos.</p>
+<h2>SLOTS: la pieza interesante</h2>
+<p><code>SLOTS</code> hace dos trabajos, y los dos tienen su gracia.</p>
+<h3>Buscar la RAM</h3>
+<p>El juego necesita los 64 KB del MSX. Pero en un MSX la memoria está repartida en &quot;slots&quot;, y cada máquina los organiza a su manera. Así que <code>SLOTS</code> los recorre todos, probando a escribir y releer para averiguar dónde hay RAM de verdad:</p>
+<pre><code>SONDEA_PAGINA:
+    ld a,080h       ; marca de slot expandido
+    ld c,004h       ; 4 slots primarios
+    ...
+    ld (hl),020h    ; escribe 0x20 y lo relee
+    ld a,(hl)
+    cp 020h
+    jr nz,siguiente
+    ld (hl),0fah    ; y luego 0xFA, para descartar ROM</code></pre>
+<p>Y aquí viene el detalle bonito: para sondear la primera página de memoria hay un problema de la pescadilla. Esa página es donde vive la BIOS, y la rutina que necesitas para cambiar de slot <b>está en la BIOS</b>. Si la desconectas para probar la RAM, te quedas sin rutina.</p>
+<p>La solución de Topo: <b>copiarse la rutina a sí mismo</b>. <code>SLOTS</code> copia una versión propia de esa función a memoria alta, reescribe sobre la marcha el destino de su propia instrucción <code>CALL</code> para que apunte a la copia, y entonces sí puede sondear la página 0 sin depender de la BIOS.</p>
+<pre><code>    ld hl,00024h        ; primero, la de la BIOS
+    ld (0c3b3h),hl      ; escrita como operando del CALL de 0xC3B2
+    ...
+    ld hl,lc418h        ; ahora copia la nuestra a RAM
+    ld de,09c40h
+    ld bc,000c8h
+    ldir
+    ld hl,09c40h
+    ld (0c3b3h),hl      ; y reescribe el CALL para usarla</code></pre>
+<h3>Leer la cinta a lo bruto</h3>
+<p>La segunda mitad es un <b>cargador turbo</b>: lee la cinta mucho más rápido que las rutinas del sistema, midiendo a mano la anchura de los pulsos.</p>
+<p>Lee el bit 7 del registro 14 del chip de sonido, que es donde el MSX conecta la entrada del casete, y cuenta cuánto tarda en cambiar de nivel. Pulso corto, un bit; pulso largo, el otro.</p>
+<p>Y mientras lo hace, este detalle:</p>
+<pre><code>    ld a,r          ; el registro R del Z80: un valor practicamente aleatorio
+    and 00fh
+    out (099h),a    ; ...escrito en el registro de color del video</code></pre>
+<p>El registro <code>R</code> del Z80 se incrementa solo con cada instrucción. Cogerlo y volcarlo al color de fondo produce <b>las rayas de colores que se ven mientras carga</b>. No es decoración añadida: es un subproducto del propio bucle de lectura, gratis.</p>
+<h2>Formato de los bloques turbo</h2>
+<p>Cada bloque turbo es:</p>
+<pre><code>[ 0x00 ] [ ......datos...... ] [ checksum ]</code></pre>
+<p>Un byte de sincronismo, los datos, y un byte de comprobación calculado de forma que el XOR de todo el bloque dé cero.</p>
+<p>Esto se verificó comparando la memoria que el emulador tenía cargada tras leer la cinta con los bytes del fichero TSX: <b>idénticos</b>, con el desplazamiento de un byte que corresponde al sincronismo.</p>
+<h2>La secuencia completa</h2>
+<p>Cronometrado en el emulador, en tiempo de máquina real:</p>
+<table><tr><th>Momento</th><th>Qué pasa</th></tr><tr><td>0 s</td><td>Empieza la cinta</td></tr><tr><td>65 s</td><td>Aparece el logo de Topo Soft</td></tr><tr><td>96 s</td><td>Arranca <code>SLOTS</code>: busca la RAM y toma el control de la carga</td></tr><tr><td>181 s</td><td>Ya está la portada; se dibuja en pantalla</td></tr><tr><td><b>406 s</b></td><td>El juego arranca</td></tr></table>
+<p>Casi siete minutos. Así era esto.</p>
+<h2>Reconstruir la cinta</h2>
+<p>El proyecto puede hacer el camino inverso: coger los listados comentados, ensamblarlos, y volver a montar la cinta entera con sus cabeceras, sincronismos y checksums.</p>
+<pre><code>python3 tools/build_tape.py build build/Temptations_rebuild.tsx</code></pre>
+<p>El resultado es <b>idéntico byte a byte</b> al TSX original, y carga en el emulador con los mismos tiempos. Ésa es la prueba de que el formato está entendido del todo: no queda nada sin interpretar.</p>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>
