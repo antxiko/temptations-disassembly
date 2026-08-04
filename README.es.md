@@ -84,6 +84,7 @@ compilar nada.
 | [Bugs](docs/BUGS.md) | Fallos que el juego tiene desde 1988, con su código. |
 | [Herramientas](docs/HERRAMIENTAS.md) | Qué hace cada programa del proyecto. |
 | [Inventario](docs/INVENTARIO.txt) | Listado completo de rutinas y datos. |
+| [Lo siguiente](docs/SIGUIENTE-ALEHOP.md) | Notas de arranque para *Alehop*, el siguiente juego del mismo autor. |
 | [Las 29 pantallas](docs/pantallas.html) | Galería de todos los mapas. |
 
 ## Cómo está montado

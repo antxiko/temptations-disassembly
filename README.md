@@ -85,6 +85,7 @@ nothing needs building.
 | [Bugs](docs/BUGS.md) | Faults the game has had since 1988, with the code. |
 | [Tools](docs/TOOLS.md) | What each program in the project does. |
 | [Inventory](docs/INVENTARIO.txt) | Full listing of routines and data blocks. |
+| [What's next](docs/SIGUIENTE-ALEHOP.md) | Starting notes for *Alehop*, the next game by the same author. |
 | [All 29 screens](https://antxiko.github.io/temptations-disassembly/pantallas.html) | Gallery of every map. |
 
 **Website:** <https://antxiko.github.io/temptations-disassembly/>
