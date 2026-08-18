@@ -46,7 +46,7 @@ We forced the end of the game in the emulator, once with the flag clear and once
 with it set by hand, and compared the last line of the play area:
 
 ```
-legitimate ending:  ¿TE ATREVERAS CON "ALEHOP!"?
+legitimate ending:  ¿TE ATREUERAS CON "ALEHOP"?
 with the cheat:     POR QUE NO PRUEBAS SIN POKES
 ```
 
@@ -69,9 +69,6 @@ The flag is zero on a clean tape and stays zero with the game running, so the
 punishment never triggers.
 
 ### And now the good part: they forgot to initialise it
-
-At first we assumed Topo had left the trap "armed and waiting". Looking at the
-data more carefully, the explanation is different, and quite a bit better.
 
 The game's start-up initialises fifteen variables, one after another:
 
@@ -168,42 +165,6 @@ One byte. With that, every transparent area of every tile goes from black to
 green all at once, and the whole level turns into the bottom of the sea without
 a single graphic having changed.
 
-This finding came out of an observation by a veteran player: on seeing the maps
-we had drawn he said *"the underwater ones are wrong, the background is green"*.
-He was right: our program was painting colour 0 as black. Looking for whoever
-touched the backdrop register turned up the `ld a,00ch` above.
-
----
-
-## The maps: 29 screens of 512 bytes
-
-Each screen of the game is a 512-byte block starting at `0x9000`: 32 columns by
-16 rows, one tile byte per cell, row by row. No compression.
-
-The arithmetic is right there in the routine that loads them:
-
-```asm
-CARGA_MAPA:
-    ld a,(08f0dh)   ; A = numero de pantalla
-    ld d,a
-    sla d           ; SLA D con E=0 deja DE = pantalla * 512
-    ld e,000h
-    ld hl,09000h    ; base de la tabla de mapas
-    add hl,de
-    ld de,07d80h    ; buffer del mapa en RAM
-    ld bc,00200h    ; 512 bytes
-    ldir
-```
-
-There are **29** blocks: the 28 playable screens (4 levels × 7) plus the victory
-one.
-
-We verified this two ways. First by comparing memory: with the game stopped on
-screen 0, the 512 bytes at `0x9000` match **byte for byte** what is in VRAM. And
-second by drawing them: if the format were wrong we would get noise, and instead
-we get perfectly recognisable game screens. They are in
-[pantallas.html](pantallas.html).
-
 ---
 
 ## Four levels of seven screens, straight from the code
@@ -226,76 +187,31 @@ FIN_DE_PANTALLA:
 ```
 
 6, 13, 20 and 27. The cuts come every seven screens: 0-6, 7-13, 14-20, 21-27.
-
----
-
-## U and V are the same drawing
-
-The game does not use ASCII: it has its own character table. Space is code 0
-(not 32), the digits start at 0x5C and the punctuation lives around 0x68.
-
-Reading the texts out of the binary turns up things like `PVES SERES HORRIBLES`,
-`DE NUEUO SOBRE TI` or `MVSICA:GOMINOLAS` — that is, PUES, NUEVO and MÚSICA.
-They look like typos, but on screen they read perfectly.
-
-The reason is that **the codes for 'U' and 'V' draw exactly the same glyph**. It
-makes no difference which one you type: the same letter comes out. Whoever typed
-the texts in used one or the other without distinction.
-
-Along the way, the character table was confirmed by two independent routes: on
-one hand by drawing the glyphs, and on the other because the code itself does
-`ld b,05Ch` + `add a,b` to turn a number into a digit, which pins 0x5C down as
-the '0'.
-
----
-
-## A nod to another game from the same publisher
-
-The ending text, in full, reads:
-
-> ALELUYA, OH FRAY ARNULFO. SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL
-> CIELO. "SOLUM VICTORIUS EST GLORIA". ¿TE ATREVERÁS CON "ALEHOP"?
-
-(In English: "Hallelujah, oh Brother Arnulfo. Having overcome all the perils of
-evil you have won heaven. SOLUM VICTORIUS EST GLORIA. Will you dare take on
-ALEHOP?")
-
-*Alehop* was another Topo Soft game. The victory screen ends up selling you the
-next one.
-
-And a minor curiosity: the game's manual calls the main character **Hermano
-Nonato, «Noni»**, but the text that appears on screen says **Fray Arnulfo**.
-Somewhere between design and printing, the monk changed his name.
-
----
-
 ## Leftovers from another build
 
-Between `0xCA00` and `0xD000` there are 1,536 bytes that are **real code**: they
-disassemble without trouble and the routines make sense. But they never run.
+Between `0xCA00` and `0xD000` there are 1,536 bytes the analysis does not claim.
+About 729 of them —`0xCA00-0xCC10` and `0xCE00-0xCEC7`— are real code: they
+disassemble cleanly and the routines make sense. But nothing calls them. The rest
+is tables and padding.
 
-It is an earlier version of some routines that stayed behind in the binary. And
-it is a dangerous trap for anyone disassembling: we fell for it. An automatic
-jump-table detector flagged them as game code, we eyeballed them and they did
-indeed *look* like correct code, and in they went. It took a later review to
-realise that nobody calls them.
-
-The lesson got written down in the project: a chunk disassembling coherently is
-no proof that it ever runs.
+It is an earlier version of some routines, left behind in the binary. And it is
+worth a warning: a chunk disassembling coherently is no proof that it ever runs.
 
 ---
 
 ## And the bytes nobody touches
 
-At the end of the analysis there were 642 bytes left unexplained. We settled
-them by putting memory watchpoints on every one of them and playing a full game
-in the emulator — with infinite lives and pushing the monk against the right-hand
-edge, so as to run through all four levels up to screen 27.
+642 bytes were left unexplained. They were settled by putting memory watchpoints
+on every one of them and playing a full game in the emulator, with infinite lives
+and the monk pushed against the right-hand edge, to run through all four levels
+up to screen 27.
 
-- **96 bytes** were the **stack**: they took writes from 557 different
-  addresses, including the BASIC ROM itself. Only the back-and-forth of `PUSH`
-  and `POP` produces that pattern.
-- **1 byte** was a sound-effect slot we had not counted.
-- **543 bytes** were not touched by anything for the whole game. Among them, two
-  orphan `RET`s: return instructions that no path ever reaches, because the
-  routine before them already ends with one of its own.
+- **80 bytes** (`0x8FB0-0x8FFF`) were the **stack**: they took writes from 342
+  different addresses, including the BASIC ROM itself. Only the back-and-forth
+  of `PUSH` and `POP` produces that pattern.
+- **16 bytes** (`0x8FA0-0x8FAF`) are not stack: they are the table of the four
+  hidden points of the current screen.
+- **1 byte** was a sound-effect slot that had not been counted.
+- **545 bytes** were not touched by anything for the whole game. Among them, two
+  orphan `RET`s: return instructions no path ever reaches, because the routine
+  before them already ends with one of its own.

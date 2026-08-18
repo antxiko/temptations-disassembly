@@ -93,8 +93,9 @@ puntos que existen en todo el juego, solo 17 están sobre una calavera o un cofr
 
 Las alitas, en concreto, solo se consiguen en **dos puntos ocultos de todo el
 juego** —uno en la pantalla 7 y otro en la 10—. El de la pantalla 7 está sobre
-fondo vacío; el de la 10, sobre un tile de decorado que no delata nada. El tile de las alitas no aparece ni una sola vez en
-los 29 mapas: la única forma de conseguirlas es disparar al sitio exacto.
+fondo vacío; el de la 10, sobre un tile de decorado que no delata nada. El tile
+de las alitas no aparece ni una sola vez en los 29 mapas: la única forma de
+conseguirlas es disparar al sitio exacto.
 
 También hay trampas: en la pantalla 26, uno de esos puntos ocultos suelta un tile
 **mortal**. Disparar a todo tiene su precio.
@@ -123,7 +124,7 @@ y llamadas a frases musicales, todo en poco más de un kilobyte. Está descrito 
 Superadas las 28 pantallas aparece la pantalla de victoria:
 
 > ALELUYA, OH FRAY ARNULFO. SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL
-> CIELO. "SOLUM VICTORIUS EST GLORIA". ¿TE ATREVERÁS CON "ALEHOP"?
+> CIELO. "SOLUM VICTORIUS EST GLORIA". ¿TE ATREUERAS CON "ALEHOP"?
 
 *Alehop* era el siguiente juego de la casa. Y esa última línea, la de la
 invitación, es exactamente la que el juego te borra si detecta que has hecho

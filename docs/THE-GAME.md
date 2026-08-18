@@ -95,9 +95,10 @@ the whole game, only 17 are on top of a skull or a chest: **the other 13 are
 invisible**, in mid-air or over scenery.
 
 The wings in particular can only be obtained at **two hidden spots in the entire
-game** —one on screen 7 and one on screen 10— and both of them are over
-background, with nothing drawn to give them away. The wings tile does not appear
-even once in the 29 maps: the only way to get them is to shoot the exact spot.
+game** —one on screen 7 and one on screen 10—. The one on screen 7 is over empty
+background; the one on screen 10, over a scenery tile that gives nothing away.
+The wings tile does not appear even once in the 29 maps: the only way to get them
+is to shoot the exact spot.
 
 There are traps too: on screen 26, one of those hidden spots drops a **deadly**
 tile. Shooting at everything has its price.
@@ -126,7 +127,7 @@ musical phrases, all in a little over a kilobyte. It is described in
 Once the 28 screens are beaten, the victory screen appears:
 
 > ALELUYA, OH FRAY ARNULFO. SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL
-> CIELO. "SOLUM VICTORIUS EST GLORIA". ¿TE ATREVERÁS CON "ALEHOP"?
+> CIELO. "SOLUM VICTORIUS EST GLORIA". ¿TE ATREUERAS CON "ALEHOP"?
 
 (*"Hallelujah, oh Fray Arnulfo. By overcoming all the perils of evil you have won
 heaven. 'SOLUM VICTORIUS EST GLORIA'. Will you dare to take on 'ALEHOP'?"*)

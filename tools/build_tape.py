@@ -13,6 +13,7 @@ Reconstruye cada bloque con el formato que espera el MSX:
   - Bloques turbo: un 0x00 de sincronismo, los datos, y un byte de checksum tal
     que el XOR de todo el bloque de.
 """
+import tempfile
 import functools
 import json
 import operator
@@ -20,6 +21,9 @@ import os
 import shutil
 import subprocess
 import sys
+
+# El temporal del sistema: en Windows no hay /tmp.
+TMP = tempfile.gettempdir()
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -34,7 +38,7 @@ MODULOS = [
 
 
 def ensambla(asm):
-    out = f"/tmp/{os.path.basename(asm)}.bin"
+    out = f"{TMP}/{os.path.basename(asm)}.bin"
     r = subprocess.run(["pasmo", "--bin", asm, out], capture_output=True, text=True)
     if r.returncode != 0:
         print(f"FALLO al ensamblar {asm}:\n{r.stderr[:600]}")

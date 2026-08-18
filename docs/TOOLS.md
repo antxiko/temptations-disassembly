@@ -78,12 +78,9 @@ python3 tools/check_trace.py trazado.json zonas.nocode
 
 Checks that the zones we know are data have not ended up marked as code.
 
-It exists because it was needed. Seeding the tracer with destinations from an
-automatic detector pushed coverage from 13% to 80%, and it looked like a
-success. It was contamination: 100% of the colour table and of the end-game
-text had been marked as code. And the worst part is that `verify_build.sh`
-**does not catch it**, because the bytes don't change, only their
-interpretation.
+This is the check `verify_build.sh` cannot make: if a drawing is read as
+instructions the bytes don't change, only their interpretation, and the build
+still matches.
 
 ### `coverage.py` — the byte budget
 
@@ -180,4 +177,4 @@ original.
 |---|---|
 | `gen_msx_syms.py` | Pulls the MSX BIOS routine table out of the MSXgl headers, instead of typing it from memory |
 | `dasm_slice.py` | Disassembles in sections with different origins. Needed for `SLOTS`, which copies itself to other addresses before it runs |
-| `find_tables.py` | Looks for pointer tables. **It gives false positives**: it is there to decide where to look, not as a source of truth. It was what caused the false-coverage episode |
+| `find_tables.py` | Looks for pointer tables. **It gives false positives**: it is there to decide where to look, not as a source of truth. |

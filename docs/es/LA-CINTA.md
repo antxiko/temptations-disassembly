@@ -21,7 +21,7 @@ Los bloques de tipo **KCS** (`0x4B`, la extensión propia del MSX) traen los byt
 **ya desmodulados**. O sea que no hace falta decodificar audio: la extracción es
 exacta, sin margen de error.
 
-## Los cuatro programas
+## Los cinco bloques
 
 | Nombre | Carga en | Ejecuta en | Tamaño | Qué es |
 |---|---|---|---|---|

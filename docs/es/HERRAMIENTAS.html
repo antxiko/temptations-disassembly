@@ -67,7 +67,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <h3><code>check_trace.py</code> — cazar la cobertura falsa</h3>
 <pre><code>python3 tools/check_trace.py trazado.json zonas.nocode</code></pre>
 <p>Comprueba que las zonas que sabemos que son datos no hayan quedado marcadas como código.</p>
-<p>Existe porque hizo falta. Al sembrar el trazador con destinos sacados de un detector automático, la cobertura saltó del 13% al 80% y pareció un éxito. Era contaminación: había marcado como código el 100% de la tabla de colores y de los textos del final. Y lo peor es que <code>verify_build.sh</code> <b>no lo detecta</b>, porque los bytes no cambian, solo su interpretación.</p>
+<p>Es la comprobación que <code>verify_build.sh</code> no puede hacer: si un dibujo se lee como instrucciones los bytes no cambian, solo su interpretación, y el reensamblado sigue cuadrando.</p>
 <h3><code>coverage.py</code> — el presupuesto de bytes</h3>
 <pre><code>python3 tools/coverage.py trazado.json notas.txt 40449 0x4000</code></pre>
 <p>Cuenta cuántos bytes están explicados —o como código trazado, o dentro de un rango de datos identificado— y lista los huecos que quedan.</p>
@@ -96,5 +96,5 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <p>Ensambla los listados, remonta los bloques con sus cabeceras y checksums, y escribe un TSX nuevo. El resultado es idéntico byte a byte al original.</p>
 <p><code>tsx_build.py</code> hace la parte de bajo nivel: reconstruir el fichero desde el manifiesto.</p>
 <h2>Auxiliares</h2>
-<table><tr><th></th><th></th></tr><tr><td><code>gen_msx_syms.py</code></td><td>Saca la tabla de rutinas de la BIOS del MSX de los headers de MSXgl, en vez de escribirla de memoria</td></tr><tr><td><code>dasm_slice.py</code></td><td>Desensambla por secciones con orígenes distintos. Hace falta para <code>SLOTS</code>, que se copia a sí mismo a otras direcciones antes de ejecutarse</td></tr><tr><td><code>find_tables.py</code></td><td>Busca tablas de punteros. <b>Da falsos positivos</b>: sirve para decidir dónde mirar, no como fuente de verdad. Fue lo que provocó el episodio de la cobertura falsa</td></tr></table>
+<table><tr><th></th><th></th></tr><tr><td><code>gen_msx_syms.py</code></td><td>Saca la tabla de rutinas de la BIOS del MSX de los headers de MSXgl, en vez de escribirla de memoria</td></tr><tr><td><code>dasm_slice.py</code></td><td>Desensambla por secciones con orígenes distintos. Hace falta para <code>SLOTS</code>, que se copia a sí mismo a otras direcciones antes de ejecutarse</td></tr><tr><td><code>find_tables.py</code></td><td>Busca tablas de punteros. <b>Da falsos positivos</b>: sirve para decidir dónde mirar, no como fuente de verdad.</td></tr></table>
 <footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

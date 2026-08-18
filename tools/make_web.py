@@ -9,6 +9,7 @@ embebidas como data URI, de modo que cada pagina es un fichero autocontenido.
 
 La inglesa se escribe en docs/index.html y la castellana en docs/es/index.html.
 """
+import tempfile
 import base64
 import html as H
 import os
@@ -16,6 +17,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from render_maps import render, png  # noqa: E402
+
+# El temporal del sistema: en Windows no hay /tmp.
+TMP = tempfile.gettempdir()
 
 ORG = 0x4000
 REPO = "https://github.com/antxiko/temptations-disassembly"
@@ -434,14 +438,14 @@ def main(binpath, mapdir, out, idioma="en"):
     t, c = T[idioma], CUERPO[idioma]
 
     w, h, im = recorta(d, 0x5CC0, 6, 5, 21, 9, escala=3)
-    png("/tmp/_logo.png", w, h, im)
+    png(f"{TMP}/_logo.png", w, h, im)
     w, h, im = recorta(d, 0x5CC0, 0, 0, 32, 24, escala=2)
-    png("/tmp/_menu.png", w, h, im)
+    png(f"{TMP}/_menu.png", w, h, im)
 
     subs = {k: f'<pre class="asm">{H.escape(v)}</pre>' for k, v in ASM.items()}
     subs.update(
         t_poke=tabla(c["t_poke"]), t_pila=tabla(c["t_pila"]), t_metodo=tabla(c["t_metodo"]),
-        menu=f'<figure>{img("/tmp/_menu.png", "Title screen")}</figure>',
+        menu=f'<figure>{img(f"{TMP}/_menu.png", "Title screen")}</figure>',
         par='<div class="par">'
             f'<figure>{img(os.path.join(mapdir, "FINAL_limpio.png"), "Legit ending")}</figure>'
             f'<figure>{img(os.path.join(mapdir, "FINAL_con_trampa.png"), "Ending with the trap")}</figure>'
@@ -473,7 +477,7 @@ def main(binpath, mapdir, out, idioma="en"):
 <style>{ESTILO}</style>
 <div class="w">
 <header class="top">
-  {img("/tmp/_logo.png", "Temptations logo")}
+  {img(f"{TMP}/_logo.png", "Temptations logo")}
   <p class="claim">{t["claim"]}</p>
   <div class="ficha">{"".join(f"<span>{x}</span>" for x in t["ficha"])}</div>
 </header>

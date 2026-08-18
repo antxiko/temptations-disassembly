@@ -63,7 +63,7 @@ cd /tmp/pasmo &amp;&amp; ./configure &amp;&amp; make &amp;&amp; sudo make instal
 <ol><li>Abre la cinta y saca los cuatro programas que contiene</li><li>Analiza cuáles de sus bytes son instrucciones y cuáles son datos</li><li>Genera los listados comentados en <code>src/</code></li><li>Comprueba que todo cuadra</li></ol>
 <p>Si termina con <code>TODO VERDE</code>, funcionó.</p>
 <h2>4. Léelo</h2>
-<p>Abre <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/temptations_game.asm">src/temptations_game.asm</a>. Es el juego principal. unas 6.000 líneas. Empieza por el principio: la primera rutina es el arranque, y de ahí se sigue el hilo.</p>
+<p>Abre <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/temptations_game.asm">src/temptations_game.asm</a>. Es el juego principal, unas 6.000 líneas. Empieza por el principio: la primera rutina es el arranque, y de ahí se sigue el hilo.</p>
 <p>Un fragmento, para que veas la pinta que tiene:</p>
 <pre><code>PINTA_MARCADOR:         ; Redibuja el marcador (vidas / pantalla / nivel)
     ld hl,05fc0h        ; Plantilla del marcador -&gt; VRAM 0x1A00, las filas 16..23

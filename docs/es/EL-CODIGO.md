@@ -22,7 +22,8 @@ Con el juego corriendo, el MSX queda así:
 0x8000 ├──────────────────────────┤
        │  CÓDIGO DEL JUEGO        │  ~5 KB
 0x8F00 │  Variables               │
-0x8FA0 │  Pila                    │  crece hacia abajo desde 0x8FFF
+0x8FA0 │  Los cuatro puntos       │  16 bytes, pantalla en curso
+0x8FB0 │  Pila                    │  crece hacia abajo desde 0x8FFF
 0x9000 ├──────────────────────────┤
        │  29 mapas de pantalla    │  512 bytes cada uno
 0xCA00 ├──────────────────────────┤

@@ -78,11 +78,9 @@ python3 tools/check_trace.py trazado.json zonas.nocode
 Comprueba que las zonas que sabemos que son datos no hayan quedado marcadas como
 código.
 
-Existe porque hizo falta. Al sembrar el trazador con destinos sacados de un
-detector automático, la cobertura saltó del 13% al 80% y pareció un éxito. Era
-contaminación: había marcado como código el 100% de la tabla de colores y de los
-textos del final. Y lo peor es que `verify_build.sh` **no lo detecta**, porque los
-bytes no cambian, solo su interpretación.
+Es la comprobación que `verify_build.sh` no puede hacer: si un dibujo se lee
+como instrucciones los bytes no cambian, solo su interpretación, y el
+reensamblado sigue cuadrando.
 
 ### `coverage.py` — el presupuesto de bytes
 
@@ -179,4 +177,4 @@ manifiesto.
 |---|---|
 | `gen_msx_syms.py` | Saca la tabla de rutinas de la BIOS del MSX de los headers de MSXgl, en vez de escribirla de memoria |
 | `dasm_slice.py` | Desensambla por secciones con orígenes distintos. Hace falta para `SLOTS`, que se copia a sí mismo a otras direcciones antes de ejecutarse |
-| `find_tables.py` | Busca tablas de punteros. **Da falsos positivos**: sirve para decidir dónde mirar, no como fuente de verdad. Fue lo que provocó el episodio de la cobertura falsa |
+| `find_tables.py` | Busca tablas de punteros. **Da falsos positivos**: sirve para decidir dónde mirar, no como fuente de verdad. |

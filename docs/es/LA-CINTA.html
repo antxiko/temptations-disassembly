@@ -49,7 +49,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <p>Nuestro fichero tiene 12 bloques:</p>
 <table><tr><th></th><th>Contenido</th></tr><tr><td>3 bloques</td><td>Metadatos: quién la volcó, el comando de carga, el nombre TOSEC</td></tr><tr><td>1 bloque</td><td>Ficha del juego: título, editor, año, idioma</td></tr><tr><td>6 bloques</td><td>Los tres primeros programas, en pares de cabecera + datos</td></tr><tr><td>2 bloques</td><td>Los dos bloques grandes, en formato turbo</td></tr></table>
 <p>Los bloques de tipo <b>KCS</b> (<code>0x4B</code>, la extensión propia del MSX) traen los bytes <b>ya desmodulados</b>. O sea que no hace falta decodificar audio: la extracción es exacta, sin margen de error.</p>
-<h2>Los cuatro programas</h2>
+<h2>Los cinco bloques</h2>
 <table><tr><th>Nombre</th><th>Carga en</th><th>Ejecuta en</th><th>Tamaño</th><th>Qué es</th></tr><tr><td><code>TEMPT</code></td><td>—</td><td>—</td><td>256 B</td><td>Cargador BASIC</td></tr><tr><td><code>TOPO</code></td><td>0x9470</td><td>0x9470</td><td>4.254 B</td><td>El logo de Topo Soft</td></tr><tr><td><code>SLOTS</code></td><td>0xC350</td><td>0xC58F</td><td>700 B</td><td>Buscador de RAM + cargador turbo</td></tr><tr><td><em>(turbo 1)</em></td><td>0x88B8</td><td>0x88B8</td><td>12.388 B</td><td>La pantalla de portada</td></tr><tr><td><em>(turbo 2)</em></td><td>0x4000</td><td><b>0x8000</b></td><td>40.449 B</td><td>El juego</td></tr></table>
 <p>El cargador BASIC es de una simplicidad desarmante:</p>
 <pre><code>10 COLOR 1,1,1:SCREEN 2

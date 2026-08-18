@@ -89,10 +89,10 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
     jp 08076h       ; reinicia... entrando DESPUES del ld sp</code></pre>
 <p><code>0x8076</code> is the main initialisation, which is <b>below</b> the instruction that sets up the stack. So the new game starts with the stack pointer wherever the previous one left it.</p>
 <h3>Measured in the emulator</h3>
-<p>Triggering eight game overs in a row and noting where the stack was left at each restart:</p>
+<p>Triggering eight game overs in a row —forced from the debugger, setting lives to zero and jumping into the death routine— and noting where the stack was left at each restart:</p>
 <table><tr><th>Restart</th><th>Stack pointer</th></tr><tr><td>1</td><td><code>0x8FFF</code></td></tr><tr><td>2</td><td><code>0x8FFF</code></td></tr><tr><td>3</td><td><code>0x8FFD</code></td></tr><tr><td>4</td><td><code>0x8FFB</code></td></tr><tr><td>5</td><td><code>0x8FF9</code></td></tr><tr><td>6</td><td><code>0x8FDB</code></td></tr><tr><td>7</td><td><code>0x8FD9</code></td></tr><tr><td>8</td><td><code>0x8FD7</code></td></tr></table>
 <p>It goes down and never comes back up.</p>
-<p>The stack grows downwards from <code>0x8FFF</code>, and the game variables start at <code>0x8F00</code>. So there are about 255 bytes of headroom: after enough lost games in a row <b>without resetting the machine</b>, the stack would end up writing over the game variables, with everything that implies.</p>
+<p>The stack grows downwards from <code>0x8FFF</code>. Just below it, at <code>0x8FA0</code>, sits the table of the four hidden points of the current screen, and below that, from <code>0x8F00</code>, the game variables. So the first damage lands after about 80 bytes of leak, and past about 160 it starts eating the variables. After enough lost games in a row <b>without resetting the machine</b>, the game would corrupt itself.</p>
 <p>In 1988, playing from a tape that took seven minutes to load, it was unlikely that anyone would string that many games together in one sitting. Today, with an emulator and instant loading, getting there is trivial.</p>
 <p><b>Fix:</b> change the destination of the jump from <code>0x8076</code> to an address that puts the stack back before carrying on.</p>
 <hr>

@@ -68,7 +68,7 @@ CASTIGO_TRAMPAS:
 <p>In other words: you have cleared all 28 screens, you reach the victory screen with its <em>«Aleluya, oh fray Arnulfo»</em>, and instead of letting you enjoy it the game writes the telling-off right on top of it. A punishment saved for the very end.</p>
 <h3>Which line it wipes out, exactly</h3>
 <p>We forced the end of the game in the emulator, once with the flag clear and once with it set by hand, and compared the last line of the play area:</p>
-<pre><code>legitimate ending:  ¿TE ATREVERAS CON &quot;ALEHOP!&quot;?
+<pre><code>legitimate ending:  ¿TE ATREUERAS CON &quot;ALEHOP&quot;?
 with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
 <p>The telling-off does not land in free space: **it replaces exactly the line where the game invites you to play *Alehop***, the company&#x27;s next title. The cheater has the invitation taken away.</p>
 <p><img src="mapas/FINAL_limpio.png" alt="Legitimate ending"></p>
@@ -77,7 +77,6 @@ with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
 <p>We searched all four of the game&#x27;s binaries for any instruction that writes to <code>0x8F1E</code>, in every form: <code>ld (0x8F1E),a</code>, <code>ld hl,0x8F1E</code>, <code>ld de,…</code>, <code>ld bc,…</code>. <b>The only reference in the whole game is the read at 0x8B80.</b> No write, anywhere.</p>
 <p>The flag is zero on a clean tape and stays zero with the game running, so the punishment never triggers.</p>
 <h3>And now the good part: they forgot to initialise it</h3>
-<p>At first we assumed Topo had left the trap &quot;armed and waiting&quot;. Looking at the data more carefully, the explanation is different, and quite a bit better.</p>
 <p>The game&#x27;s start-up initialises fifteen variables, one after another:</p>
 <pre><code>8F09 8F0A 8F0B 8F0C 8F0D 8F0E 8F11 8F12 8F13 8F14 8F17 8F18 8F19 8F1C 8F1D</code></pre>
 <p>One is missing. <b>0x8F1E is the only variable the game reads and never initialises</b>, and it sits right next to 0x8F1C and 0x8F1D, which are initialised. That is precisely the one they skipped.</p>
@@ -113,23 +112,6 @@ with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
     ld a,001h
     ld (08f11h),a       ; y enciende el modo flotar</code></pre>
 <p>One byte. With that, every transparent area of every tile goes from black to green all at once, and the whole level turns into the bottom of the sea without a single graphic having changed.</p>
-<p>This finding came out of an observation by a veteran player: on seeing the maps we had drawn he said <em>&quot;the underwater ones are wrong, the background is green&quot;</em>. He was right: our program was painting colour 0 as black. Looking for whoever touched the backdrop register turned up the <code>ld a,00ch</code> above.</p>
-<hr>
-<h2>The maps: 29 screens of 512 bytes</h2>
-<p>Each screen of the game is a 512-byte block starting at <code>0x9000</code>: 32 columns by 16 rows, one tile byte per cell, row by row. No compression.</p>
-<p>The arithmetic is right there in the routine that loads them:</p>
-<pre><code>CARGA_MAPA:
-    ld a,(08f0dh)   ; A = numero de pantalla
-    ld d,a
-    sla d           ; SLA D con E=0 deja DE = pantalla * 512
-    ld e,000h
-    ld hl,09000h    ; base de la tabla de mapas
-    add hl,de
-    ld de,07d80h    ; buffer del mapa en RAM
-    ld bc,00200h    ; 512 bytes
-    ldir</code></pre>
-<p>There are <b>29</b> blocks: the 28 playable screens (4 levels × 7) plus the victory one.</p>
-<p>We verified this two ways. First by comparing memory: with the game stopped on screen 0, the 512 bytes at <code>0x9000</code> match <b>byte for byte</b> what is in VRAM. And second by drawing them: if the format were wrong we would get noise, and instead we get perfectly recognisable game screens. They are in <a href="pantallas.html">pantallas.html</a>.</p>
 <hr>
 <h2>Four levels of seven screens, straight from the code</h2>
 <p>The structure of the game does not have to be guessed at. The routine that decides what happens when a screen is finished says it:</p>
@@ -145,26 +127,11 @@ with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
     jp z,L_8B23
     jp CAMBIO_PANT_NORMAL</code></pre>
 <p>6, 13, 20 and 27. The cuts come every seven screens: 0-6, 7-13, 14-20, 21-27.</p>
-<hr>
-<h2>U and V are the same drawing</h2>
-<p>The game does not use ASCII: it has its own character table. Space is code 0 (not 32), the digits start at 0x5C and the punctuation lives around 0x68.</p>
-<p>Reading the texts out of the binary turns up things like <code>PVES SERES HORRIBLES</code>, <code>DE NUEUO SOBRE TI</code> or <code>MVSICA:GOMINOLAS</code> — that is, PUES, NUEVO and MÚSICA. They look like typos, but on screen they read perfectly.</p>
-<p>The reason is that <b>the codes for &#x27;U&#x27; and &#x27;V&#x27; draw exactly the same glyph</b>. It makes no difference which one you type: the same letter comes out. Whoever typed the texts in used one or the other without distinction.</p>
-<p>Along the way, the character table was confirmed by two independent routes: on one hand by drawing the glyphs, and on the other because the code itself does <code>ld b,05Ch</code> + <code>add a,b</code> to turn a number into a digit, which pins 0x5C down as the &#x27;0&#x27;.</p>
-<hr>
-<h2>A nod to another game from the same publisher</h2>
-<p>The ending text, in full, reads:</p>
-<blockquote>ALELUYA, OH FRAY ARNULFO. SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL CIELO. &quot;SOLUM VICTORIUS EST GLORIA&quot;. ¿TE ATREVERÁS CON &quot;ALEHOP&quot;?</blockquote>
-<p>(In English: &quot;Hallelujah, oh Brother Arnulfo. Having overcome all the perils of evil you have won heaven. SOLUM VICTORIUS EST GLORIA. Will you dare take on ALEHOP?&quot;)</p>
-<p><em>Alehop</em> was another Topo Soft game. The victory screen ends up selling you the next one.</p>
-<p>And a minor curiosity: the game&#x27;s manual calls the main character <b>Hermano Nonato, «Noni»</b>, but the text that appears on screen says <b>Fray Arnulfo</b>. Somewhere between design and printing, the monk changed his name.</p>
-<hr>
 <h2>Leftovers from another build</h2>
-<p>Between <code>0xCA00</code> and <code>0xD000</code> there are 1,536 bytes that are <b>real code</b>: they disassemble without trouble and the routines make sense. But they never run.</p>
-<p>It is an earlier version of some routines that stayed behind in the binary. And it is a dangerous trap for anyone disassembling: we fell for it. An automatic jump-table detector flagged them as game code, we eyeballed them and they did indeed <em>look</em> like correct code, and in they went. It took a later review to realise that nobody calls them.</p>
-<p>The lesson got written down in the project: a chunk disassembling coherently is no proof that it ever runs.</p>
+<p>Between <code>0xCA00</code> and <code>0xD000</code> there are 1,536 bytes the analysis does not claim. About 729 of them —<code>0xCA00-0xCC10</code> and <code>0xCE00-0xCEC7</code>— are real code: they disassemble cleanly and the routines make sense. But nothing calls them. The rest is tables and padding.</p>
+<p>It is an earlier version of some routines, left behind in the binary. And it is worth a warning: a chunk disassembling coherently is no proof that it ever runs.</p>
 <hr>
 <h2>And the bytes nobody touches</h2>
-<p>At the end of the analysis there were 642 bytes left unexplained. We settled them by putting memory watchpoints on every one of them and playing a full game in the emulator — with infinite lives and pushing the monk against the right-hand edge, so as to run through all four levels up to screen 27.</p>
-<ul><li><b>96 bytes</b> were the <b>stack</b>: they took writes from 557 different addresses, including the BASIC ROM itself. Only the back-and-forth of <code>PUSH</code> and <code>POP</code> produces that pattern.</li><li><b>1 byte</b> was a sound-effect slot we had not counted.</li><li><b>543 bytes</b> were not touched by anything for the whole game. Among them, two orphan <code>RET</code>s: return instructions that no path ever reaches, because the routine before them already ends with one of its own.</li></ul>
+<p>642 bytes were left unexplained. They were settled by putting memory watchpoints on every one of them and playing a full game in the emulator, with infinite lives and the monk pushed against the right-hand edge, to run through all four levels up to screen 27.</p>
+<ul><li><b>80 bytes</b> (<code>0x8FB0-0x8FFF</code>) were the <b>stack</b>: they took writes from 342 different addresses, including the BASIC ROM itself. Only the back-and-forth of <code>PUSH</code> and <code>POP</code> produces that pattern.</li><li><b>16 bytes</b> (<code>0x8FA0-0x8FAF</code>) are not stack: they are the table of the four hidden points of the current screen.</li><li><b>1 byte</b> was a sound-effect slot that had not been counted.</li><li><b>545 bytes</b> were not touched by anything for the whole game. Among them, two orphan <code>RET</code>s: return instructions no path ever reaches, because the routine before them already ends with one of its own.</li></ul>
 <footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

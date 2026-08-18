@@ -79,7 +79,6 @@ PAREJA = {
     "FINDINGS.html": "HALLAZGOS.html",  "HALLAZGOS.html": "FINDINGS.html",
     "BUGS.html": "BUGS.html",
     "TOOLS.html": "HERRAMIENTAS.html",  "HERRAMIENTAS.html": "TOOLS.html",
-    "CONTEXT.html": "CONTEXTO.html",    "CONTEXTO.html": "CONTEXT.html",
 }
 
 

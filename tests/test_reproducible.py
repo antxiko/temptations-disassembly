@@ -16,8 +16,11 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 
+# El directorio temporal del sistema: en Windows no hay /tmp.
+TMP = tempfile.gettempdir()
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(RAIZ, "tools"))
 
@@ -46,7 +49,7 @@ class TestReproducible(unittest.TestCase):
             asm = os.path.join(RAIZ, "src", asmname)
             orig = os.path.join(RAIZ, binrel)
             with self.subTest(modulo=asmname):
-                out = f"/tmp/_t_{asmname}.bin"
+                out = os.path.join(TMP, f"_t_{asmname}.bin")
                 r = subprocess.run(["pasmo", "--bin", asm, out],
                                    capture_output=True, text=True)
                 self.assertEqual(r.returncode, 0,
@@ -113,8 +116,13 @@ class TestCinta(unittest.TestCase):
 
     def test_ida_y_vuelta_del_tsx(self):
         man = os.path.join(RAIZ, "extracted", "manifest.json")
-        originales = [f for f in os.listdir(RAIZ) if f.lower().endswith(".tsx")]
-        out = "/tmp/_t_regen.tsx"
+        # Por el nombre, no "el primer .tsx que haya": en la carpeta puede
+        # haber cintas de otros juegos, y entonces se compararia contra otra.
+        originales = [f for f in os.listdir(RAIZ)
+                      if f.lower().endswith(".tsx") and "temptations" in f.lower()]
+        self.assertEqual(len(originales), 1,
+                         "hace falta la cinta de Temptations en la raiz")
+        out = os.path.join(TMP, "_t_regen.tsx")
         r = subprocess.run(
             [sys.executable, os.path.join(RAIZ, "tools", "tsx_build.py"),
              man, out, os.path.join(RAIZ, "extracted")],

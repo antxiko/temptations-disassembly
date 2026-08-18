@@ -22,7 +22,8 @@ With the game running, the MSX looks like this:
 0x8000 ├──────────────────────────┤
        │  GAME CODE               │  ~5 KB
 0x8F00 │  Variables               │
-0x8FA0 │  Stack                   │  grows downwards from 0x8FFF
+0x8FA0 │  Four hidden points      │  16 bytes, current screen
+0x8FB0 │  Stack                   │  grows downwards from 0x8FFF
 0x9000 ├──────────────────────────┤
        │  29 screen maps          │  512 bytes each
 0xCA00 ├──────────────────────────┤

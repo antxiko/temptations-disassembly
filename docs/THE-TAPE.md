@@ -21,7 +21,7 @@ Blocks of type **KCS** (`0x4B`, the MSX's own extension) carry the bytes
 **already demodulated**. So there is no audio to decode: the extraction is
 exact, with no margin for error.
 
-## The four programs
+## The five blocks
 
 | Name | Loads at | Runs at | Size | What it is |
 |---|---|---|---|---|

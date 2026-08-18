@@ -49,7 +49,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <p>Our file has 12 blocks:</p>
 <table><tr><th></th><th>Contents</th></tr><tr><td>3 blocks</td><td>Metadata: who dumped it, the load command, the TOSEC name</td></tr><tr><td>1 block</td><td>Game record: title, publisher, year, language</td></tr><tr><td>6 blocks</td><td>The first three programs, in header + data pairs</td></tr><tr><td>2 blocks</td><td>The two big blocks, in turbo format</td></tr></table>
 <p>Blocks of type <b>KCS</b> (<code>0x4B</code>, the MSX&#x27;s own extension) carry the bytes <b>already demodulated</b>. So there is no audio to decode: the extraction is exact, with no margin for error.</p>
-<h2>The four programs</h2>
+<h2>The five blocks</h2>
 <table><tr><th>Name</th><th>Loads at</th><th>Runs at</th><th>Size</th><th>What it is</th></tr><tr><td><code>TEMPT</code></td><td>—</td><td>—</td><td>256 B</td><td>BASIC loader</td></tr><tr><td><code>TOPO</code></td><td>0x9470</td><td>0x9470</td><td>4,254 B</td><td>The Topo Soft logo</td></tr><tr><td><code>SLOTS</code></td><td>0xC350</td><td>0xC58F</td><td>700 B</td><td>RAM finder + turbo loader</td></tr><tr><td><em>(turbo 1)</em></td><td>0x88B8</td><td>0x88B8</td><td>12,388 B</td><td>The title screen</td></tr><tr><td><em>(turbo 2)</em></td><td>0x4000</td><td><b>0x8000</b></td><td>40,449 B</td><td>The game</td></tr></table>
 <p>The BASIC loader is disarmingly simple:</p>
 <pre><code>10 COLOR 1,1,1:SCREEN 2

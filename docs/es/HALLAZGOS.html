@@ -68,7 +68,7 @@ CASTIGO_TRAMPAS:
 <p>Es decir: te has pasado las 28 pantallas, llegas a la pantalla de victoria con su <em>«Aleluya, oh fray Arnulfo»</em>, y en lugar de dejarte disfrutarla, el juego te escribe el reproche encima. Un castigo reservado para el final.</p>
 <h3>Qué línea borra exactamente</h3>
 <p>Forzamos el final del juego en el emulador, una vez con la bandera limpia y otra encendiéndola a mano, y comparamos la última línea del área de juego:</p>
-<pre><code>final legítimo:  ¿TE ATREVERAS CON &quot;ALEHOP!&quot;?
+<pre><code>final legítimo:  ¿TE ATREUERAS CON &quot;ALEHOP&quot;?
 con la trampa:   POR QUE NO PRUEBAS SIN POKES</code></pre>
 <p>El reproche no cae en un hueco libre: **sustituye justo a la línea donde el juego te invita a jugar a *Alehop***, el siguiente título de la casa. Al tramposo le quitan la invitación.</p>
 <p><img src="../mapas/FINAL_limpio.png" alt="Final legítimo"></p>
@@ -77,7 +77,6 @@ con la trampa:   POR QUE NO PRUEBAS SIN POKES</code></pre>
 <p>Buscamos en los cuatro binarios del juego cualquier instrucción que escriba en <code>0x8F1E</code>, en todas sus formas: <code>ld (0x8F1E),a</code>, <code>ld hl,0x8F1E</code>, <code>ld de,…</code>, <code>ld bc,…</code>. <b>La única referencia en todo el juego es la lectura de 0x8B80.</b> Ninguna escritura, en ninguna parte.</p>
 <p>La bandera vale cero en la cinta limpia y sigue valiendo cero con el juego corriendo, así que el castigo no se dispara nunca.</p>
 <h3>Y ahora la parte buena: se les olvidó inicializarla</h3>
-<p>Al principio dimos por hecho que Topo había dejado la trampa «armada y esperando». Mirando los datos con más cuidado, la explicación es otra y bastante mejor.</p>
 <p>El arranque del juego inicializa quince variables, una detrás de otra:</p>
 <pre><code>8F09 8F0A 8F0B 8F0C 8F0D 8F0E 8F11 8F12 8F13 8F14 8F17 8F18 8F19 8F1C 8F1D</code></pre>
 <p>Falta una. <b>0x8F1E es la única variable que el juego lee y nunca inicializa</b>, y está pegada a 0x8F1C y 0x8F1D, que sí se inicializan. Se saltaron precisamente ésa.</p>
@@ -113,23 +112,6 @@ con la trampa:   POR QUE NO PRUEBAS SIN POKES</code></pre>
     ld a,001h
     ld (08f11h),a       ; y enciende el modo flotar</code></pre>
 <p>Un byte. Con eso, todas las zonas transparentes de todos los tiles pasan de negras a verdes de golpe, y el nivel entero se convierte en el fondo del mar sin haber cambiado ni un gráfico.</p>
-<p>Este hallazgo salió de una observación de un jugador veterano: al ver los mapas que habíamos dibujado dijo <em>«los acuáticos están mal, el fondo es verde»</em>. Tenía razón: nuestro programa pintaba el color 0 como negro. Buscando quién tocaba el registro de fondo apareció el <code>ld a,00ch</code> de arriba.</p>
-<hr>
-<h2>Los mapas: 29 pantallas de 512 bytes</h2>
-<p>Cada pantalla del juego es un bloque de 512 bytes a partir de <code>0x9000</code>: 32 columnas por 16 filas, un byte de tile por casilla, fila a fila. Sin compresión.</p>
-<p>La aritmética está a la vista en la rutina que las carga:</p>
-<pre><code>CARGA_MAPA:
-    ld a,(08f0dh)   ; A = numero de pantalla
-    ld d,a
-    sla d           ; SLA D con E=0 deja DE = pantalla * 512
-    ld e,000h
-    ld hl,09000h    ; base de la tabla de mapas
-    add hl,de
-    ld de,07d80h    ; buffer del mapa en RAM
-    ld bc,00200h    ; 512 bytes
-    ldir</code></pre>
-<p>Son <b>29</b> bloques: las 28 pantallas jugables (4 niveles × 7) más la de victoria.</p>
-<p>Se verificó de dos maneras. Primero comparando memoria: con el juego parado en la pantalla 0, los 512 bytes de <code>0x9000</code> coinciden <b>byte a byte</b> con lo que hay en la memoria de vídeo. Y segundo dibujándolos: si el formato estuviera mal saldría ruido, y salen pantallas de juego perfectamente reconocibles. Están en <a href="../pantallas.html">pantallas.html</a>.</p>
 <hr>
 <h2>Cuatro niveles de siete pantallas, dicho por el código</h2>
 <p>La estructura del juego no hay que suponerla. La rutina que decide qué pasa al terminar una pantalla lo dice:</p>
@@ -145,23 +127,9 @@ con la trampa:   POR QUE NO PRUEBAS SIN POKES</code></pre>
     jp z,L_8B23
     jp CAMBIO_PANT_NORMAL</code></pre>
 <p>6, 13, 20 y 27. Los cortes están cada siete pantallas: 0-6, 7-13, 14-20, 21-27.</p>
-<hr>
-<h2>La U y la V son el mismo dibujo</h2>
-<p>El juego no usa ASCII: tiene su propia tabla de caracteres. El espacio es el código 0 (no el 32), los dígitos empiezan en 0x5C y la puntuación anda por 0x68.</p>
-<p>Al leer los textos del binario aparecen cosas como <code>PVES SERES HORRIBLES</code>, <code>DE NUEUO SOBRE TI</code> o <code>MVSICA:GOMINOLAS</code>. Parecen erratas, pero en pantalla se leen perfectamente.</p>
-<p>El motivo es que <b>los códigos de la &#x27;U&#x27; y la &#x27;V&#x27; dibujan exactamente el mismo glifo</b>. Da igual cuál escribas: sale la misma letra. Quien tecleó los textos usó una u otra indistintamente.</p>
-<p>De paso, la tabla de caracteres quedó confirmada por dos vías independientes: por un lado dibujando los glifos, y por otro porque el propio código hace <code>ld b,05Ch</code> + <code>add a,b</code> para convertir un número en dígito, lo que fija el 0x5C como el &#x27;0&#x27;.</p>
-<hr>
-<h2>Un guiño a otro juego de la casa</h2>
-<p>El texto del final, completo, dice:</p>
-<blockquote>ALELUYA, OH FRAY ARNULFO. SUPERANDO TODOS LOS PELIGROS DEL MAL HAS GANADO EL CIELO. &quot;SOLUM VICTORIUS EST GLORIA&quot;. ¿TE ATREVERÁS CON &quot;ALEHOP&quot;?</blockquote>
-<p><em>Alehop</em> era otro juego de Topo Soft. La pantalla de victoria termina vendiéndote el siguiente.</p>
-<p>Y una curiosidad menor: el manual del juego llama al protagonista <b>Hermano Nonato, «Noni»</b>, pero el texto que sale en pantalla dice <b>Fray Arnulfo</b>. En algún momento entre el diseño y la impresión, el monje cambió de nombre.</p>
-<hr>
 <h2>Restos de otra compilación</h2>
-<p>Entre <code>0xCA00</code> y <code>0xD000</code> hay 1.536 bytes que el análisis no reclama. Unos 729 son <b>código de verdad</b> —los tramos 0xCA00-0xCC10 y 0xCE00-0xCEC7—: se desensamblan sin problemas y las rutinas tienen sentido. Pero no se ejecutan nunca. El resto son tablas y relleno.</p>
-<p>Es una versión anterior de algunas rutinas que quedó en el binario. Y es una trampa peligrosa para quien desensambla: nosotros picamos. Un detector automático de tablas de saltos las señaló como código del juego, se comprobó a ojo que efectivamente <em>parecían</em> código correcto, y se incorporaron. Hizo falta una revisión posterior para caer en que nadie las llama.</p>
-<p>La lección quedó anotada en el proyecto: que un trozo desensamble de forma coherente no prueba que se ejecute.</p>
+<p>Entre <code>0xCA00</code> y <code>0xD000</code> hay 1.536 bytes que el análisis no reclama. Unos 729 —los tramos <code>0xCA00-0xCC10</code> y <code>0xCE00-0xCEC7</code>— son código de verdad: se desensamblan sin problemas y las rutinas tienen sentido. Pero no los llama nadie. El resto son tablas y relleno.</p>
+<p>Es una versión anterior de algunas rutinas que se quedó en el binario. Y conviene avisarlo: que un trozo desensamble de forma coherente no prueba que se ejecute.</p>
 <hr>
 <h2>Y lo que no toca nadie</h2>
 <p>Al final del análisis quedaban 642 bytes sin explicar. Se resolvieron poniendo vigilantes de memoria sobre cada uno y jugando una partida completa en el emulador —con vidas infinitas y empujando al monje contra el borde derecho, para recorrer los cuatro niveles hasta la pantalla 27.</p>
