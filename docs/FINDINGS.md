@@ -187,6 +187,9 @@ FIN_DE_PANTALLA:
 ```
 
 6, 13, 20 and 27. The cuts come every seven screens: 0-6, 7-13, 14-20, 21-27.
+
+---
+
 ## Leftovers from another build
 
 Between `0xCA00` and `0xD000` there are 1,536 bytes the analysis does not claim.

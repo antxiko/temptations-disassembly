@@ -52,7 +52,7 @@ make
 
 Y ya está. Eso hace cuatro cosas seguidas:
 
-1. Abre la cinta y saca los cuatro programas que contiene
+1. Abre la cinta y saca los cinco bloques que contiene
 2. Analiza cuáles de sus bytes son instrucciones y cuáles son datos
 3. Genera los listados comentados en `src/`
 4. Comprueba que todo cuadra

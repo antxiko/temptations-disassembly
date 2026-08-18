@@ -127,6 +127,7 @@ with the cheat:     POR QUE NO PRUEBAS SIN POKES</code></pre>
     jp z,L_8B23
     jp CAMBIO_PANT_NORMAL</code></pre>
 <p>6, 13, 20 and 27. The cuts come every seven screens: 0-6, 7-13, 14-20, 21-27.</p>
+<hr>
 <h2>Leftovers from another build</h2>
 <p>Between <code>0xCA00</code> and <code>0xD000</code> there are 1,536 bytes the analysis does not claim. About 729 of them —<code>0xCA00-0xCC10</code> and <code>0xCE00-0xCEC7</code>— are real code: they disassemble cleanly and the routines make sense. But nothing calls them. The rest is tables and padding.</p>
 <p>It is an earlier version of some routines, left behind in the binary. And it is worth a warning: a chunk disassembling coherently is no proof that it ever runs.</p>

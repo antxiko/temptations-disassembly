@@ -52,7 +52,7 @@ make
 
 And that's it. That does four things in a row:
 
-1. Opens the tape and pulls out the four programs it contains
+1. Opens the tape and pulls out the five blocks it contains
 2. Works out which of their bytes are instructions and which are data
 3. Generates the commented listings in `src/`
 4. Checks that everything adds up

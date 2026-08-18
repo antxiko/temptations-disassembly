@@ -95,7 +95,7 @@ the whole game, only 17 are on top of a skull or a chest: **the other 13 are
 invisible**, in mid-air or over scenery.
 
 The wings in particular can only be obtained at **two hidden spots in the entire
-game** —one on screen 7 and one on screen 10—. The one on screen 7 is over empty
+game**: one on screen 7 and one on screen 10. The one on screen 7 is over empty
 background; the one on screen 10, over a scenery tile that gives nothing away.
 The wings tile does not appear even once in the 29 maps: the only way to get them
 is to shoot the exact spot.

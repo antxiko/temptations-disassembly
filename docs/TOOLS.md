@@ -177,4 +177,4 @@ original.
 |---|---|
 | `gen_msx_syms.py` | Pulls the MSX BIOS routine table out of the MSXgl headers, instead of typing it from memory |
 | `dasm_slice.py` | Disassembles in sections with different origins. Needed for `SLOTS`, which copies itself to other addresses before it runs |
-| `find_tables.py` | Looks for pointer tables. **It gives false positives**: it is there to decide where to look, not as a source of truth. |
+| `find_tables.py` | Looks for pointer tables. **It gives false positives**: it is there to decide where to look, not as a source of truth |

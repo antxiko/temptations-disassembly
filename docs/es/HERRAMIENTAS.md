@@ -177,4 +177,4 @@ manifiesto.
 |---|---|
 | `gen_msx_syms.py` | Saca la tabla de rutinas de la BIOS del MSX de los headers de MSXgl, en vez de escribirla de memoria |
 | `dasm_slice.py` | Desensambla por secciones con orígenes distintos. Hace falta para `SLOTS`, que se copia a sí mismo a otras direcciones antes de ejecutarse |
-| `find_tables.py` | Busca tablas de punteros. **Da falsos positivos**: sirve para decidir dónde mirar, no como fuente de verdad. |
+| `find_tables.py` | Busca tablas de punteros. **Da falsos positivos**: sirve para decidir dónde mirar, no como fuente de verdad |

@@ -60,7 +60,7 @@ cd /tmp/pasmo &amp;&amp; ./configure &amp;&amp; make &amp;&amp; sudo make instal
 <h2>3. Run it</h2>
 <pre><code>make</code></pre>
 <p>And that&#x27;s it. That does four things in a row:</p>
-<ol><li>Opens the tape and pulls out the four programs it contains</li><li>Works out which of their bytes are instructions and which are data</li><li>Generates the commented listings in <code>src/</code></li><li>Checks that everything adds up</li></ol>
+<ol><li>Opens the tape and pulls out the five blocks it contains</li><li>Works out which of their bytes are instructions and which are data</li><li>Generates the commented listings in <code>src/</code></li><li>Checks that everything adds up</li></ol>
 <p>If it finishes with <code>TODO VERDE</code> (all green), it worked.</p>
 <h2>4. Read it</h2>
 <p>Open <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/temptations_game.asm">src/temptations_game.asm</a>. That&#x27;s the main game, about 6,000 lines. Start at the beginning: the first routine is the boot code, and from there you can follow the thread.</p>

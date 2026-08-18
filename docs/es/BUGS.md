@@ -120,8 +120,9 @@ Baja y no vuelve a subir.
 
 La pila crece hacia abajo desde `0x8FFF`. Justo debajo, en `0x8FA0`, está la
 tabla de los cuatro puntos ocultos de la pantalla en curso, y más abajo aún,
-desde `0x8F00`, las variables del juego. O sea que el primer daño llega a los
-~80 bytes de fuga, y a partir de ~160 empieza a comerse las variables. Tras
+desde `0x8F00`, las variables del juego. O sea que el primer daño llega a los 80
+bytes de fuga, sobre esa tabla, y a partir de 96 empieza a comerse las
+variables. Tras
 suficientes partidas perdidas seguidas **sin resetear la máquina**, la partida
 acabaría corrompiéndose.
 

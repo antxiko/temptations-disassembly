@@ -127,11 +127,12 @@ con la trampa:   POR QUE NO PRUEBAS SIN POKES</code></pre>
     jp z,L_8B23
     jp CAMBIO_PANT_NORMAL</code></pre>
 <p>6, 13, 20 y 27. Los cortes están cada siete pantallas: 0-6, 7-13, 14-20, 21-27.</p>
+<hr>
 <h2>Restos de otra compilación</h2>
 <p>Entre <code>0xCA00</code> y <code>0xD000</code> hay 1.536 bytes que el análisis no reclama. Unos 729 —los tramos <code>0xCA00-0xCC10</code> y <code>0xCE00-0xCEC7</code>— son código de verdad: se desensamblan sin problemas y las rutinas tienen sentido. Pero no los llama nadie. El resto son tablas y relleno.</p>
 <p>Es una versión anterior de algunas rutinas que se quedó en el binario. Y conviene avisarlo: que un trozo desensamble de forma coherente no prueba que se ejecute.</p>
 <hr>
 <h2>Y lo que no toca nadie</h2>
 <p>Al final del análisis quedaban 642 bytes sin explicar. Se resolvieron poniendo vigilantes de memoria sobre cada uno y jugando una partida completa en el emulador —con vidas infinitas y empujando al monje contra el borde derecho, para recorrer los cuatro niveles hasta la pantalla 27.</p>
-<ul><li><b>80 bytes</b> (0x8FB0-0x8FFF) eran la <b>pila</b>: recibieron escrituras desde 342 direcciones distintas, incluida la propia ROM del BASIC. Ese patrón sólo lo produce el vaivén de <code>PUSH</code> y <code>POP</code>. Los 16 de debajo (0x8FA0-0x8FAF) no son pila: son la tabla de los cuatro puntos ocultos de la pantalla en curso.</li><li><b>1 byte</b> era una ranura de efectos de sonido que no habíamos contado.</li><li><b>545 bytes</b> no los tocó nadie en toda la partida. Entre ellos, dos <code>RET</code> huérfanos: instrucciones de retorno a las que no llega ningún camino, porque la rutina anterior ya cierra con otro.</li></ul>
+<ul><li><b>80 bytes</b> (<code>0x8FB0-0x8FFF</code>) eran la <b>pila</b>: recibieron escrituras desde 342 direcciones distintas, incluida la propia ROM del BASIC. Ese patrón sólo lo produce el vaivén de <code>PUSH</code> y <code>POP</code>.</li><li><b>16 bytes</b> (<code>0x8FA0-0x8FAF</code>) no son pila: son la tabla de los cuatro puntos ocultos de la pantalla en curso.</li><li><b>1 byte</b> era una ranura de efectos de sonido que no habíamos contado.</li><li><b>545 bytes</b> no los tocó nadie en toda la partida. Entre ellos, dos <code>RET</code> huérfanos: instrucciones de retorno a las que no llega ningún camino, porque la rutina anterior ya cierra con otro.</li></ul>
 <footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

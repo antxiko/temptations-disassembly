@@ -124,8 +124,8 @@ It goes down and never comes back up.
 
 The stack grows downwards from `0x8FFF`. Just below it, at `0x8FA0`, sits the
 table of the four hidden points of the current screen, and below that, from
-`0x8F00`, the game variables. So the first damage lands after about 80 bytes of
-leak, and past about 160 it starts eating the variables. After enough lost games
+`0x8F00`, the game variables. So the first damage lands after 80 bytes of leak,
+on that table, and past 96 it starts eating the variables. After enough lost games
 in a row **without resetting the machine**, the game would corrupt itself.
 
 In 1988, playing from a tape that took seven minutes to load, it was unlikely
