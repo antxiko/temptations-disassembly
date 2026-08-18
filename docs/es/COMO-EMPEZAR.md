@@ -62,7 +62,7 @@ Si termina con `TODO VERDE`, funcionó.
 ## 4. Léelo
 
 Abre [src/temptations_game.asm](../src/temptations_game.asm). Es el juego
-principal, unas 6.000 líneas. Empieza por el principio: la primera rutina es el
+principal, unas 6.578 líneas. Empieza por el principio: la primera rutina es el
 arranque, y de ahí se sigue el hilo.
 
 Un fragmento, para que veas la pinta que tiene:

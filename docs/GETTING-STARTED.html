@@ -63,7 +63,7 @@ cd /tmp/pasmo &amp;&amp; ./configure &amp;&amp; make &amp;&amp; sudo make instal
 <ol><li>Opens the tape and pulls out the five blocks it contains</li><li>Works out which of their bytes are instructions and which are data</li><li>Generates the commented listings in <code>src/</code></li><li>Checks that everything adds up</li></ol>
 <p>If it finishes with <code>TODO VERDE</code> (all green), it worked.</p>
 <h2>4. Read it</h2>
-<p>Open <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/temptations_game.asm">src/temptations_game.asm</a>. That&#x27;s the main game, about 6,000 lines. Start at the beginning: the first routine is the boot code, and from there you can follow the thread.</p>
+<p>Open <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/temptations_game.asm">src/temptations_game.asm</a>. That&#x27;s the main game, about 6,578 lines. Start at the beginning: the first routine is the boot code, and from there you can follow the thread.</p>
 <p>A snippet, so you can see what it looks like:</p>
 <pre><code>PINTA_MARCADOR:         ; Redibuja el marcador (vidas / pantalla / nivel)
     ld hl,05fc0h        ; Plantilla del marcador -&gt; VRAM 0x1A00, las filas 16..23

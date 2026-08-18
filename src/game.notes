@@ -136,7 +136,7 @@ C 0xDA4E Devuelve el hook H.TIMI a como estaba
 # QUE codigo lee o escribe cada direccion con el juego en marcha, y se contrasta
 # con lo que aparece en pantalla decodificando la tabla de nombres de la VRAM.
 
-D 0x8F00 0x8F30 vars_juego  Variables del juego. Las identificadas: 0x8F09/0x8F0A = X/Y del jugador; 0x8F0D = pantalla; 0x8F0E = nivel; 0x8F12 = vidas.
+D 0x8F00 0x8F20 vars_juego  Variables del juego. Las identificadas: 0x8F09/0x8F0A = X/Y del jugador; 0x8F0D = pantalla; 0x8F0E = nivel; 0x8F12 = vidas. El rango llegaba hasta 0x8F30 y se pisaba con los enemigos: 0x8734, 0x8823 y 0x8A5A cargan ix/iy con 0x8F20 y ahi empiezan sus registros
 
 B 0x8698 ############################################################
 B 0x8698 MARCADOR: pinta vidas, pantalla y nivel

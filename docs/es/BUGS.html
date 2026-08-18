@@ -85,7 +85,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
     ld sp,08fffh    ; pila definitiva del juego   &lt;- 0x8058
     jp INIT_PRINCIPAL</code></pre>
 <p>Pero cuando pierdes la última vida, el game over termina así:</p>
-<pre><code>    call 08bfdh
+<pre><code>    call L_8BFD
     jp 08076h       ; reinicia... entrando DESPUES del ld sp</code></pre>
 <p><code>0x8076</code> es la inicialización principal, que está <b>por debajo</b> de la instrucción que coloca la pila. Así que la partida nueva arranca con el puntero de pila donde lo dejó la anterior.</p>
 <h3>Medido en el emulador</h3>

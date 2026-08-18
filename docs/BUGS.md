@@ -95,7 +95,7 @@ GAME_START:
 But when you lose your last life, the game over ends like this:
 
 ```asm
-    call 08bfdh
+    call L_8BFD
     jp 08076h       ; reinicia... entrando DESPUES del ld sp
 ```
 

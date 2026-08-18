@@ -45,11 +45,11 @@ The whole game fits in this:
 
 ```asm
 BUCLE_PARTIDA:
-    call 0832ah         ; ¿han pulsado CTRL+STOP?
+    call CHK_ABANDONAR         ; ¿han pulsado CTRL+STOP?
     halt                ; espera al barrido de pantalla
-    call 0db00h         ; efectos de sonido (motor PSG)
+    call SFX_FRAME         ; efectos de sonido (motor PSG)
     halt
-    call 0db00h
+    call SFX_FRAME
     call DISPARA
     call MUEVE_DISPAROS
     call MUEVE_ENEMIGOS

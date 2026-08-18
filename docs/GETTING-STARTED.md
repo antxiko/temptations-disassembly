@@ -62,7 +62,7 @@ If it finishes with `TODO VERDE` (all green), it worked.
 ## 4. Read it
 
 Open [src/temptations_game.asm](../src/temptations_game.asm). That's the main
-game, about 6,000 lines. Start at the beginning: the first routine is the boot
+game, about 6,578 lines. Start at the beginning: the first routine is the boot
 code, and from there you can follow the thread.
 
 A snippet, so you can see what it looks like:

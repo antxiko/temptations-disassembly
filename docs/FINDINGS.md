@@ -182,7 +182,7 @@ FIN_DE_PANTALLA:
     cp 01bh             ; 27 -> se acabo el juego
     jp z,FINAL_JUEGO
     cp 006h             ; 6  -> entra al nivel 2
-    jp z,L_8B23
+    jp z,CEREMONIA_NIVEL
     jp CAMBIO_PANT_NORMAL
 ```
 

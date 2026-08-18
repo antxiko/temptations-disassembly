@@ -85,7 +85,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
     ld sp,08fffh    ; pila definitiva del juego   &lt;- 0x8058
     jp INIT_PRINCIPAL</code></pre>
 <p>But when you lose your last life, the game over ends like this:</p>
-<pre><code>    call 08bfdh
+<pre><code>    call L_8BFD
     jp 08076h       ; reinicia... entrando DESPUES del ld sp</code></pre>
 <p><code>0x8076</code> is the main initialisation, which is <b>below</b> the instruction that sets up the stack. So the new game starts with the stack pointer wherever the previous one left it.</p>
 <h3>Measured in the emulator</h3>
