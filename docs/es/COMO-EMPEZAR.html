@@ -79,6 +79,8 @@ L_86AE:
     add a,b             ; ...asi que 0x5C+vidas da directamente el caracter
     ld hl,01a68h        ; Casilla del digito de VIDAS en la VRAM</code></pre>
 <p>Si te pierdes, <a href="EL-CODIGO.html">EL-CODIGO.md</a> tiene el mapa de dónde está cada cosa.</p>
+<h3>Como salen los bloques de datos</h3>
+<p>Cada rango de datos declarado en las notas sale como un bloque aparte: su cabecera diciendo para que sirve, su etiqueta y el volcado alineado a su primer byte, de modo que se ve de un golpe donde acaba una tabla y empieza la siguiente. Una linea opcional le da al bloque la anchura de fila de su estructura real, y eso es lo que hace legibles los veintinueve mapas de pantalla: 32 bytes por fila es una fila del mapa, asi que los muros y las plataformas se ven en el propio listado. La fuente, la tabla de colores y los sprites salen de ocho en ocho -un patron por fila- y las tablas de saltos salen en <code>defw</code> con el destino nombrado al lado.</p>
 <h2>5. Añadir tus propios comentarios</h2>
 <p>**No edites los <code>.asm</code>**: se regeneran cada vez y perderías el trabajo. Los comentarios van en <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/game.notes">../src/game.notes</a>, anclados a la dirección de memoria:</p>
 <pre><code>L 0x8698 PINTA_MARCADOR   Redibuja el marcador completo

@@ -85,6 +85,18 @@ L_86AE:
 
 Si te pierdes, [EL-CODIGO.md](EL-CODIGO.md) tiene el mapa de dónde está cada cosa.
 
+### Como salen los bloques de datos
+
+Cada rango de datos declarado en las notas sale como un bloque aparte: su
+cabecera diciendo para que sirve, su etiqueta y el volcado alineado a su primer
+byte, de modo que se ve de un golpe donde acaba una tabla y empieza la
+siguiente. Una linea opcional le da al bloque la anchura de fila de su
+estructura real, y eso es lo que hace legibles los veintinueve mapas de
+pantalla: 32 bytes por fila es una fila del mapa, asi que los muros y las
+plataformas se ven en el propio listado. La fuente, la tabla de colores y los
+sprites salen de ocho en ocho -un patron por fila- y las tablas de saltos salen
+en `defw` con el destino nombrado al lado.
+
 ## 5. Añadir tus propios comentarios
 
 **No edites los `.asm`**: se regeneran cada vez y perderías el trabajo. Los

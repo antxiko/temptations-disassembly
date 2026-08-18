@@ -85,6 +85,17 @@ L_86AE:
 
 If you get lost, [THE-CODE.md](THE-CODE.md) has the map of where everything is.
 
+### How the data blocks are laid out
+
+Every data range declared in the notes comes out as a block of its own: its own
+heading saying what it is for, its own label, and the dump aligned to its first
+byte, so where one table ends and the next begins is visible at a glance. An
+optional line gives the block the row width of its real structure, and that is
+what makes the twenty-nine screen maps readable: 32 bytes per row is one row of
+the map, so the walls and the platforms can be seen in the listing itself. The
+font, the colour table and the sprites go eight bytes per row -one pattern- and
+the jump tables come out as `defw` with the destination named next to them.
+
 ## 5. Adding your own comments
 
 **Don't edit the `.asm` files**: they're regenerated every time and you'd lose

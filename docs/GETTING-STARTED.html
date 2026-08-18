@@ -79,6 +79,8 @@ L_86AE:
     add a,b             ; ...asi que 0x5C+vidas da directamente el caracter
     ld hl,01a68h        ; Casilla del digito de VIDAS en la VRAM</code></pre>
 <p>If you get lost, <a href="THE-CODE.html">THE-CODE.md</a> has the map of where everything is.</p>
+<h3>How the data blocks are laid out</h3>
+<p>Every data range declared in the notes comes out as a block of its own: its own heading saying what it is for, its own label, and the dump aligned to its first byte, so where one table ends and the next begins is visible at a glance. An optional line gives the block the row width of its real structure, and that is what makes the twenty-nine screen maps readable: 32 bytes per row is one row of the map, so the walls and the platforms can be seen in the listing itself. The font, the colour table and the sprites go eight bytes per row -one pattern- and the jump tables come out as <code>defw</code> with the destination named next to them.</p>
 <h2>5. Adding your own comments</h2>
 <p>**Don&#x27;t edit the <code>.asm</code> files**: they&#x27;re regenerated every time and you&#x27;d lose the work. Comments go in <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/game.notes">../src/game.notes</a>, anchored to the memory address:</p>
 <pre><code>L 0x8698 PINTA_MARCADOR   Redibuja el marcador completo

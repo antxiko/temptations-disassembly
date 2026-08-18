@@ -14,10 +14,14 @@
 # exactamente que trozo de RAM va a que zona de VRAM.
 
 D 0x4000 0x4800 fuente        Tabla de PATRONES: 256 glifos de 8 bytes. Se copia a los tres tercios de la pantalla (VRAM 0x0000/0x0800/0x1000), por eso los tres se ven iguales.
+F 0x4000 8
 D 0x4800 0x5000 colores       Tabla de COLORES de los patrones, uno por linea de glifo. Va a VRAM 0x2000/0x2800/0x3000.
+F 0x4800 8
 D 0x5000 0x5800 sprites       Patrones de SPRITES. Se copian a VRAM 0x3800 desde la rutina 0x805E.
+F 0x5000 8
 D 0x5800 0x5CC0 grafdesc      Datos graficos sin identificar todavia (?)
 D 0x5CC0 0x5FC0 pantalla_menu Tabla de NOMBRES de la pantalla de presentacion (32x24 = 768 bytes). Copiada tal cual a VRAM 0x1800. Contiene el texto del monje y los creditos.
+F 0x5CC0 32
 D 0x5FC0 0x8000 datos_juego   Datos del juego sin identificar todavia (mapas de pantallas, tablas) (?)
 
 # =============================================================================
@@ -97,6 +101,7 @@ L 0xD431 SND_JUMPIDX      HL = puntero nº A de la tabla que apunta HL
 C 0xD432 A*2 (los punteros son de 2 bytes)
 
 D 0xD513 0xD531 tabla_cmd_sonido Tabla de saltos de los 15 comandos del reproductor (0x80..0x8E). A partir de 0xD531 ya son otros datos.
+F 0xD513 w1
 D 0xD53E 0xD5C8 canales_psg      Estructuras de los 3 canales del PSG, 46 bytes cada una (0xD53E, 0xD56C, 0xD59A).
 D 0xD760 0xD891 melodia_canal0   Datos de la melodia del menu, canal 0
 D 0xD891 0xD8F8 melodia_canal1   Datos de la melodia del menu, canal 1
@@ -290,13 +295,16 @@ L 0x8C1E GAME_OVER        Fin de partida
 # 0x7D80 de la RAM.
 
 D 0x7D80 0x7F80 buffer_mapa       Buffer del mapa de la pantalla actual (512 bytes). Se llena desde 0x9000+pantalla*512 y se vuelca a VRAM 0x1800.
+F 0x7D80 32
 D 0x8F20 0x8F80 enemigos_activos  Enemigos en juego: 4 registros de 5 bytes.
 D 0x8F80 0x8FA0 disparos_activos  Proyectiles en vuelo: 7 registros, plantilla inicial en 0x8CB8.
 D 0x8CAB 0x8CB8 tabla_flags       Flags por estado del jugador, indexada igual que la tabla de direcciones.
 D 0x8CB8 0x8CD4 plantilla_disparos Plantilla de los 7 registros de proyectil (02 15 00 00 cada uno); el arranque la copia en 0x80BA.
+F 0x8CB8 4
 D 0xCA00 0xD000 codigo_muerto     Codigo de OTRA COMPILACION que quedo en el binario y nunca se ejecuta. Desensambla bien porque es codigo real, pero no pertenece al juego que corre; no se traza para no ensuciar el listado.
 D 0xD5C8 0xD760 datos_psg         Tablas del reproductor PSG (periodos de nota, envolventes) (?)
 D 0xDDAC 0xDDB4 ranuras_sonido    8 ranuras de efecto de sonido. 0xDDAC = andar, 0xDDAD = saltar/caer (las escribe 0x8141).
+F 0xDDAC 1
 
 # =============================================================================
 # CORRECCIONES Y AMPLIACIONES VERIFICADAS (2026-08-04)
@@ -1454,6 +1462,7 @@ B 0x8c60 (VRAM 0x1B00) y 0x80C5 entra en el menu de 0xDA00. Al salir del
 B 0x8c60 menu, 0x80CB vuelve a llamar a 0x8315 y los borra: por eso estos
 B 0x8c60 cuatro sprites solo se ven en la portada y jamas en la partida.
 D 0x8c60 0x8c70 attr_sprites_portada  Cuatro entradas (Y, X, patron, color) de la tabla de atributos de sprite: 29 61 04 0F / 29 7E 04 0F / 28 52 04 0F / 29 9E 04 0F. Las cuatro llevan el patron 4 y el color 0x0F (blanco). Como el juego trabaja con sprites de 16x16 (0x8003 escribe 0xF2 en el registro 1 del VDP, con el bit SIZE a 1), el patron 4 sale de 0x5020. Por las coordenadas caen las cuatro sobre la banda del logo del titulo, o sea que son adorno de la portada (?). [SUSTITUYE a la D 0x8c60 init_sprites]
+F 0x8c60 4
 B 0x8c70 La tabla ocupa 50 bytes (0x8C70-0x8CA1) pero la tabla de
 B 0x8c70 animacion de 0x60C0 solo tiene 49 ranuras de 128 bytes:
 B 0x8c70 (0x7940-0x60C0)/128 = 49, y de 0x790D en adelante ya es relleno.
@@ -1520,6 +1529,7 @@ D 0x8ed5 0x8f00 relleno_ram_sucia_2  43 bytes del mismo relleno, entre el final 
 C 0x8878 Destino de los rompibles de esta pantalla: 16 bytes justos en 0x8FA0-0x8FAF, pegados por debajo de la pila [SUSTITUYE]
 C 0x8979 Salta al siguiente rompible; con el tope de 4 que impone el CP de 0x8974 el barrido toca 0x8FA0, 0x8FA4, 0x8FA8 y 0x8FAC y ni un byte mas
 D 0x8fa0 0x8fb0 objetos_activos  Los cuatro puntos ocultos de la pantalla en curso, 4 registros de 4 bytes. Los siembra el LDIR de 0x887E copiando 16 bytes desde 0x79C0 + pantalla*16 (el origen se calcula en 0x8863-0x8877 con cuatro SLA E/RL D). VERIFICADO con el juego corriendo: en dump/scr25.ram y dump/poketest.ram, parados en la pantalla 0, los 16 bytes valen 04 0A FF AC 14 05 FE AD y ocho ceros, identicos a 0x79C0-0x79CF; en dump/running_full.bin, volcado en el menu, todavia se ven los bytes de la cinta porque el LDIR aun no ha corrido. Aqui NO sobra nada: de 0x8FB0 en adelante ya es pila. [SUSTITUYE a la D 0x8FA0 0x9000 pila; la pila la declara la D de abajo]
+F 0x8fa0 4
 B 0x8fb0 ############################################################
 B 0x8fb0 ESPACIO DE PILA
 B 0x8fb0 ############################################################
@@ -1547,34 +1557,63 @@ B 0x9000 volcados de RAM con el juego corriendo no cambian ni un byte
 B 0x9000 entre 0x9000 y 0xCA00. Lo que se modifica al recoger objetos es
 B 0x9000 el buffer 0x7D80, nunca esto.
 D 0x9000 0x9200 mapa_p00 Pantalla 0 (nivel 1, marcador 1/7). 2 enemigos, 1 calavera. Puntos ocultos: (4,10) a 1 disparo da 0xAC sobre la calavera; (20,5) a 2 disparos da 0xAD en el aire. [SUSTITUYE a la D 0x9000 0xCA00 mapas_pantalla: las 29 D de aqui cubren el rango entero]
+F 0x9000 32
 D 0x9200 0x9400 mapa_p01 Pantalla 1 (nivel 1, marcador 2/7). 3 enemigos, un 0xAC a la vista, sin puntos ocultos.
+F 0x9200 32
 D 0x9400 0x9600 mapa_p02 Pantalla 2 (nivel 1, marcador 3/7). 2 enemigos, un 0xAB a la vista, sin puntos ocultos.
+F 0x9400 32
 D 0x9600 0x9800 mapa_p03 Pantalla 3 (nivel 1, marcador 4/7). 3 enemigos, 1 calavera. Puntos ocultos: (13,14) a 5 disparos da 0xAC sobre la calavera; (1,7) a 2 disparos da 0xAB en el aire.
+F 0x9600 32
 D 0x9800 0x9A00 mapa_p04 Pantalla 4 (nivel 1, marcador 5/7). 3 enemigos, sin recogibles ni puntos ocultos.
+F 0x9800 32
 D 0x9A00 0x9C00 mapa_p05 Pantalla 5 (nivel 1, marcador 6/7). 3 enemigos, 1 calavera con 0xAD a los 4 disparos en (6,11).
+F 0x9A00 32
 D 0x9C00 0x9E00 mapa_p06 Pantalla 6 (nivel 1, marcador 7/7). 4 enemigos, nada que recoger. Ultima del nivel 1: el 'cp 006h' de 0x8B09 salta desde aqui al cambio de nivel.
+F 0x9C00 32
 D 0x9E00 0xA000 mapa_p07 Pantalla 7 (nivel 2, marcador 1/7). 4 enemigos. Un solo punto oculto, (20,4) a 3 disparos, y da las ALITAS 0xAA; esta en el aire, no sobre cofre ni calavera.
+F 0x9E00 32
 D 0xA000 0xA200 mapa_p08 Pantalla 8 (nivel 2, marcador 2/7). 3 enemigos, 56 casillas mortales, un 0xAC y un 0xAD a la vista, sin puntos ocultos.
+F 0xA000 32
 D 0xA200 0xA400 mapa_p09 Pantalla 9 (nivel 2, marcador 3/7). 3 enemigos, 72 casillas mortales, 1 cofre en (28,10) que suelta 0xAD a un solo disparo.
+F 0xA200 32
 D 0xA400 0xA600 mapa_p10 Pantalla 10 (nivel 2, marcador 4/7). 4 enemigos, 3 calaveras. Puntos ocultos: (14,10) a 7 disparos, el mas duro del juego, da 0xAC sobre calavera; (19,14) a 2 disparos da las ALITAS 0xAA sobre decorado (tile 0x8A).
+F 0xA400 32
 D 0xA600 0xA800 mapa_p11 Pantalla 11 (nivel 2, marcador 5/7). 4 enemigos, 1 calavera. Puntos ocultos: (26,2) a 5 disparos da 0xAD sobre la calavera; (28,7) a 4 disparos da 0xAC en el aire.
+F 0xA600 32
 D 0xA800 0xAA00 mapa_p12 Pantalla 12 (nivel 2, marcador 6/7). 4 enemigos, 1 calavera y 1 cofre. Puntos ocultos: (12,6) a 5 disparos da 0xAC sobre la calavera; (11,11) a 5 disparos da 0xAB sobre el cofre.
+F 0xA800 32
 D 0xAA00 0xAC00 mapa_p13 Pantalla 13 (nivel 2, marcador 7/7). 4 enemigos, nada que recoger. Ultima del nivel 2: el 'cp 00dh' de 0x8B09 entra al nivel 3, que de paso recarga 0x4C0 bytes de patrones de sprite desde 0x5800 a VRAM 0x3B40.
+F 0xAA00 32
 D 0xAC00 0xAE00 mapa_p14 Pantalla 14 (nivel 3, marcador 1/7). 3 enemigos, 1 calavera, 10 casillas mortales, un 0xAD a la vista. Puntos ocultos: (10,5) a 1 disparo da 0xAC sobre la calavera; (20,6) a 6 disparos da 0xAB en el aire.
+F 0xAC00 32
 D 0xAE00 0xB000 mapa_p15 Pantalla 15 (nivel 3, marcador 2/7). 4 enemigos, 1 calavera, un 0xAB y un 0xAC a la vista. Puntos ocultos: (30,11) a 6 disparos da 0xAD sobre la calavera; (16,7) a 6 disparos da 0xAB en el aire.
+F 0xAE00 32
 D 0xB000 0xB200 mapa_p16 Pantalla 16 (nivel 3, marcador 3/7). 4 enemigos, 1 cofre, 63 casillas mortales y DOS tiles 0xAC a la vista: al coger uno, 0x8AE3 borra siempre el primero. Puntos ocultos: (2,14) a 1 disparo da 0xAB sobre el cofre; (21,5) a 2 disparos da 0xAD en el aire.
+F 0xB000 32
 D 0xB200 0xB400 mapa_p17 Pantalla 17 (nivel 3, marcador 4/7). 4 enemigos, 1 calavera, 6 casillas mortales, un 0xAB a la vista. Punto oculto: (10,14) a 6 disparos da 0xAC sobre la calavera.
+F 0xB200 32
 D 0xB400 0xB600 mapa_p18 Pantalla 18 (nivel 3, marcador 5/7). 3 enemigos, 1 calavera, 11 casillas mortales. Punto oculto: (9,8) a 3 disparos da 0xAC sobre la calavera.
+F 0xB400 32
 D 0xB600 0xB800 mapa_p19 Pantalla 19 (nivel 3, marcador 6/7). 4 enemigos, 1 calavera, un 0xAB a la vista. Punto oculto: (2,10) a 2 disparos da 0xAD sobre la calavera.
+F 0xB600 32
 D 0xB800 0xBA00 mapa_p20 Pantalla 20 (nivel 3, marcador 7/7). 4 enemigos, 19 casillas mortales, sin puntos ocultos. Ultima del nivel 3: el 'cp 014h' de 0x8B09 salta a 0x8B55, que enciende el modo flotar.
+F 0xB800 32
 D 0xBA00 0xBC00 mapa_p21 Pantalla 21 (nivel 4, marcador 1/7). 3 enemigos, 2 calaveras, un 0xAC a la vista y 126 casillas mortales, la mas hostil del juego. Puntos ocultos: (11,9) a 6 disparos da 0xAD y (15,8) a 2 disparos da 0xAC, los dos sobre calavera.
+F 0xBA00 32
 D 0xBC00 0xBE00 mapa_p22 Pantalla 22 (nivel 4, marcador 2/7). 3 enemigos, 125 casillas mortales, un 0xAC y un 0xAD a la vista. Punto oculto: (9,10) a 6 disparos da 0xAC sobre un tile 0xCB de decorado.
+F 0xBC00 32
 D 0xBE00 0xC000 mapa_p23 Pantalla 23 (nivel 4, marcador 3/7). 4 enemigos, sin recogibles ni puntos ocultos.
+F 0xBE00 32
 D 0xC000 0xC200 mapa_p24 Pantalla 24 (nivel 4, marcador 4/7). 3 enemigos, un 0xAC a la vista, sin puntos ocultos.
+F 0xC000 32
 D 0xC200 0xC400 mapa_p25 Pantalla 25 (nivel 4, marcador 5/7). 3 enemigos, 16 casillas mortales. Punto oculto: (5,5) a 6 disparos da 0xAB en el aire.
+F 0xC200 32
 D 0xC400 0xC600 mapa_p26 Pantalla 26 (nivel 4, marcador 6/7). 4 enemigos, 1 calavera y 37 casillas mortales. La calavera de (3,4) es una TRAMPA: a los 6 disparos suelta el tile 0xF4, que es de clase 7 y mata al tocarlo.
+F 0xC400 32
 D 0xC600 0xC800 mapa_p27 Pantalla 27 (nivel 4, marcador 7/7). 4 enemigos y SEIS tiles 0xAB de vida a la vista, el atracon final. Sus tres puntos ocultos (8,12), (10,10) y (9,8) llevan premio 0x00 sobre tiles 0xD5: no dan nada, son bloques que se rompen de un disparo para abrir paso. Ultima jugable: el 'cp 01bh' de 0x8B09 pasa a la pantalla de victoria.
+F 0xC600 32
 D 0xC800 0xCA00 mapa_p28 Pantalla 28: la de VICTORIA. La carga la misma 0x8ACE despues de que 0x8B6D incremente 0x8F0D a 28, y 0x8B74 le carga ademas sus cuatro enemigos decorativos. Arriba hay arcos dibujados con tiles; el texto del final empieza EXACTAMENTE en 0xC962 (de 0xC93B a 0xC961 son tiles 0x00, o sea la linea en blanco anterior): la direccion 0xC93B que da docs/CONTEXTO.md apunta al hueco, no al texto.
+F 0xC800 32
 # --- 0xCA00: que es de verdad el bloque muerto ----------------------------
 B 0xca00 AFINA lo que dice docs/CONTEXTO.md: este bloque no es 'codigo
 B 0xca00 ensamblado para correr en 0xCAxx'. Los 535 bytes de 0xCCEA-0xCF01
@@ -1631,6 +1670,7 @@ C 0xD209 Unica llamada a 0xD43E en todo el binario: la sombra sale al chip una s
 C 0xD402 HL = A * DE por sumas y desplazamientos, preservando BC; si A es cero devuelve HL=0. La usan el offset de canal, la duracion de nota y el tempo
 C 0xD43E Los unicos dos OUT a los puertos 0xA0/0xA1 de todo el binario estan aqui (0xD447 y 0xD44A), pero no son la unica via de escribir el PSG: el motor de efectos de 0xDB00 lo hace por la BIOS, con 39 llamadas a WRTPSG
 D 0xd453 0xd513 tabla_periodos  Tabla de periodos de nota del PSG: 96 palabras little-endian, estrictamente decrecientes, del indice 0 (periodo 3421) al 95 (periodo 14). Con el reloj REAL del PSG del MSX, que es 3579545/2 = 1789772,5 Hz, y f = reloj/(16*periodo), el indice 45 vale 254 = 440,4 Hz: la tabla esta afinada a LA4 = 440 Hz y el indice 0 es un DO de 32,70 Hz, o sea DO1. Cada octava es exactamente la mitad de periodo que la anterior redondeada, comprobadas las 84 parejas w[i+12] frente a w[i] sin una sola excepcion. Por debajo del indice 60 la desafinacion frente al temperamento igual no pasa de 4,2 centesimas; de ahi arriba el periodo entero se queda corto y llega a 37 centesimas en el indice 87, el peor de los 96. La indexa un unico sitio, 0xD0A2, y acaba justo donde empieza la tabla de comandos. [SUSTITUYE a la D 0xd453 anterior, que daba 65,4 Hz: estaba una octava alta por usar 3579545/16 en vez de 1789772,5/16]
+F 0xd453 w8
 D 0xd531 0xd532 snd_canal_actual  Canal que el reproductor esta procesando (0, 1 o 2). Lo escribe solo 0xD072, dentro del bucle de tres vueltas de 0xD060, y lo leen 0xD28D, 0xD39A, 0xD3A8, 0xD3C0, 0xD3DC y 0xD3F7 para saber sobre que canal actua cada comando. En la imagen de cinta trae un 02, pero da igual: lo primero que hace el bucle es reescribirlo. [SUSTITUYE a la D 0xd531 0xd533 psg_control, que se parte en dos]
 D 0xd532 0xd533 snd_ticks_unidad  Duracion en ticks de interrupcion de la unidad de tiempo, o sea el tempo ya convertido. Lo fija el comando 0x85 (0xD2A8) como 3000/(tempo*16) y lo leen los comandos 0x83 (0xD265) y 0x86 (0xD2F2), que multiplican por el la duracion escrita en la melodia. El 3000 es 50*60, coherente con un tempo en negras por minuto a 50 Hz y 16 unidades de duracion por negra (?). Los dos lectores hacen ld de,(0xD532), que se trae de propina 0xD533 en D, y lo tiran acto seguido con ld d,0.
 D 0xd533 0xd53e snd_regs_psg  Sombra en RAM de los 11 registros del PSG, R0 en 0xD533 y R10 en 0xD53D, en el mismo orden que el chip: R0-R5 periodos de tono A/B/C, R6 periodo de ruido, R7 mezclador y R8-R10 los tres volumenes. Verificada registro a registro: 0xD068 y 0xD06B reparten los punteros por canal, 0xD206 escribe R6, 0xD3A3-0xD3BB manipula R7 y 0xD43E la vuelca entera. Solo sale al chip una vez por vuelta de 0xD060, desde 0xD209. En la imagen de cinta esta todo a cero salvo 0xD53A = 0x3F, que es justo el mezclador con tono y ruido callados en los tres canales. [SUSTITUYE]
