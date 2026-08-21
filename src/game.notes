@@ -330,7 +330,7 @@ L 0x8933 MUEVE_DISPAROS   Avanza los proyectiles y los pinta como tiles
 L 0x8885 DISPARA          Crea un proyectil: columna=(X+7)/8, fila=(Y+8)/8
 L 0x87FE CARGA_ENEMIGOS   Carga en 0x8F20 los enemigos de la pantalla, desde 0x7BA0+pantalla*16
 L 0x82BE ANIMA_JUGADOR    Motor de animacion: indexa estado*128 + paso*4; 4 bytes por fotograma y 0x80 como terminador
-L 0x8BA7 SUBE_NIVEL       Incrementa 0x8F0E (el nivel es variable propia, no se deduce de la pantalla)
+L 0x8BA7 SUBE_NIVEL       NO es un punto de entrada: la palabra 0x8BA7 no sale ni una vez en los 40449 bytes. Es la continuacion de EMPIEZA_NIVEL, partida aqui solo para dar nombre al sitio donde se guarda el nivel en 0x8F0E
 L 0x8B9D EMPIEZA_NIVEL    Prepara el nivel: resetea arma y municion
 L 0x8B09 DESPACHA_NIVEL   Elige que hacer segun el nivel al que se entra
 
@@ -1720,9 +1720,7 @@ B 0xddb4 O sea: estos 77 bytes se grabaron, simplemente no sirven de nada.
 D 0xddb4 0xddbb resto_epilogo_irq  Siete bytes, D9 F1 C1 D1 E1 FB C9 = exx / pop af / pop bc / pop de / pop hl / ei / ret, identicos al final de la rutina de interrupcion 0xD00E-0xD014, que es el tramo que desapila lo que mete la BIOS antes de llamar a H.TIMI. La secuencia aparece exactamente DOS veces en los 40449 bytes: alli y aqui. Que sean el resto de una version anterior en la que el motor de efectos colgaba de H.TIMI, en vez de llamarse desde el bucle principal como ahora, encaja con que la rutina actual acabe en un RET pelado, pero no se puede probar con los bytes (?) [SUSTITUYE a la D 0xddb4 0xde01 sfx_restos, que se parte en tres]
 D 0xddbb 0xddc7 ceros_cola  Doce bytes a cero, sin ninguna referencia. Que esten a cero limpio y no con el patron 00/FF de los huecos apunta a que si los emitio el ensamblado, igual que los ceros de 0xDDA8-0xDDAA (?)
 D 0xddc7 0xde01 ram_sin_iniciar_cola  58 bytes del mismo patron degradado que 0xDA80: alternancia 00/FF con bits sueltos cambiados (20,7% de desviacion), bytes bajos 04 21 44 54 74 y altos ff fb cb. El ultimo byte del juego, 0xDE00 = 0x21, no significa nada: es un byte mas de este relleno.
-# --- Estas dos van en src/slots.notes, NO en game.notes -------------------
-C 0xC590 Copia 100 bytes de 0xDAC0 a 0xDEA8 ANTES de cargar el juego (el LDIR esta en 0xC599 y la carga del bloque en 0xC5E4): 0xDAC0 cae dentro de lo que la carga 0x4000-0xDE00 va a machacar y 0xDEA8 no. Sirve para poner a salvo una tabla de parches que se haya dejado en 0xDAC0 antes de arrancar (?)
-C 0xC5F4 Formato de la tabla: tres 0xC9 de marca en 0xDEA8-0xDEAA, un byte de contador y luego repeticiones de (direccion baja, direccion alta, valor) que se aplican con 'ld (de),a'. Los 100 bytes copiados dan justo para 3 + 1 + 32*3, o sea sitio para 32 parches, pero el codigo NO comprueba el contador: con uno mayor leeria mas alla de lo copiado. Ojo: lo que decide si hay marca es lo que el BASIC dejara en 0xDAC0 al arrancar, no el contenido del juego, que en ese momento aun no esta cargado; no consta ningun cargador ni entrenador publicado que use esta tabla
+# --- Las dos C de 0xC590 y 0xC5F4 que habia aqui ya estan en src/slots.notes -
 
 # =============================================================================
 # 0x8F1E: NO ES UNA TRAMPA DELIBERADA, ES UN OLVIDO CON SUERTE
@@ -1744,3 +1742,182 @@ C 0xC5F4 Formato de la tabla: tres 0xC9 de marca en 0xDEA8-0xDEAA, un byte de co
 # SIEMPRE y todo el que se pasara el juego veria el reproche sin haber hecho
 # trampa. No es astucia, es un olvido que salio bien.
 C 0x8F1E Bandera del castigo por trampas. El arranque NUNCA la inicializa: vale 0 solo porque el relleno de la cinta dejo un 0 justo aqui (3 de 160 bytes de esta zona son cero)
+
+# =============================================================================
+# SEGUNDA PASADA (reproductor 0xD0D9-0xD452): comentario de linea
+# =============================================================================
+# Las envolventes de este reproductor son generadores de rampa. Cada fase
+# guarda cuatro cosas: un contador de ticks que faltan para el proximo escalon,
+# el numero de escalones que le quedan, el tamano del escalon y el valor con el
+# que se recarga el contador de ticks. Los dos primeros viven en la estructura
+# del canal y los dos ultimos vienen del instrumento (+16..+24).
+
+C 0xD0D9 Aqui llega tambien el canal que estaba esperando, por el salto de 0xD07B: lo unico que le queda por hacer es descontar el tick
+C 0xD0DF Un tick menos de los que dura la nota
+C 0xD0E6 IY = IX: las fases se leen con IY, que va avanzando de byte en byte por la estructura
+C 0xD0EA Dos fases de volumen, en ix+0C e ix+0D
+C 0xD0EC C es el testigo: si acaba en cero es que no quedaba ninguna fase viva
+C 0xD0F2 Sin ticks pendientes: toca mirar si quedan escalones
+C 0xD0F4 Aun falta para el siguiente escalon
+C 0xD0FB +0E = escalones que le quedan a esta fase
+C 0xD0FF Fase terminada del todo: pasa a la siguiente
+C 0xD101 Un escalon menos
+C 0xD105 Suma el paso (+1B) al desplazamiento de volumen acumulado (+2A), que 0xD198 anade al volumen base
+C 0xD10E Y recarga desde +20 los ticks que hay entre escalon y escalon
+C 0xD117 Fase agotada: IY salta al byte de al lado, que es la fase siguiente
+C 0xD14A Con el paso en negativo hay que restar en vez de sumar
+C 0xD14D Complemento a dos del paso
+C 0xD153 Resta de 16 bits sobre el desplazamiento de tono (+2B/+2C)
+C 0xD166 Paso positivo: la misma suma, sin dar la vuelta al signo
+C 0xD174 Tambien aqui se recorta a 12 bits
+C 0xD179 Recarga los ticks desde +22 y apunta el escalon como dado
+C 0xD1C4 Las mismas rampas, pero sobre la estructura GLOBAL de ruido de 0xD5C8: +00/+01 son los ticks que faltan
+C 0xD1C8 Sin ticks pendientes: mira los escalones
+C 0xD1D1 +02/+03 = escalones que quedan en esta fase
+C 0xD1D5 Fase acabada: a la siguiente
+C 0xD1DB Suma el paso (+06) al desplazamiento de ruido acumulado, que esta en 0xD5D4
+C 0xD1E4 Y recarga los ticks desde +08
+C 0xD1ED Segunda y ultima fase de la envolvente de ruido
+C 0xD1F2 Si ninguna de las dos ha dado escalon, la envolvente esta agotada
+C 0xD212 Del instrumento a los contadores: +20 son los ticks (a +0C) y +16 los escalones (a +0E)
+C 0xD21E IX avanza un byte para repetirlo sobre la segunda fase
+C 0xD220 Dos fases de volumen
+C 0xD223 IX vuelve intacto: quien lo ha movido es el bucle
+C 0xD22A Lo mismo para el tono: +22 son los ticks (a +10) y +18 los escalones (a +13)
+C 0xD236 Tres fases en tres bytes consecutivos
+C 0xD246 Y para el ruido: +08 los ticks (a +00) y +04 los escalones (a +02)
+C 0xD252 Las dos fases van en bytes consecutivos de 0xD5C8
+C 0xD289 Los 46 ceros, uno a uno
+C 0xD28D 0xD5D5 dice que canal se quedo con el generador de ruido; lo escribe 0xD39D
+C 0xD297 Borra de 0xD5C8 a 0xD5D2: la envolvente de ruido entera y sus bits de repeticion
+C 0xD2A0 El LDIR va arrastrando el cero desde 0xD5C8
+C 0xD2A3 Se salta 0xD5D3 -el periodo base de ruido, que se respeta- para poner a cero 0xD5D4, el desplazamiento acumulado
+C 0xD2EF Bucle de sumandos: el operando de 0xD2EA dijo cuantos vienen
+C 0xD2F0 Siguiente byte de duracion
+C 0xD2F2 Ticks por unidad de duracion, el tempo que fijo el comando 0x85 en 0xD2BA
+C 0xD2F8 HL = duracion x ticks
+C 0xD2FC Se suma al total acumulado en DE
+C 0xD300 Un sumando menos
+C 0xD303 El total va a +06/+07, que es la duracion con la que se recarga cada nota
+C 0xD338 Los 15 bytes del instrumento a +16..+24 de la estructura del canal
+C 0xD33D IX avanza a la vez que HL; por eso hizo falta el PUSH IX de 0xD334...
+C 0xD343 ...y por eso hay que recuperarlo aqui
+C 0xD36A Bits de repeticion globales del ruido
+C 0xD372 El operando es el numero de envolvente
+C 0xD373 6 bytes ocupa cada una
+C 0xD37D La envolvente de ruido es unica para los tres canales: siempre 0xD5C8
+C 0xD381 Las dos cuentas de ticks arrancan a cero para que el primer escalon salga en el tick siguiente
+C 0xD389 Los 6 bytes de la envolvente van a +04..+09
+C 0xD38B Copia byte a byte
+C 0xD390 IY avanza a la vez que HL
+C 0xD395 Y el desplazamiento de ruido acumulado vuelve a cero
+C 0xD3AB Tantos desplazamientos como numero de canal: el 0 no desplaza, el 1 una vez, el 2 dos
+C 0xD3AC Canal 0: las mascaras ya valen tal cual
+C 0xD3AF Por la derecha de E entran unos, para no tocar los bits de los canales de abajo
+C 0xD3B0 E lleva los bits que se encienden (a 0 en R7 es sonando)
+C 0xD3B2 En D entran ceros: solo apaga los dos bits de este canal
+C 0xD3C4 Dos bytes por canal en la tabla de direcciones de vuelta
+C 0xD3C8 El operando es el numero de frase
+C 0xD3D7 BC pasa a leer del cuerpo de la frase
+C 0xD3DC El canal en curso decide de que hueco sale la direccion de vuelta
+C 0xD3DF Dos bytes por canal
+C 0xD3E3 La misma tabla en la que escribio el 0x8C, en 0xD3CE
+C 0xD3E7 BC vuelve a donde se quedo la melodia
+C 0xD3ED Se salta el 0x8E para leer el operando
+C 0xD3EE HL = el byte de transposicion de este canal
+C 0xD3F3 Se guarda tal cual: quien lo suma al codigo de nota es 0xD0A1
+C 0xD3F7 Un byte por canal, sin multiplicar
+C 0xD3FD Base de las tres transposiciones
+C 0xD41E Division por restas y desplazamientos: el dividendo sale por la izquierda de C...
+C 0xD421 ...y entra por la derecha del resto, que se lleva en HL
+C 0xD423 Prueba a restar el divisor
+C 0xD425 Cabia, asi que el bit del cociente vale 1
+C 0xD427 No cabia: deshace la resta
+C 0xD428 El carry viene invertido de la resta, y este CCF es el que mete el bit bueno en el RL C de la vuelta siguiente
+C 0xD429 Los 16 bits del dividendo
+C 0xD42B Un desplazamiento mas para colocar el ultimo bit del cociente
+C 0xD42E BC ya tiene el cociente completo
+C 0xD438 Lee la palabra apuntada, en little endian
+C 0xD43C A vuelve como estaba: el indice se conserva
+C 0xD445 Los 11 registros salen en orden, de R0 a R10
+C 0xD446 C = el valor que hay en la sombra
+C 0xD447 Puerto de direccion del PSG: el numero de registro
+C 0xD44A Puerto de datos: el valor
+C 0xD44D Siguiente registro y siguiente byte de la sombra
+C 0xD44F Los 11 registros
+
+# =============================================================================
+# SEGUNDA PASADA (juego 0x83F0-0x8ED2): comentario de linea
+# =============================================================================
+
+C 0x83F0 Guarda la X: la primera lectura se lleva por delante BC
+C 0x83F1 X+2 en dos INC B, la esquina de abajo a la izquierda
+C 0x83F3 Y+16: la fila que hay justo debajo de los pies, porque el sprite mide 16 de alto
+C 0x83F6 LEE_TILE quiere la X en C y la Y en A
+C 0x83FA Recupera la X original y deja el primer tipo en la pila, que es de donde lo saca MAX_TIPO en 0x843A
+C 0x83FC X+13: la esquina de abajo a la derecha. Con X+2 y X+13 las dos sondas van metidas hacia dentro, o sea que el sprite se sostiene sobre sus 12 pixeles centrales y no sobre los 16
+C 0x8400 La misma fila de debajo de los pies
+C 0x8407 Gana el tipo mas alto de los dos
+
+C 0x8424 Guarda la posicion, que cada lectura destroza
+C 0x8425 Y-1: la fila de justo encima de la cabeza
+C 0x8426 A = Y y C = X, que es como los quiere LEE_TILE
+C 0x842C El primer tipo se queda en la pila para MAX_TIPO
+C 0x842D El POP ha devuelto la Y original, asi que hay que volver a restarle 1
+C 0x842E X+15: la esquina de arriba a la derecha. Aqui no se mete hacia dentro, al reves que en el suelo
+C 0x8431 Baile de registros por D para dejar la Y en A y la X en C
+C 0x8437 Gana el tipo mas alto de los dos
+
+C 0x8630 B = X del jugador y C = Y: es lo que esperan las rutinas de colision
+C 0x8638 Sondea las dos esquinas del costado derecho
+C 0x863B Tipo 6: pared, no avanza
+C 0x863E Tipo 8: tampoco
+C 0x8641 Este JR no hace nada: L_8643 es la instruccion que viene justo detras. VUELO_IZQUIERDA hace lo mismo sin el
+C 0x8643 El tile no frena, pero puede ser objeto que se recoge o trampa que mata
+C 0x8646 Dos pixeles a la derecha, el mismo paso que las otras tres direcciones de vuelo
+C 0x85FD Nada frena la caida salvo el tipo 6, pero el tile puede seguir siendo objeto o trampa
+C 0x8600 Dos pixeles hacia abajo
+
+C 0x87B8 Tipo 0, el fondo
+C 0x87B9 Tipos 2 a 5, los objetos que se recogen
+C 0x87C5 Aqui solo llegan los tipos 1, 6, 7 y 8, y el 1 es la pared invisible del bloque de arriba
+
+C 0x8A2A Procesados ya todos los proyectiles que el jugador tiene en vuelo
+C 0x8A2B Cuatro bytes por proyectil, a base de INC IX en vez de un ADD IX,DE
+C 0x8A33 A por el siguiente
+
+C 0x8BA7 0x8F0E es el numero de nivel; se lleva aparte porque no se puede deducir de la pantalla
+C 0x8BAA Sube la pantalla una posicion para que CARGA_ENEMIGOS y CARGA_MAPA de 0x8BC6/0x8BC9 traigan ya la primera del nivel nuevo
+C 0x8BB1 El rotulo de 0x7F80, que en la fuente del juego dice " NIVEL:" y tres espacios
+C 0x8BB7 VRAM 0x1953 = fila 10, columna 19, uno de los espacios que el rotulo acaba de dejar en blanco
+C 0x8BBD 0x5C es el glifo del '0', asi que 0x5D+nivel pinta el nivel 0 como un 1
+C 0x8BC3 Pausa de 54 interrupciones para que de tiempo a leer el rotulo
+C 0x8BD2 Y deshace el incremento de la pantalla, porque quien la sube de verdad es FIJA_REAPARICION en 0x868B: a ella se va justo despues por los dos caminos de cambio de nivel (0x8B26 y 0x8B6A). Por el tercer camino, el arranque de 0x810F, da igual: 0x8114 la pone a 0
+C 0x8BD9 Cada nivel empieza con el arma 0...
+C 0x8BDE ...y con un solo proyectil en vuelo
+L 0x8BFD PAUSA_54_VBLANK  Espera 54 interrupciones: 1,08 s a 50 Hz, 0,90 s a 60
+C 0x8BFD Seis llamadas x tres x tres HALT = 54 interrupciones; no hay contador, la espera esta escrita a base de CALL anidados
+L 0x8C10 PAUSA_9_VBLANK   Nueve interrupciones
+L 0x8C1A PAUSA_3_VBLANK   Tres HALT seguidos, el ladrillo de las esperas
+L 0x8BE4 BORRA_NOMBRES    Esconde los sprites y deja la tabla de nombres a cero
+
+B 0x8E0A Una fila de un paso. La fila esta en 0x8F16 y el paso en 0x8F15.
+B 0x8E0A Son dos LDIRVM: el primero corre a la izquierda lo que queda de
+B 0x8E0A la pantalla vieja y el segundo mete por la derecha las columnas
+B 0x8E0A de la nueva que ya han entrado.
+L 0x8E0A BUCLE_CORTINILLA Redibuja una fila de la cortinilla
+C 0x8E0D La fila, de 0 a 15
+C 0x8E13 Cinco SLA/RL seguidos: fila x 32, que es el ancho de una fila del mapa
+C 0x8E28 Y `paso` columnas mas adentro: eso es lo que se ha ido por la izquierda
+C 0x8E37 El carry esta a cero (viene del ADD HL,DE de 0x8E2E, que no desborda), asi que la longitud es 33-paso. Es UNA columna mas de las que sobreviven, y esa de sobra la tapa acto seguido el segundo LDIRVM
+C 0x8E3A Destino: la tabla de nombres, columna 0 de esta misma fila
+C 0x8E58 LDIRVM quiere el destino en DE y el origen en HL, y estaban al reves
+C 0x8E61 Del mapa nuevo se coge tambien la fila que toca...
+C 0x8E85 ...y solo `paso` columnas: las que ya han entrado por la derecha
+C 0x8EAA La columna donde empiezan a pegarse, contando desde el final: 32-paso
+C 0x8EB5 Otra vez el cambio de HL/DE que pide LDIRVM
+C 0x8EBB Siguiente fila
+C 0x8EC2 Las 16 filas del area de juego; el marcador de abajo no se toca
+C 0x8EC7 Fila completa: un paso mas de scroll
+C 0x8ECE 32 pasos y la pantalla nueva esta entera: se acabo
+C 0x8ED1 Un HALT por paso, o sea que la cortinilla tarda 32 interrupciones, algo mas de medio segundo

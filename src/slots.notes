@@ -52,8 +52,6 @@ B 0xC4D7 openMSX: un byte 0x00 de sincronismo, los datos, y un byte de
 B 0xC4D7 checksum tal que el XOR de todo da cero.
 L 0xC4D7 CARGA_TURBO      Lee un bloque de cinta a (IX), longitud DE
 C 0xC4D7 Mete 0xE39D en la pila: al hacer RET se ira a apagar el motor
-C 0xC4F9 Escribe en el PPI para arrancar el motor del cassette
-C 0xC4FD Selecciona el registro 14 del PSG, donde esta la entrada de cinta
 
 B 0xC58F ############################################################
 B 0xC58F ENTRADA DEL CARGADOR  (BLOAD "cas:",R)
@@ -85,5 +83,122 @@ C 0xC5D8 Ejecuta la portada, que la vuelca a la VRAM y vuelve
 C 0xC5DB Destino del bloque 2: el juego entero
 C 0xC5DF 40449 bytes
 C 0xC5E7 Mecanismo de parcheo: si en 0xDEA8 hay tres 0xC9 seguidos...
-C 0xC5F4 ...lee un contador y aplica esa cantidad de parches (direccion, valor)
+C 0xC5F4 Formato de la tabla: tres 0xC9 de marca en 0xDEA8-0xDEAA, un byte de contador y luego repeticiones de (direccion baja, direccion alta, valor) que se aplican con 'ld (de),a'. Los 100 bytes copiados dan justo para 3 + 1 + 32*3, o sea sitio para 32 parches, pero el codigo NO comprueba el contador: con uno mayor leeria mas alla de lo copiado. Ojo: lo que decide si hay marca es lo que el BASIC dejara en 0xDAC0 al arrancar, no el contenido del juego, que en ese momento aun no esta cargado; no consta ningun cargador ni entrenador publicado que use esta tabla
 C 0xC5FF Arranca el juego
+
+# =============================================================================
+# SEGUNDA PASADA: comentario de linea rutina a rutina
+# =============================================================================
+
+C 0xC39D Lee el registro de slots primarios de las cuatro paginas
+C 0xC39F Lo deja en 0xE290 (llamada A) o 0xE292 (llamada B)
+C 0xC3A1 El registro de subslots de 0xFFFF se lee INVERTIDO...
+C 0xC3A4 ...asi que hay que complementarlo para anotar el valor de verdad
+C 0xC3A5 Queda en 0xE291 / 0xE293: de ahi lo saca luego el conmutador de 0xE25A
+
+C 0xC3AB Limpia los bits 2-3 (subslot) y conserva el bit 7 y el primario
+C 0xC3AF Se guarda todo porque ENASLT machaca A, BC y HL
+C 0xC3B8 Si no vuelve el 0x20 aqui no hay RAM: siguiente slot
+C 0xC3C4 Sin RAM en este: recupera los dos contadores y sigue
+C 0xC3C6 +4 avanza los bits 2-3 del identificador: siguiente slot secundario
+C 0xC3C8 Los cuatro secundarios del primario en curso
+C 0xC3CA El cuarto +4 desborda a los bits altos; este INC pasa al siguiente primario y el AND 0x83 de 0xC3AB limpia lo que sobra
+C 0xC3CB Los cuatro primarios
+C 0xC3CE Ninguno de los 16 tenia RAM: se sale con los slots como los dejo el ultimo intento
+C 0xC3CF Encontrada: se sale con esa pagina ya conmutada por ENASLT y con el identificador en A
+
+B 0xC418 ############################################################
+B 0xC418 ENASLT COPIADA A RAM  (se ejecuta en 0x9C40)
+B 0xC418 ############################################################
+B 0xC418 Los 120 bytes de 0xC418 a 0xC48F son la rutina ENASLT de la BIOS
+B 0xC418 copiada literalmente. Comprobado contra las ROM de la VG-8020, la
+B 0xC418 VG-8010 y la NMS-801: la ENASLT de las tres arranca en 0x025E y solo
+B 0xC418 se diferencia de esta copia en diez bytes, que son los operandos de
+B 0xC418 los cinco CALL/JP internos, reubicados a 0x9C40. Topo le quito ademas
+B 0xC418 el DI que la BIOS tiene en 0x027E, justo donde entra el CALL.
+B 0xC418 Hace falta la copia porque el sondeo de la pagina 0 (0xC37B) conmuta
+B 0xC418 esa pagina a RAM y deja la BIOS sin mapear a mitad de la rutina.
+L 0xC418 ENASLT_RAM       ENASLT de la BIOS, copiada para poder sondear la pagina 0
+C 0xC418 0x9C60 es este mismo listado en 0xC438: descompone el identificador de A en B (valor) y C (mascara), segun la pagina que pida HL
+C 0xC41B Bit 7 del identificador: si el slot es expandido hay que tocar tambien 0xFFFF (0x9C4D = 0xC425)
+C 0xC41E Slot sin expandir: basta con reescribir los dos bits de la pagina...
+C 0xC422 ...en el registro de slots primarios
+
+B 0xC490 ############################################################
+B 0xC490 SELECTOR DE PAGINA  (se ejecuta en 0xE22C)
+B 0xC490 ############################################################
+B 0xC490 Seis entradas de cinco bytes, una por combinacion de {estado que se
+B 0xC490 quiere} x {pagina}. Cada una carga HL con el par de bytes que
+B 0xC490 anotaron 0xC395 y 0xC39A, y salta a la plantilla de mascara:
+B 0xC490     0xE22C  original, pagina 0     0xE23B  RAM, pagina 0
+B 0xC490     0xE231  original, pagina 1     0xE240  RAM, pagina 1
+B 0xC490     0xE236  original, pagina 2     0xE245  RAM, pagina 2
+B 0xC490 La secuencia de carga solo usa las dos ultimas (0xE240 y 0xE245).
+L 0xC490 SEL_ORIG_P0      Deja la pagina 0 como estaba antes de la busqueda
+C 0xC490 0xE291/0xE290: la pareja de registros de slot ANTES de tocar nada
+C 0xC493 A la plantilla de la pagina 0
+L 0xC4AE MASCARA_P0       Bits 0-1: pagina 0
+C 0xC4AE D = bits que se copian del valor guardado
+C 0xC4B0 E = bits que se conservan de lo que hay puesto ahora
+L 0xC4BE CONMUTA_PAGINA   Mueve una sola pagina, sin tocar las otras tres
+C 0xC4BE Ni una interrupcion entre los dos registros de slot
+C 0xC4BF Byte de subslots guardado (0xE291 o 0xE293)
+C 0xC4C0 Se queda solo con los dos bits de la pagina que se mueve
+C 0xC4C2 Lee el subslot que hay puesto, invertido como siempre en 0xFFFF
+C 0xC4C6 E conserva las otras tres paginas
+C 0xC4C8 Escribir en 0xFFFF va sin invertir
+C 0xC4CB Un byte por debajo esta el registro de slots primarios (0xE290 o 0xE292)
+C 0xC4CF Misma mezcla, ahora sobre el puerto 0xA8
+
+C 0xC4DC PPI en modo bit: pone a 0 el bit 4, que arranca el motor del cassette
+C 0xC4E0 PSG: selecciona el registro 14, cuyo bit 7 es la entrada de cinta
+C 0xC4E4 Recupera el AF del llamador: A trae el byte de sincronismo que se espera (0x00) y el carry, su SCF
+C 0xC4E5 Fuerza NZ -D nunca vale 0xFF- y lo guarda en AF': con eso la primera vuelta del bucle COMPARA en vez de almacenar
+C 0xC4E7 Deshace el INC: DE tiene que seguir siendo la longitud
+C 0xC4E8 Ni una interrupcion: la carga se hace contando ciclos
+C 0xC4E9 C lleva el estado esperado de la senal; solo importa su bit 7, que aqui empieza a 0
+C 0xC4ED Espera a la primera transicion; mientras no la haya, insiste
+C 0xC4F2 1045 vueltas del bucle de abajo
+C 0xC4F5 1045 x 256 DJNZ a 13 T son unos 3,5 millones de ciclos: cerca de un segundo a 3,58 MHz esperando a que el motor coja velocidad (?)
+C 0xC4F8 HL a cero deja tambien H a cero, que es lo que cuenta el bucle de 0xC501
+C 0xC4FC Vuelve a engancharse a la senal
+C 0xC501 B es el contador de anchura: la rutina de medida lo va incrementando desde este 0x9C
+C 0xC503 Mide un pulso entero (0xE376 = 0xC559 en este listado)
+C 0xC508 Pulso largo es B por encima de 0xC6; si sale corto, esto no era la cabecera
+C 0xC50D 256 pulsos largos seguidos de tono piloto antes de dar la cabecera por buena
+C 0xC510 Ahora al reves: espera el primer pulso CORTO, que es el que marca el fin del tono
+C 0xC512 Mide medio pulso (0xE37A = 0xC55D)
+C 0xC517 Aun es largo (B por encima de 0xD4): sigue esperando
+C 0xC51C Se traga el medio pulso que queda
+C 0xC51F Sin senal: aborta y el RET va a 0xE39D, que apaga el motor
+C 0xC520 H es el checksum: XOR de todos los bytes que se lean
+C 0xC522 Anchura de partida del primer bit
+C 0xC526 Recupera el flag guardado en 0xC4E6: la primera vuelta viene con NZ, de la segunda en adelante con Z
+C 0xC529 Byte bueno: a la RAM, en (IX)
+C 0xC52E Rota C con el carry; el RLA de 0xC533 lo deshace, asi que el estado de la senal no cambia (?)
+C 0xC530 A sigue trayendo el 0x00 del llamador: comprueba el byte de sincronismo del bloque
+C 0xC531 No era 0x00: aborta la carga
+C 0xC535 Compensa el DEC DE de 0xC53A, porque el sincronismo no cuenta como dato
+C 0xC538 Solo avanza el destino el camino que ha almacenado de verdad
+C 0xC53A Un byte menos por leer
+C 0xC53B Devuelve a AF' el flag Z que decide la rama de la vuelta siguiente
+C 0xC53C Anchura de partida del primer bit del byte que viene
+C 0xC53E L = 00000001: los bits entran por la derecha y ese 1 sale por el carry justo al octavo
+C 0xC540 Mide el pulso de un bit
+C 0xC543 Timeout: se acabo la cinta
+C 0xC544 Mas ancho que 0xCB es un uno; mas estrecho, un cero
+C 0xC547 Mete el bit por la derecha de L
+C 0xC549 Reinicia la anchura para el bit siguiente
+C 0xC54B Mientras el 1 marcador no haya salido quedan bits (0xE35D = 0xC540)
+C 0xC54E Acumula el byte en el checksum
+C 0xC551 Quedan bytes por meter en RAM?
+C 0xC555 Se acabo: el ultimo byte leido era el checksum y por eso no se ha almacenado
+C 0xC556 H tiene que valer 0 -medido: el XOR de los dos bloques de la cinta da 0x00-, y el CP deja carry solo en ese caso: mismo convenio que los RET NC de arriba
+
+C 0xC590 Copia 100 bytes de 0xDAC0 a 0xDEA8 ANTES de cargar el juego (el LDIR esta en 0xC599 y la carga del bloque en 0xC5E4): 0xDAC0 cae dentro de lo que la carga 0x4000-0xDE00 va a machacar y 0xDEA8 no. Sirve para poner a salvo una tabla de parches que se haya dejado en 0xDAC0 antes de arrancar (?)
+C 0xC5A1 BUSCA_RAM sale con EI: hay que volver a apagarlas
+C 0xC5EC Los tres 0xC9 de firma
+C 0xC5F6 Cada parche son tres bytes: la direccion en little endian...
+C 0xC5FA ...y el valor
+C 0xC5FC Lo escribe en su sitio
+C 0xC5FD Tantos parches como dijo el contador

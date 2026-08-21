@@ -2246,23 +2246,23 @@ L_83EA:
 L_83ED:
 	jp MAX_TIPO		;83ed
 COLISION_SUELO:		; Tipo de tile bajo los pies: (X+2,Y+16) y (X+13,Y+16)
-	push bc			;83f0
-	inc b			;83f1
+	push bc			;83f0   ; Guarda la X: la primera lectura se lleva por delante BC
+	inc b			;83f1   ; X+2 en dos INC B, la esquina de abajo a la izquierda
 	inc b			;83f2
-	ld a,010h		;83f3
+	ld a,010h		;83f3   ; Y+16: la fila que hay justo debajo de los pies, porque el sprite mide 16 de alto
 	add a,c			;83f5
-	ld c,b			;83f6
+	ld c,b			;83f6   ; LEE_TILE quiere la X en C y la Y en A
 	call LEE_TILE		;83f7
-	pop bc			;83fa
+	pop bc			;83fa   ; Recupera la X original y deja el primer tipo en la pila, que es de donde lo saca MAX_TIPO en 0x843A
 	push af			;83fb
-	ld a,00dh		;83fc
+	ld a,00dh		;83fc   ; X+13: la esquina de abajo a la derecha. Con X+2 y X+13 las dos sondas van metidas hacia dentro, o sea que el sprite se sostiene sobre sus 12 pixeles centrales y no sobre los 16
 	add a,b			;83fe
 	ld d,a			;83ff
-	ld a,010h		;8400
+	ld a,010h		;8400   ; La misma fila de debajo de los pies
 	add a,c			;8402
 	ld c,d			;8403
 	call LEE_TILE		;8404
-	jp MAX_TIPO		;8407
+	jp MAX_TIPO		;8407   ; Gana el tipo mas alto de los dos
 COLISION_DER:		; Tipo de tile en el costado derecho: (X+16,Y) y (X+16,Y+15)
 	push bc			;840a
 L_840B:
@@ -2294,21 +2294,21 @@ L_841E:
 ; no comprueba techos.
 ; ----------------------------------------------------------------------
 COLISION_ARRIBA:		; Tipo de tile sobre la cabeza: (X,Y-1) y (X+15,Y-1)
-	push bc			;8424
-	dec c			;8425
-	ld a,c			;8426
+	push bc			;8424   ; Guarda la posicion, que cada lectura destroza
+	dec c			;8425   ; Y-1: la fila de justo encima de la cabeza
+	ld a,c			;8426   ; A = Y y C = X, que es como los quiere LEE_TILE
 	ld c,b			;8427
 	call LEE_TILE		;8428
 	pop bc			;842b
-	push af			;842c
-	dec c			;842d
-	ld a,00fh		;842e
+	push af			;842c   ; El primer tipo se queda en la pila para MAX_TIPO
+	dec c			;842d   ; El POP ha devuelto la Y original, asi que hay que volver a restarle 1
+	ld a,00fh		;842e   ; X+15: la esquina de arriba a la derecha. Aqui no se mete hacia dentro, al reves que en el suelo
 	add a,b			;8430
-	ld d,c			;8431
+	ld d,c			;8431   ; Baile de registros por D para dejar la Y en A y la X en C
 	ld c,a			;8432
 	ld a,d			;8433
 	call LEE_TILE		;8434
-	jp MAX_TIPO		;8437
+	jp MAX_TIPO		;8437   ; Gana el tipo mas alto de los dos
 MAX_TIPO:		; Se queda con el mayor de los dos tipos leidos
 	pop de			;843a
 L_843B:
@@ -2652,8 +2652,8 @@ VUELO_ABAJO:		; Baja 2 pixeles si no hay suelo debajo
 	jr nz,L_85FD		;85fa
 	ret			;85fc
 L_85FD:
-	call EVENTO_TILE		;85fd
-	ld a,(08f0ah)		;8600
+	call EVENTO_TILE		;85fd   ; Nada frena la caida salvo el tipo 6, pero el tile puede seguir siendo objeto o trampa
+	ld a,(08f0ah)		;8600   ; Dos pixeles hacia abajo
 	inc a			;8603
 	inc a			;8604
 	ld (08f0ah),a		;8605
@@ -2679,19 +2679,19 @@ VUELO_IZQUIERDA:		; Avanza 2 pixeles a la izquierda
 VUELO_DERECHA:		; Avanza 2 pixeles a la derecha
 	ld a,00bh		;862b   ; Estado 11 = sprite mirando a la derecha
 	ld (08f0bh),a		;862d
-	ld a,(08f09h)		;8630
+	ld a,(08f09h)		;8630   ; B = X del jugador y C = Y: es lo que esperan las rutinas de colision
 	ld b,a			;8633
 	ld a,(08f0ah)		;8634
 	ld c,a			;8637
-	call COLISION_DER		;8638
-	cp 006h		;863b
+	call COLISION_DER		;8638   ; Sondea las dos esquinas del costado derecho
+	cp 006h		;863b   ; Tipo 6: pared, no avanza
 	ret z			;863d
-	cp 008h		;863e
+	cp 008h		;863e   ; Tipo 8: tampoco
 	ret z			;8640
-	jr L_8643		;8641
+	jr L_8643		;8641   ; Este JR no hace nada: L_8643 es la instruccion que viene justo detras. VUELO_IZQUIERDA hace lo mismo sin el
 L_8643:
-	call EVENTO_TILE		;8643
-	ld a,(08f09h)		;8646
+	call EVENTO_TILE		;8643   ; El tile no frena, pero puede ser objeto que se recoge o trampa que mata
+	ld a,(08f09h)		;8646   ; Dos pixeles a la derecha, el mismo paso que las otras tres direcciones de vuelo
 	inc a			;8649
 	inc a			;864a
 	ld (08f09h),a		;864b
@@ -2946,8 +2946,8 @@ L_87B3:
 GIRA_ENEMIGO:		; Cambia el sentido de marcha de un enemigo
 	cp 000h		;87b6   ; Tipo 0 = fondo; 2..5 son objetos: el enemigo los atraviesa
 L_87B8:
-	ret z			;87b8
-	cp 002h		;87b9
+	ret z			;87b8   ; Tipo 0, el fondo
+	cp 002h		;87b9   ; Tipos 2 a 5, los objetos que se recogen
 	ret z			;87bb
 	cp 003h		;87bc
 	ret z			;87be
@@ -2955,7 +2955,7 @@ L_87B8:
 	ret z			;87c1
 	cp 005h		;87c2
 	ret z			;87c4
-	ld a,(ix+002h)		;87c5
+	ld a,(ix+002h)		;87c5   ; Aqui solo llegan los tipos 1, 6, 7 y 8, y el 1 es la pared invisible del bloque de arriba
 L_87C8:
 	cp 021h		;87c8   ; Las animaciones van emparejadas: la de mirar a la derecha esta 0x11 ranuras despues
 	jr nc,L_87D3		;87ca
@@ -3346,12 +3346,12 @@ L_8A23:
 L_8A28:
 	cp 000h		;8a28
 L_8A2A:
-	ret z			;8a2a
-	inc ix		;8a2b
+	ret z			;8a2a   ; Procesados ya todos los proyectiles que el jugador tiene en vuelo
+	inc ix		;8a2b   ; Cuatro bytes por proyectil, a base de INC IX en vez de un ADD IX,DE
 	inc ix		;8a2d
 	inc ix		;8a2f
 	inc ix		;8a31
-	jp L_893C		;8a33
+	jp L_893C		;8a33   ; A por el siguiente
 
 ; ----------------------------------------------------------------------
 ; DATOS ret_huerfano_2: Otro RET inalcanzable, entre la rutina que acaba en
@@ -3678,36 +3678,36 @@ BUCLE_FINAL:		; Bucle infinito del final: solo mueve los enemigos
 	halt			;8b99
 	jp BUCLE_FINAL		;8b9a   ; El juego acaba aqui: no se vuelve al menu
 EMPIEZA_NIVEL:		; Prepara el nivel: resetea arma y municion
-	call L_8BE4		;8b9d
+	call BORRA_NOMBRES		;8b9d
 	call 00090h		;8ba0   ; BIOS GICINI - Initialises PSG and sets initial value for the PLAY statement
 	ld a,(08f0eh)		;8ba3
 	inc a			;8ba6
-SUBE_NIVEL:		; Incrementa 0x8F0E (el nivel es variable propia, no se deduce de la pantalla)
-	ld (08f0eh),a		;8ba7
-	ld a,(08f0dh)		;8baa
+SUBE_NIVEL:		; NO es un punto de entrada: la palabra 0x8BA7 no sale ni una vez en los 40449 bytes. Es la continuacion de EMPIEZA_NIVEL, partida aqui solo para dar nombre al sitio donde se guarda el nivel en 0x8F0E
+	ld (08f0eh),a		;8ba7   ; 0x8F0E es el numero de nivel; se lleva aparte porque no se puede deducir de la pantalla
+	ld a,(08f0dh)		;8baa   ; Sube la pantalla una posicion para que CARGA_ENEMIGOS y CARGA_MAPA de 0x8BC6/0x8BC9 traigan ya la primera del nivel nuevo
 	inc a			;8bad
 	ld (08f0dh),a		;8bae
-	ld hl,07f80h		;8bb1
+	ld hl,07f80h		;8bb1   ; El rotulo de 0x7F80, que en la fuente del juego dice " NIVEL:" y tres espacios
 	call ESCRIBE_ROTULO		;8bb4
-	ld hl,01953h		;8bb7
+	ld hl,01953h		;8bb7   ; VRAM 0x1953 = fila 10, columna 19, uno de los espacios que el rotulo acaba de dejar en blanco
 	ld a,(08f0eh)		;8bba
-	ld b,05dh		;8bbd
+	ld b,05dh		;8bbd   ; 0x5C es el glifo del '0', asi que 0x5D+nivel pinta el nivel 0 como un 1
 	add a,b			;8bbf
 	call 0004dh		;8bc0   ; BIOS WRTVRM - Writes data in VRAM
-	call L_8BFD		;8bc3
+	call PAUSA_54_VBLANK		;8bc3   ; Pausa de 54 interrupciones para que de tiempo a leer el rotulo
 	call CARGA_ENEMIGOS		;8bc6
 	call CARGA_MAPA		;8bc9
 	call PINTA_MARCADOR		;8bcc
 	call VUELCA_BUFFER		;8bcf
-	ld a,(08f0dh)		;8bd2
+	ld a,(08f0dh)		;8bd2   ; Y deshace el incremento de la pantalla, porque quien la sube de verdad es FIJA_REAPARICION en 0x868B: a ella se va justo despues por los dos caminos de cambio de nivel (0x8B26 y 0x8B6A). Por el tercer camino, el arranque de 0x810F, da igual: 0x8114 la pone a 0
 	dec a			;8bd5
 	ld (08f0dh),a		;8bd6
-	ld a,000h		;8bd9
+	ld a,000h		;8bd9   ; Cada nivel empieza con el arma 0...
 	ld (08f18h),a		;8bdb
-	ld a,001h		;8bde
+	ld a,001h		;8bde   ; ...y con un solo proyectil en vuelo
 	ld (08f17h),a		;8be0
 	ret			;8be3
-L_8BE4:
+BORRA_NOMBRES:		; Esconde los sprites y deja la tabla de nombres a cero
 	call OCULTA_SPRITES		;8be4
 	ld bc,00300h		;8be7
 	ld hl,01800h		;8bea
@@ -3719,20 +3719,20 @@ ESCRIBE_ROTULO:		; LDIRVM de 10 bytes a VRAM 0x194B (rotulos de nivel y de fin)
 	ld bc,0000ah		;8bf6
 	call 0005ch		;8bf9   ; BIOS LDIRVM - Block transfers to VRAM from memory
 	ret			;8bfc
-L_8BFD:
-	call L_8C10		;8bfd
-	call L_8C10		;8c00
-	call L_8C10		;8c03
-	call L_8C10		;8c06
-	call L_8C10		;8c09
-	call L_8C10		;8c0c
+PAUSA_54_VBLANK:		; Espera 54 interrupciones: 1,08 s a 50 Hz, 0,90 s a 60
+	call PAUSA_9_VBLANK		;8bfd   ; Seis llamadas x tres x tres HALT = 54 interrupciones; no hay contador, la espera esta escrita a base de CALL anidados
+	call PAUSA_9_VBLANK		;8c00
+	call PAUSA_9_VBLANK		;8c03
+	call PAUSA_9_VBLANK		;8c06
+	call PAUSA_9_VBLANK		;8c09
+	call PAUSA_9_VBLANK		;8c0c
 	ret			;8c0f
-L_8C10:
-	call L_8C1A		;8c10
-	call L_8C1A		;8c13
-	call L_8C1A		;8c16
+PAUSA_9_VBLANK:		; Nueve interrupciones
+	call PAUSA_3_VBLANK		;8c10
+	call PAUSA_3_VBLANK		;8c13
+	call PAUSA_3_VBLANK		;8c16
 	ret			;8c19
-L_8C1A:
+PAUSA_3_VBLANK:		; Tres HALT seguidos, el ladrillo de las esperas
 	halt			;8c1a
 L_8C1B:
 	halt			;8c1b
@@ -3767,12 +3767,12 @@ GAME_OVER:		; Fin de partida
 	ld hl,01b00h		;8c29
 	ld a,0c8h		;8c2c
 	call 0004dh		;8c2e   ; BIOS WRTVRM - Writes data in VRAM
-	call L_8BFD		;8c31
-	call L_8BE4		;8c34
+	call PAUSA_54_VBLANK		;8c31
+	call BORRA_NOMBRES		;8c34
 	ld hl,07f8ah		;8c37
 	call ESCRIBE_ROTULO		;8c3a
-	call L_8BFD		;8c3d
-	call L_8BFD		;8c40
+	call PAUSA_54_VBLANK		;8c3d
+	call PAUSA_54_VBLANK		;8c40
 	jp INIT_PRINCIPAL		;8c43   ; Reinicia la partida entrando por INIT_PRINCIPAL, o sea que se vuelve a ver el menu; pero como no se pasa por el 'ld sp,08fffh' de 0x8058, la pila arranca donde la dejo la partida anterior
 CASILLA_DE_ENEMIGO:		; Pasa la posicion en pixeles de un enemigo a casilla: B = (iy+0)/8 y C = (iy+1)/8, a base de tres SRL cada uno
 	ld b,(iy+000h)		;8c46
@@ -4023,12 +4023,19 @@ CORTINILLA:		; Scroll horizontal entre dos pantallas, una columna por paso
 L_8E05:
 	ld a,000h		;8e05
 	ld (08f16h),a		;8e07
-L_8E0A:
+
+; ----------------------------------------------------------------------
+; Una fila de un paso. La fila esta en 0x8F16 y el paso en 0x8F15.
+; Son dos LDIRVM: el primero corre a la izquierda lo que queda de
+; la pantalla vieja y el segundo mete por la derecha las columnas
+; de la nueva que ya han entrado.
+; ----------------------------------------------------------------------
+BUCLE_CORTINILLA:		; Redibuja una fila de la cortinilla
 	ld hl,07d80h		;8e0a   ; Origen de lo que queda de la pantalla vieja: el buffer de RAM, `paso` columnas adentro
-	ld a,(08f16h)		;8e0d
+	ld a,(08f16h)		;8e0d   ; La fila, de 0 a 15
 	ld d,000h		;8e10
 	ld e,a			;8e12
-	sla e		;8e13
+	sla e		;8e13   ; Cinco SLA/RL seguidos: fila x 32, que es el ancho de una fila del mapa
 	rl d		;8e15
 	sla e		;8e17
 	rl d		;8e19
@@ -4039,7 +4046,7 @@ L_8E0A:
 	sla e		;8e23
 	rl d		;8e25
 	add hl,de			;8e27
-	ld a,(08f15h)		;8e28
+	ld a,(08f15h)		;8e28   ; Y `paso` columnas mas adentro: eso es lo que se ha ido por la izquierda
 	ld d,000h		;8e2b
 	ld e,a			;8e2d
 	add hl,de			;8e2e
@@ -4047,10 +4054,10 @@ L_8E0A:
 	ld b,000h		;8e32
 	ld c,a			;8e34
 	ld a,021h		;8e35   ; Longitud de lo que sobrevive de la fila vieja: 0x21 menos el paso
-	sbc a,c			;8e37
+	sbc a,c			;8e37   ; El carry esta a cero (viene del ADD HL,DE de 0x8E2E, que no desborda), asi que la longitud es 33-paso. Es UNA columna mas de las que sobreviven, y esa de sobra la tapa acto seguido el segundo LDIRVM
 	ld c,a			;8e38
 	push hl			;8e39
-	ld hl,01800h		;8e3a
+	ld hl,01800h		;8e3a   ; Destino: la tabla de nombres, columna 0 de esta misma fila
 	ld a,(08f16h)		;8e3d
 	ld d,000h		;8e40
 	ld e,a			;8e42
@@ -4065,12 +4072,12 @@ L_8E0A:
 	sla e		;8e53
 	rl d		;8e55
 	add hl,de			;8e57
-	ld d,h			;8e58
+	ld d,h			;8e58   ; LDIRVM quiere el destino en DE y el origen en HL, y estaban al reves
 	ld e,l			;8e59
 	pop hl			;8e5a
 	call 0005ch		;8e5b   ; BIOS LDIRVM - Block transfers to VRAM from memory
 	ld hl,09200h		;8e5e   ; 0x9200 = 0x9000 + 512: el mapa de la pantalla SIGUIENTE, la que esta entrando
-	ld a,(08f0dh)		;8e61
+	ld a,(08f0dh)		;8e61   ; Del mapa nuevo se coge tambien la fila que toca...
 	ld d,a			;8e64
 	sla d		;8e65
 	ld e,000h		;8e67
@@ -4089,7 +4096,7 @@ L_8E0A:
 	sla e		;8e80
 	rl d		;8e82
 	add hl,de			;8e84
-	ld a,(08f15h)		;8e85
+	ld a,(08f15h)		;8e85   ; ...y solo `paso` columnas: las que ya han entrado por la derecha
 	ld b,000h		;8e88
 	ld c,a			;8e8a
 	push hl			;8e8b
@@ -4108,28 +4115,28 @@ L_8E0A:
 	sla e		;8ea5
 	rl d		;8ea7
 	add hl,de			;8ea9
-	ld a,(08f15h)		;8eaa
+	ld a,(08f15h)		;8eaa   ; La columna donde empiezan a pegarse, contando desde el final: 32-paso
 	ld e,a			;8ead
 	ld a,020h		;8eae
 	sbc a,e			;8eb0
 	ld e,a			;8eb1
 	ld d,000h		;8eb2
 	add hl,de			;8eb4
-	ld d,h			;8eb5
+	ld d,h			;8eb5   ; Otra vez el cambio de HL/DE que pide LDIRVM
 	ld e,l			;8eb6
 	pop hl			;8eb7
 	call 0005ch		;8eb8   ; BIOS LDIRVM - Block transfers to VRAM from memory
-	ld a,(08f16h)		;8ebb
+	ld a,(08f16h)		;8ebb   ; Siguiente fila
 	inc a			;8ebe
 	ld (08f16h),a		;8ebf
-	cp 010h		;8ec2
-	jp nz,L_8E0A		;8ec4
-	ld a,(08f15h)		;8ec7
+	cp 010h		;8ec2   ; Las 16 filas del area de juego; el marcador de abajo no se toca
+	jp nz,BUCLE_CORTINILLA		;8ec4
+	ld a,(08f15h)		;8ec7   ; Fila completa: un paso mas de scroll
 	inc a			;8eca
 	ld (08f15h),a		;8ecb
-	cp 021h		;8ece
+	cp 021h		;8ece   ; 32 pasos y la pantalla nueva esta entera: se acabo
 	ret z			;8ed0
-	halt			;8ed1
+	halt			;8ed1   ; Un HALT por paso, o sea que la cortinilla tarda 32 interrupciones, algo mas de medio segundo
 	jp L_8E05		;8ed2   ; Fin del codigo de verdad: salto incondicional, no se cae hacia el relleno de 0x8ED5
 
 ; ----------------------------------------------------------------------
@@ -5274,38 +5281,38 @@ L_D0C7:
 	ld (ix+004h),l		;d0d3
 	ld (ix+005h),h		;d0d6
 L_D0D9:
-	ld l,(ix+004h)		;d0d9
+	ld l,(ix+004h)		;d0d9   ; Aqui llega tambien el canal que estaba esperando, por el salto de 0xD07B: lo unico que le queda por hacer es descontar el tick
 	ld h,(ix+005h)		;d0dc
-	dec hl			;d0df
+	dec hl			;d0df   ; Un tick menos de los que dura la nota
 	ld (ix+004h),l		;d0e0
 	ld (ix+005h),h		;d0e3
-	push ix		;d0e6
+	push ix		;d0e6   ; IY = IX: las fases se leen con IY, que va avanzando de byte en byte por la estructura
 	pop iy		;d0e8
-	ld d,002h		;d0ea
-	ld c,000h		;d0ec
+	ld d,002h		;d0ea   ; Dos fases de volumen, en ix+0C e ix+0D
+	ld c,000h		;d0ec   ; C es el testigo: si acaba en cero es que no quedaba ninguna fase viva
 L_D0EE:
 	ld a,(iy+00ch)		;d0ee   ; Envolvente de VOLUMEN: dos fases, IY va recorriendo ix+0 e ix+1
 	or a			;d0f1
-	jr z,L_D0FB		;d0f2
-	dec a			;d0f4
+	jr z,L_D0FB		;d0f2   ; Sin ticks pendientes: toca mirar si quedan escalones
+	dec a			;d0f4   ; Aun falta para el siguiente escalon
 	ld (iy+00ch),a		;d0f5
 	inc c			;d0f8
 	jr L_D11C		;d0f9
 L_D0FB:
-	ld a,(iy+00eh)		;d0fb
+	ld a,(iy+00eh)		;d0fb   ; +0E = escalones que le quedan a esta fase
 	or a			;d0fe
-	jr z,L_D117		;d0ff
-	dec a			;d101
+	jr z,L_D117		;d0ff   ; Fase terminada del todo: pasa a la siguiente
+	dec a			;d101   ; Un escalon menos
 	ld (iy+00eh),a		;d102
-	ld a,(ix+02ah)		;d105
+	ld a,(ix+02ah)		;d105   ; Suma el paso (+1B) al desplazamiento de volumen acumulado (+2A), que 0xD198 anade al volumen base
 	add a,(iy+01bh)		;d108
 	ld (ix+02ah),a		;d10b
-	ld a,(iy+020h)		;d10e
+	ld a,(iy+020h)		;d10e   ; Y recarga desde +20 los ticks que hay entre escalon y escalon
 	ld (iy+00ch),a		;d111
 	inc c			;d114
 	jr L_D11C		;d115
 L_D117:
-	inc iy		;d117
+	inc iy		;d117   ; Fase agotada: IY salta al byte de al lado, que es la fase siguiente
 	dec d			;d119
 	jr nz,L_D0EE		;d11a
 L_D11C:
@@ -5335,12 +5342,12 @@ L_D13C:
 	ld (iy+013h),a		;d143
 	ld a,(iy+01dh)		;d146
 	or a			;d149
-	jp p,L_D166		;d14a   ; Incremento negativo: se resta en lugar de sumarse
-	ld a,(iy+01dh)		;d14d
+	jp p,L_D166		;d14a   ; Con el paso en negativo hay que restar en vez de sumar
+	ld a,(iy+01dh)		;d14d   ; Complemento a dos del paso
 	cpl			;d150
 	inc a			;d151
 	ld e,a			;d152
-	ld a,(ix+02bh)		;d153
+	ld a,(ix+02bh)		;d153   ; Resta de 16 bits sobre el desplazamiento de tono (+2B/+2C)
 	sub e			;d156
 	ld (ix+02bh),a		;d157
 	ld a,(ix+02ch)		;d15a
@@ -5349,15 +5356,15 @@ L_D13C:
 	ld (ix+02ch),a		;d161
 	jr L_D179		;d164
 L_D166:
-	ld a,(ix+02bh)		;d166
+	ld a,(ix+02bh)		;d166   ; Paso positivo: la misma suma, sin dar la vuelta al signo
 	add a,(iy+01dh)		;d169
 	ld (ix+02bh),a		;d16c
 	ld a,(ix+02ch)		;d16f
 	adc a,000h		;d172
-	and 00fh		;d174
+	and 00fh		;d174   ; Tambien aqui se recorta a 12 bits
 	ld (ix+02ch),a		;d176
 L_D179:
-	ld a,(iy+022h)		;d179
+	ld a,(iy+022h)		;d179   ; Recarga los ticks desde +22 y apunta el escalon como dado
 	ld (iy+010h),a		;d17c
 	inc c			;d17f
 	jr L_D187		;d180
@@ -5400,32 +5407,32 @@ L_D192:
 	ld d,002h		;d1c0
 	ld c,000h		;d1c2
 L_D1C4:
-	ld a,(iy+000h)		;d1c4
+	ld a,(iy+000h)		;d1c4   ; Las mismas rampas, pero sobre la estructura GLOBAL de ruido de 0xD5C8: +00/+01 son los ticks que faltan
 	or a			;d1c7
-	jr z,L_D1D1		;d1c8
+	jr z,L_D1D1		;d1c8   ; Sin ticks pendientes: mira los escalones
 	dec a			;d1ca
 	ld (iy+000h),a		;d1cb
 	inc c			;d1ce
 	jr L_D1F2		;d1cf
 L_D1D1:
-	ld a,(iy+002h)		;d1d1
+	ld a,(iy+002h)		;d1d1   ; +02/+03 = escalones que quedan en esta fase
 	or a			;d1d4
-	jr z,L_D1ED		;d1d5
+	jr z,L_D1ED		;d1d5   ; Fase acabada: a la siguiente
 	dec a			;d1d7
 	ld (iy+002h),a		;d1d8
-	ld a,(0d5d4h)		;d1db
+	ld a,(0d5d4h)		;d1db   ; Suma el paso (+06) al desplazamiento de ruido acumulado, que esta en 0xD5D4
 	add a,(iy+006h)		;d1de
 	ld (0d5d4h),a		;d1e1
-	ld a,(iy+008h)		;d1e4
+	ld a,(iy+008h)		;d1e4   ; Y recarga los ticks desde +08
 	ld (iy+000h),a		;d1e7
 	inc c			;d1ea
 	jr L_D1F2		;d1eb
 L_D1ED:
-	inc iy		;d1ed
+	inc iy		;d1ed   ; Segunda y ultima fase de la envolvente de ruido
 	dec d			;d1ef
 	jr nz,L_D1C4		;d1f0
 L_D1F2:
-	ld a,c			;d1f2
+	ld a,c			;d1f2   ; Si ninguna de las dos ha dado escalon, la envolvente esta agotada
 	or a			;d1f3
 	jr nz,L_D1FE		;d1f4
 	ld a,(0d5d2h)		;d1f6
@@ -5444,24 +5451,24 @@ SND_RESET_ENV_VOL:		; Recarga las 2 fases de la envolvente de volumen desde el i
 	push ix		;d20e
 	ld d,002h		;d210
 L_D212:
-	ld a,(ix+020h)		;d212
+	ld a,(ix+020h)		;d212   ; Del instrumento a los contadores: +20 son los ticks (a +0C) y +16 los escalones (a +0E)
 	ld (ix+00ch),a		;d215
 	ld a,(ix+016h)		;d218
 	ld (ix+00eh),a		;d21b
-	inc ix		;d21e
-	dec d			;d220
+	inc ix		;d21e   ; IX avanza un byte para repetirlo sobre la segunda fase
+	dec d			;d220   ; Dos fases de volumen
 	jr nz,L_D212		;d221
-	pop ix		;d223
+	pop ix		;d223   ; IX vuelve intacto: quien lo ha movido es el bucle
 	ret			;d225
 SND_RESET_ENV_TONO:		; Recarga las 3 fases de la envolvente de tono desde el instrumento
 	ld d,003h		;d226
 	push ix		;d228
 L_D22A:
-	ld a,(ix+022h)		;d22a
+	ld a,(ix+022h)		;d22a   ; Lo mismo para el tono: +22 son los ticks (a +10) y +18 los escalones (a +13)
 	ld (ix+010h),a		;d22d
 	ld a,(ix+018h)		;d230
 	ld (ix+013h),a		;d233
-	inc ix		;d236
+	inc ix		;d236   ; Tres fases en tres bytes consecutivos
 	dec d			;d238
 	jr nz,L_D22A		;d239
 	pop ix		;d23b
@@ -5471,11 +5478,11 @@ SND_RESET_ENV_RUIDO:		; Recarga las 2 fases de la envolvente global de ruido
 	push iy		;d240
 	ld iy,0d5c8h		;d242
 L_D246:
-	ld a,(iy+008h)		;d246
+	ld a,(iy+008h)		;d246   ; Y para el ruido: +08 los ticks (a +00) y +04 los escalones (a +02)
 	ld (iy+000h),a		;d249
 	ld a,(iy+004h)		;d24c
 	ld (iy+002h),a		;d24f
-	inc iy		;d252
+	inc iy		;d252   ; Las dos fases van en bytes consecutivos de 0xD5C8
 	dec d			;d254
 	jr nz,L_D246		;d255
 	pop iy		;d257
@@ -5525,19 +5532,19 @@ SND_CMD_8B_FIN:		; 0x8B: fin del canal. Sin operando
 	xor a			;d286
 	ld b,02eh		;d287   ; Borra los 46 bytes: con el volumen base a cero y el puntero nulo el canal queda mudo para siempre
 L_D289:
-	ld (hl),a			;d289
+	ld (hl),a			;d289   ; Los 46 ceros, uno a uno
 	inc hl			;d28a
 	djnz L_D289		;d28b
-	ld a,(0d531h)		;d28d
+	ld a,(0d531h)		;d28d   ; 0xD5D5 dice que canal se quedo con el generador de ruido; lo escribe 0xD39D
 	ld hl,0d5d5h		;d290
 	xor (hl)			;d293   ; Si este canal era el dueno del ruido, borra tambien la estructura global (pero no el periodo base de 0xD5D3)
 	jp nz,L_D192		;d294
-	ld hl,0d5c8h		;d297
+	ld hl,0d5c8h		;d297   ; Borra de 0xD5C8 a 0xD5D2: la envolvente de ruido entera y sus bits de repeticion
 	ld de,0d5c9h		;d29a
 	ld bc,0000ah		;d29d
-	ld (hl),a			;d2a0
+	ld (hl),a			;d2a0   ; El LDIR va arrastrando el cero desde 0xD5C8
 	ldir		;d2a1
-	inc de			;d2a3
+	inc de			;d2a3   ; Se salta 0xD5D3 -el periodo base de ruido, que se respeta- para poner a cero 0xD5D4, el desplazamiento acumulado
 	ld (de),a			;d2a4
 	jp L_D192		;d2a5
 SND_CMD_85_TEMPO:		; 0x85 nn: tempo. 0xD532 = 3000 / (nn*16)
@@ -5582,20 +5589,20 @@ SND_CMD_86_DURSUMA:		; 0x86 n b1..bn: duracion compuesta, suma de n valores por 
 	inc bc			;d2eb
 	ld de,00000h		;d2ec
 L_D2EF:
-	push af			;d2ef
-	ld a,(bc)			;d2f0
+	push af			;d2ef   ; Bucle de sumandos: el operando de 0xD2EA dijo cuantos vienen
+	ld a,(bc)			;d2f0   ; Siguiente byte de duracion
 	push de			;d2f1
-	ld de,(0d532h)		;d2f2
+	ld de,(0d532h)		;d2f2   ; Ticks por unidad de duracion, el tempo que fijo el comando 0x85 en 0xD2BA
 	ld d,000h		;d2f6
-	call SND_MUL		;d2f8
+	call SND_MUL		;d2f8   ; HL = duracion x ticks
 	pop de			;d2fb
-	add hl,de			;d2fc
+	add hl,de			;d2fc   ; Se suma al total acumulado en DE
 	ex de,hl			;d2fd
 	inc bc			;d2fe
 	pop af			;d2ff
-	dec a			;d300
+	dec a			;d300   ; Un sumando menos
 	jr nz,L_D2EF		;d301
-	ld (ix+006h),l		;d303
+	ld (ix+006h),l		;d303   ; El total va a +06/+07, que es la duracion con la que se recarga cada nota
 	ld (ix+007h),h		;d306
 	jp L_D08D		;d309
 SND_CMD_8A_REPETIR:		; 0x8A nn: activa la repeticion de envolventes. bit0 volumen, bit1 tono, bit2 ruido
@@ -5621,13 +5628,13 @@ SND_CMD_87_INSTRUM:		; 0x87 nn: carga el instrumento nn (15 bytes de 0xD5DF+nn*1
 	push ix		;d334
 	ld d,00fh		;d336
 L_D338:
-	ld a,(hl)			;d338
+	ld a,(hl)			;d338   ; Los 15 bytes del instrumento a +16..+24 de la estructura del canal
 	ld (ix+016h),a		;d339
 	inc hl			;d33c
-	inc ix		;d33d
+	inc ix		;d33d   ; IX avanza a la vez que HL; por eso hizo falta el PUSH IX de 0xD334...
 	dec d			;d33f
 	jp nz,L_D338		;d340
-	pop ix		;d343
+	pop ix		;d343   ; ...y por eso hay que recuperarlo aqui
 	inc bc			;d345
 	ld (ix+00ch),000h		;d346   ; Y se ponen a cero los contadores de espera y los desplazamientos acumulados
 	ld (ix+00dh),000h		;d34a
@@ -5640,26 +5647,26 @@ L_D338:
 	jp L_D08D		;d366
 SND_CMD_89_RUIDOENV:		; 0x89 nn: carga la envolvente de ruido nn (6 bytes de 0xD60C+nn*6) en la estructura global
 	inc bc			;d369
-	ld a,(0d5d2h)		;d36a
+	ld a,(0d5d2h)		;d36a   ; Bits de repeticion globales del ruido
 	res 2,a		;d36d   ; Cargar una envolvente nueva le quita la repeticion
 	ld (0d5d2h),a		;d36f
-	ld a,(bc)			;d372
-	ld de,00006h		;d373
+	ld a,(bc)			;d372   ; El operando es el numero de envolvente
+	ld de,00006h		;d373   ; 6 bytes ocupa cada una
 	call SND_MUL		;d376
 	ld de,0d60ch		;d379
 	add hl,de			;d37c
-	ld iy,0d5c8h		;d37d
-	ld (iy+000h),000h		;d381
+	ld iy,0d5c8h		;d37d   ; La envolvente de ruido es unica para los tres canales: siempre 0xD5C8
+	ld (iy+000h),000h		;d381   ; Las dos cuentas de ticks arrancan a cero para que el primer escalon salga en el tick siguiente
 	ld (iy+001h),000h		;d385
-	ld d,006h		;d389
+	ld d,006h		;d389   ; Los 6 bytes de la envolvente van a +04..+09
 L_D38B:
-	ld a,(hl)			;d38b
+	ld a,(hl)			;d38b   ; Copia byte a byte
 	ld (iy+004h),a		;d38c
 	inc hl			;d38f
-	inc iy		;d390
+	inc iy		;d390   ; IY avanza a la vez que HL
 	dec d			;d392
 	jr nz,L_D38B		;d393
-	xor a			;d395
+	xor a			;d395   ; Y el desplazamiento de ruido acumulado vuelve a cero
 	ld (0d5d4h),a		;d396
 	inc bc			;d399
 	ld a,(0d531h)		;d39a   ; Apunta que canal se ha quedado con el generador de ruido
@@ -5672,11 +5679,11 @@ SND_MIXER:		; Mete en el registro 7 los bits de tono y ruido de este canal
 	ld d,009h		;d3a6   ; 0x09 = tono + ruido del canal 0; se desplaza tantas veces como canal sea
 	ld a,(0d531h)		;d3a8
 L_D3AB:
-	dec a			;d3ab
-	jp m,L_D3B6		;d3ac
-	scf			;d3af
-	rl e		;d3b0
-	sla d		;d3b2
+	dec a			;d3ab   ; Tantos desplazamientos como numero de canal: el 0 no desplaza, el 1 una vez, el 2 dos
+	jp m,L_D3B6		;d3ac   ; Canal 0: las mascaras ya valen tal cual
+	scf			;d3af   ; Por la derecha de E entran unos, para no tocar los bits de los canales de abajo
+	rl e		;d3b0   ; E lleva los bits que se encienden (a 0 en R7 es sonando)
+	sla d		;d3b2   ; En D entran ceros: solo apaga los dos bits de este canal
 	jr L_D3AB		;d3b4
 L_D3B6:
 	ld a,(0d53ah)		;d3b6
@@ -5688,10 +5695,10 @@ L_D3B6:
 SND_CMD_8C_LLAMADA:		; 0x8C nn: llama a la frase nn de la tabla 0xD612, estilo GOSUB
 	ld a,(0d531h)		;d3c0
 	inc bc			;d3c3
-	add a,a			;d3c4
+	add a,a			;d3c4   ; Dos bytes por canal en la tabla de direcciones de vuelta
 	ld l,a			;d3c5
 	ld h,000h		;d3c6
-	ld a,(bc)			;d3c8
+	ld a,(bc)			;d3c8   ; El operando es el numero de frase
 	inc bc			;d3c9
 	ld de,0d5d6h		;d3ca
 	add hl,de			;d3cd
@@ -5700,32 +5707,32 @@ SND_CMD_8C_LLAMADA:		; 0x8C nn: llama a la frase nn de la tabla 0xD612, estilo G
 	ld (hl),b			;d3d0
 	ld hl,0d612h		;d3d1   ; Tabla de 11 punteros a frases. Solo hay un nivel: una frase no puede llamar a otra
 	call SND_JUMPIDX		;d3d4
-	ld b,h			;d3d7
+	ld b,h			;d3d7   ; BC pasa a leer del cuerpo de la frase
 	ld c,l			;d3d8
 	jp L_D08D		;d3d9
 SND_CMD_8D_RETORNO:		; 0x8D: vuelve de la frase. Sin operando
-	ld a,(0d531h)		;d3dc
-	add a,a			;d3df
+	ld a,(0d531h)		;d3dc   ; El canal en curso decide de que hueco sale la direccion de vuelta
+	add a,a			;d3df   ; Dos bytes por canal
 	ld l,a			;d3e0
 	ld h,000h		;d3e1
-	ld de,0d5d6h		;d3e3
+	ld de,0d5d6h		;d3e3   ; La misma tabla en la que escribio el 0x8C, en 0xD3CE
 	add hl,de			;d3e6
-	ld c,(hl)			;d3e7
+	ld c,(hl)			;d3e7   ; BC vuelve a donde se quedo la melodia
 	inc hl			;d3e8
 	ld b,(hl)			;d3e9
 	jp L_D08D		;d3ea
 SND_CMD_8E_TRANSPON:		; 0x8E nn: transposicion del canal en semitonos, se suma al codigo de nota
-	inc bc			;d3ed
-	call SND_PTR_TRANSP		;d3ee
+	inc bc			;d3ed   ; Se salta el 0x8E para leer el operando
+	call SND_PTR_TRANSP		;d3ee   ; HL = el byte de transposicion de este canal
 	ld a,(bc)			;d3f1
 	inc bc			;d3f2
-	ld (hl),a			;d3f3
+	ld (hl),a			;d3f3   ; Se guarda tal cual: quien lo suma al codigo de nota es 0xD0A1
 	jp L_D08D		;d3f4
 SND_PTR_TRANSP:		; HL = 0xD5DC + canal: la transposicion de este canal
-	ld a,(0d531h)		;d3f7
+	ld a,(0d531h)		;d3f7   ; Un byte por canal, sin multiplicar
 	ld l,a			;d3fa
 	ld h,000h		;d3fb
-	ld de,0d5dch		;d3fd
+	ld de,0d5dch		;d3fd   ; Base de las tres transposiciones
 	add hl,de			;d400
 	ret			;d401
 SND_MUL:		; Multiplica para calcular el offset de un canal
@@ -5750,18 +5757,18 @@ SND_DIV:		; Division de 16 bits: BC entre DE, cociente en BC
 	ld a,b			;d41b
 	ld b,010h		;d41c
 L_D41E:
-	rl c		;d41e
+	rl c		;d41e   ; Division por restas y desplazamientos: el dividendo sale por la izquierda de C...
 	rla			;d420
-	adc hl,hl		;d421
-	sbc hl,de		;d423
-	jr nc,L_D428		;d425
-	add hl,de			;d427
+	adc hl,hl		;d421   ; ...y entra por la derecha del resto, que se lleva en HL
+	sbc hl,de		;d423   ; Prueba a restar el divisor
+	jr nc,L_D428		;d425   ; Cabia, asi que el bit del cociente vale 1
+	add hl,de			;d427   ; No cabia: deshace la resta
 L_D428:
-	ccf			;d428
-	djnz L_D41E		;d429
-	rl c		;d42b
+	ccf			;d428   ; El carry viene invertido de la resta, y este CCF es el que mete el bit bueno en el RL C de la vuelta siguiente
+	djnz L_D41E		;d429   ; Los 16 bits del dividendo
+	rl c		;d42b   ; Un desplazamiento mas para colocar el ultimo bit del cociente
 	rla			;d42d
-	ld b,a			;d42e
+	ld b,a			;d42e   ; BC ya tiene el cociente completo
 	pop af			;d42f
 	ret			;d430
 SND_JUMPIDX:		; HL = puntero nº A de la tabla que apunta HL
@@ -5772,26 +5779,26 @@ SND_JUMPIDX:		; HL = puntero nº A de la tabla que apunta HL
 	jr nc,L_D438		;d435
 	inc h			;d437
 L_D438:
-	ld a,(hl)			;d438
+	ld a,(hl)			;d438   ; Lee la palabra apuntada, en little endian
 	inc hl			;d439
 	ld h,(hl)			;d43a
 	ld l,a			;d43b
-	pop af			;d43c
+	pop af			;d43c   ; A vuelve como estaba: el indice se conserva
 	ret			;d43d
 SND_VUELCA_PSG:		; Vuelca los 11 registros de 0xD533 al PSG por los puertos 0xA0/0xA1
 	ld hl,0d533h		;d43e   ; Los unicos dos OUT a los puertos 0xA0/0xA1 de todo el binario estan aqui (0xD447 y 0xD44A), pero no son la unica via de escribir el PSG: el motor de efectos de 0xDB00 lo hace por la BIOS, con 39 llamadas a WRTPSG
 	ld a,000h		;d441
 	ld d,00bh		;d443
 L_D445:
-	push af			;d445
-	ld c,(hl)			;d446
-	out (0a0h),a		;d447
+	push af			;d445   ; Los 11 registros salen en orden, de R0 a R10
+	ld c,(hl)			;d446   ; C = el valor que hay en la sombra
+	out (0a0h),a		;d447   ; Puerto de direccion del PSG: el numero de registro
 	ld a,c			;d449
-	out (0a1h),a		;d44a
+	out (0a1h),a		;d44a   ; Puerto de datos: el valor
 	pop af			;d44c
-	inc a			;d44d
+	inc a			;d44d   ; Siguiente registro y siguiente byte de la sombra
 	inc hl			;d44e
-	dec d			;d44f
+	dec d			;d44f   ; Los 11 registros
 	jr nz,L_D445		;d450
 	ret			;d452
 
