@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Herramientas — Temptations (1988)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
@@ -55,7 +57,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <p>Éste es el corazón del proyecto. Desensamblar 40 KB de corrido no funciona: en cuanto te topas con un gráfico, los píxeles se interpretan como instrucciones y a partir de ahí todo queda desalineado.</p>
 <p>Así que en vez de leer de corrido, <b>sigue el flujo del programa</b>: empieza en un punto de entrada conocido, decodifica cada instrucción, y sigue los saltos y las llamadas. Lo que se alcanza así es código; el resto, datos.</p>
 <p>Tiene dos particularidades que costaron sangre:</p>
-<ul><li>**<code>HALT</code> no corta el flujo.** Parece que sí —el procesador se detiene— pero cuando llega la interrupción sigue en la instrucción siguiente. Tratarlo como fin de rutina dejaba el análisis en el 2%.</li><li><b>Zonas prohibidas.</b> Se le puede dar una lista de rangos que sabemos que son datos, y no entra en ellos. Sin eso, un solo destino mal deducido mete al trazador en los gráficos y desde ahí no para.</li></ul>
+<ul><li><b><code>HALT</code> no corta el flujo.</b> Parece que sí —el procesador se detiene— pero cuando llega la interrupción sigue en la instrucción siguiente. Tratarlo como fin de rutina dejaba el análisis en el 2%.</li><li><b>Zonas prohibidas.</b> Se le puede dar una lista de rangos que sabemos que son datos, y no entra en ellos. Sin eso, un solo destino mal deducido mete al trazador en los gráficos y desde ahí no para.</li></ul>
 <p>Los saltos indirectos (<code>JP (HL)</code>, tablas de punteros) no se pueden seguir sin ejecutar el programa. El trazador los marca como <b>punto ciego</b> y los lista, para que se resuelvan a mano.</p>
 <h3><code>mkasm.py</code> — montar el listado comentado</h3>
 <pre><code>python3 tools/mkasm.py juego.bin 0x4000 trazado.json notas.txt simbolos.sym salida.asm &quot;Titulo&quot;</code></pre>

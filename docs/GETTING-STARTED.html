@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Getting started — Temptations (1988)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
@@ -82,7 +84,7 @@ L_86AE:
 <h3>How the data blocks are laid out</h3>
 <p>Every data range declared in the notes comes out as a block of its own: its own heading saying what it is for, its own label, and the dump aligned to its first byte, so where one table ends and the next begins is visible at a glance. An optional line gives the block the row width of its real structure, and that is what makes the twenty-nine screen maps readable: 32 bytes per row is one row of the map, so the walls and the platforms can be seen in the listing itself. The font, the colour table and the sprites go eight bytes per row -one pattern- and the jump tables come out as <code>defw</code> with the destination named next to them.</p>
 <h2>5. Adding your own comments</h2>
-<p>**Don&#x27;t edit the <code>.asm</code> files**: they&#x27;re regenerated every time and you&#x27;d lose the work. Comments go in <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/game.notes">../src/game.notes</a>, anchored to the memory address:</p>
+<p><b>Don&#x27;t edit the <code>.asm</code> files</b>: they&#x27;re regenerated every time and you&#x27;d lose the work. Comments go in <a href="https://github.com/antxiko/temptations-disassembly/blob/main/src/game.notes">../src/game.notes</a>, anchored to the memory address:</p>
 <pre><code>L 0x8698 PINTA_MARCADOR   Redibuja el marcador completo
 C 0x86A4 A = numero de vidas
 B 0x8698 Este texto sale como cabecera antes de la rutina
@@ -100,8 +102,8 @@ make clean    # deletes what was generated</code></pre>
   -script tools/omsx_demo.tcl</code></pre>
 <p>(Loading really does take seven minutes, just like in 1988. That script speeds it up ×10 and goes back to normal speed when the game starts.)</p>
 <h2>If something goes wrong</h2>
-<p>**<code>make: z80dasm: command not found</code>** — the tools from step 1 haven&#x27;t been installed.</p>
-<p>**<code>no es TZX/TSX</code>** (&quot;not a TZX/TSX&quot;) — the tape file isn&#x27;t a valid TSX, or it&#x27;s compressed. Uncompress it.</p>
+<p><b><code>make: z80dasm: command not found</code></b> — the tools from step 1 haven&#x27;t been installed.</p>
+<p><b><code>no es TZX/TSX</code></b> (&quot;not a TZX/TSX&quot;) — the tape file isn&#x27;t a valid TSX, or it&#x27;s compressed. Uncompress it.</p>
 <p><b>openMSX doesn&#x27;t start, or complains about ROMs</b> — the emulator needs the ROM of a real MSX machine. The project uses a Philips VG-8020 (an MSX1 with 64 KB, which is what the game asks for). Without system ROMs, openMSX only ships C-BIOS, which has no BASIC and therefore can&#x27;t load tapes.</p>
-<p>**<code>DIFIERE</code>** (&quot;differs&quot;) when verifying — something has broken in the annotations. The message says which bytes don&#x27;t match. If you&#x27;ve just edited the <code>.notes</code>, undo the last change.</p>
+<p><b><code>DIFIERE</code></b> (&quot;differs&quot;) when verifying — something has broken in the annotations. The message says which bytes don&#x27;t match. If you&#x27;ve just edited the <code>.notes</code>, undo the last change.</p>
 <footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

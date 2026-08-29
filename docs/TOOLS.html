@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tools — Temptations (1988)</title>
 <style>
 :root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
@@ -55,7 +57,7 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 <p>This is the heart of the project. Disassembling 40 KB straight through doesn&#x27;t work: the moment you hit a graphic, the pixels get read as instructions, and from there on everything is misaligned.</p>
 <p>So instead of reading straight through, it <b>follows the flow of the program</b>: it starts at a known entry point, decodes each instruction, and follows the jumps and the calls. Whatever it reaches that way is code; the rest is data.</p>
 <p>It has two quirks that were learned the hard way:</p>
-<ul><li>**<code>HALT</code> does not end the flow.** It looks like it does —the processor stops— but when the interrupt arrives it carries on at the next instruction. Treating it as the end of a routine left the analysis stuck at 2%.</li><li><b>Forbidden zones.</b> You can hand it a list of ranges that we know are data, and it will not go into them. Without that, a single wrongly deduced destination drops the tracer into the graphics, and from there it never stops.</li></ul>
+<ul><li><b><code>HALT</code> does not end the flow.</b> It looks like it does —the processor stops— but when the interrupt arrives it carries on at the next instruction. Treating it as the end of a routine left the analysis stuck at 2%.</li><li><b>Forbidden zones.</b> You can hand it a list of ranges that we know are data, and it will not go into them. Without that, a single wrongly deduced destination drops the tracer into the graphics, and from there it never stops.</li></ul>
 <p>Indirect jumps (<code>JP (HL)</code>, pointer tables) cannot be followed without running the program. The tracer marks them as a <b>blind spot</b> and lists them, so they can be resolved by hand.</p>
 <h3><code>mkasm.py</code> — assembling the commented listing</h3>
 <pre><code>python3 tools/mkasm.py juego.bin 0x4000 trazado.json notas.txt simbolos.sym salida.asm &quot;Titulo&quot;</code></pre>
