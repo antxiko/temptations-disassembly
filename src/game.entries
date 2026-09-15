@@ -32,3 +32,4 @@
 0xD3C0   # cmd 0x8C
 0xD3DC   # cmd 0x8D
 0xD3ED   # cmd 0x8E
+0xD015  # SND_SET_CANAL_LIBRE: entrada muerta, codigo real que no llama nadie

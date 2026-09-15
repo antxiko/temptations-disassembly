@@ -3501,13 +3501,13 @@ L_8ACC:
 ; buffer 0x7D80.
 ; ----------------------------------------------------------------------
 CARGA_MAPA:		; Copia el mapa de la pantalla actual al buffer de 0x7D80
-	ld a,(08f0dh)		;8ace   ; A = numero de pantalla
+	ld a,(08f0dh)		;8ace   ; A = numero de pantalla global (0..28)
 	ld d,a			;8ad1
-	sla d		;8ad2   ; DE = pantalla * 512 (SLA D con E=0 multiplica por 512)
+	sla d		;8ad2   ; DE = pantalla * 512 (SLA D con E=0 multiplica por 512): cada mapa ocupa 32x16 casillas
 	ld e,000h		;8ad4
-	ld hl,09000h		;8ad6   ; Base de la tabla de mapas
+	ld hl,09000h		;8ad6   ; Base de la tabla de mapas, que empieza en 0x9000, FUERA de la zona de datos de 0x4000-0x8000
 	add hl,de			;8ad9
-	ld de,07d80h		;8ada   ; Buffer del mapa en RAM
+	ld de,07d80h		;8ada   ; Buffer del mapa en RAM: la copia de trabajo desde la que se lee todo el terreno
 	ld bc,00200h		;8add   ; 512 bytes = 32 columnas x 16 filas
 	ldir		;8ae0
 	ret			;8ae2
@@ -3636,7 +3636,7 @@ FINAL_JUEGO:		; Pantalla de victoria y bucle final
 	inc a			;8b70
 	ld (08f0dh),a		;8b71
 	call CARGA_ENEMIGOS		;8b74   ; Carga las tablas de la pantalla 28: la pantalla de victoria SI tiene cuatro enemigos (0x7D60, animacion 0x0E), y son los que mueve el bucle final
-	call CARGA_MAPA		;8b77   ; Carga su mapa como el de cualquier otra pantalla
+	call CARGA_MAPA		;8b77   ; Carga el mapa nº 28, la pantalla de final de juego, como el de cualquier otra pantalla
 	call VUELCA_BUFFER		;8b7a
 	call INIT_PANTALLA		;8b7d   ; Rehace el decorado de arranque completo, no solo enciende la pantalla: 0x805E pone el borde a 1 (adios al 12 del agua) y recarga los 0x800 bytes de sprites originales de 0x5000 sobre VRAM 0x3800, con lo que el pez vuelve a ser el monje [SUSTITUYE]
 
@@ -3654,7 +3654,13 @@ FINAL_JUEGO:		; Pantalla de victoria y bucle final
 ;
 ; Pero NINGUNA instruccion del binario escribe jamas en 0x8F1E,
 ; asi que en el juego original no salta nunca. Topo lo dejo
-; armado para que saltara si alguien pokeaba ese byte.
+; asi que en el juego original no salta nunca. Y no es que
+; lo dejaran asi a proposito: el arranque inicializa quince
+; variables seguidas y se salta justo esta, la UNICA que el
+; juego lee y nunca pone a cero. Vale 0 porque el relleno de la
+; cinta deja un cero ahi (solo tres de los 160 bytes de
+; 0x8F00-0x8FA0 lo son). Con otro valor, el castigo saltaria
+; siempre.
 ; ----------------------------------------------------------------------
 CASTIGO_TRAMPAS:		; Afea la pantalla final si se detecto trampa
 	ld a,(08f1eh)		;8b80   ; Bandera de tramposo; nadie la enciende en el binario original (no existe ningun LD (08F1Eh),A). Dato que refuerza que lo que hay ahi es relleno y no una inicializacion: 0x8F1E es el UNICO byte a cero de todo el tramo 0x8F00-0x8F40 [SUSTITUYE]
@@ -5105,7 +5111,7 @@ BLOQUE_MUERTO:
 	defb 0deh,040h,0cah,044h,0fah,044h,0feh,040h,0cah,040h,0cah,044h,0cah,044h,0cah,0ffh	; cff0  .@.D.D.@.@.D.D..
 
 ; ======================================================================
-; CODIGO 0xd000..0xd015  (21 bytes)
+; CODIGO 0xd000..0xd453  (1107 bytes)
 ; ======================================================================
 
 
@@ -5139,11 +5145,6 @@ IRQ_HANDLER:		; Manejador de la interrupcion de temporizador
 	ret			;d014
 
 ; ----------------------------------------------------------------------
-; DATOS muerto_D015: 44 bytes entre el manejador de interrupcion y la rutina
-;   de asignar melodia, sin un solo acceso en una partida completa.
-;   0xd015..0xd041  (44 bytes)
-
-; ----------------------------------------------------------------------
 ; ############################################################
 ; ENTRADA MUERTA DE LA LIBRERIA DE SONIDO
 ; ############################################################
@@ -5160,15 +5161,36 @@ IRQ_HANDLER:		; Manejador de la interrupcion de temporizador
 ; por arrastre. El juego entra siempre por 0xD041.
 ; ----------------------------------------------------------------------
 SND_SET_CANAL_LIBRE:		; Variante que busca canal libre si el pedido esta ocupado. CODIGO MUERTO: la palabra 0xD015 no aparece en ningun sitio del binario, nadie la llama
-	defb 0f5h,0d5h,0e6h,07fh,011h,02eh,000h,0cdh,002h,0d4h,011h,03eh,0d5h,019h,0e5h,07eh	; d015  ...........>...~
-	defb 023h,0b6h,028h,012h,016h,003h,021h,03eh,0d5h,001h,02eh,000h,023h,07eh,02bh,0b6h	; d025  #.(...!>....#~+.
-	defb 028h,007h,009h,015h,020h,0f6h,0e1h,018h,00fh,0d1h,018h,00ch	; d035  (... .......
-
-; ======================================================================
-; CODIGO 0xd041..0xd453  (1042 bytes)
-; ======================================================================
-
-
+	push af			;d015
+	push de			;d016
+	and 07fh		;d017   ; Descarta el bit 7 del numero de canal. Para que servia ese bit no hay forma de saberlo: no existe ni una sola llamada real a esta rutina (?)
+	ld de,0002eh		;d019   ; 46 bytes ocupa la estructura de cada canal
+	call SND_MUL		;d01c   ; HL = A*46, el desplazamiento del canal pedido
+	ld de,0d53eh		;d01f   ; Base de las tres estructuras de canal
+	add hl,de			;d022
+	push hl			;d023
+	ld a,(hl)			;d024   ; Canal libre = palabra 0 a cero. Lo confirman los dos sitios que la ponen a cero: el comando 0x8B (0xD283) borra los 46 bytes al acabar la melodia, y el menu llama a 0xD041 con DE=0 (0xDA3D) para callar [SUSTITUYE]
+	inc hl			;d025
+	or (hl)			;d026
+	jr z,L_D03B		;d027   ; Si el canal que han pedido esta libre, se usa tal cual
+	ld d,003h		;d029   ; Ocupado: recorre las tres estructuras buscando una con la palabra 0 a cero
+	ld hl,0d53eh		;d02b
+	ld bc,0002eh		;d02e
+L_D031:
+	inc hl			;d031
+	ld a,(hl)			;d032
+	dec hl			;d033
+	or (hl)			;d034
+	jr z,L_D03E		;d035   ; Hay uno libre y HL ya apunta a el
+	add hl,bc			;d037
+	dec d			;d038
+	jr nz,L_D031		;d039
+L_D03B:
+	pop hl			;d03b   ; Aqui se llega por DOS caminos: porque el canal pedido estaba libre (el JR Z de 0xD027) o porque el bucle no encontro ninguno. En los dos casos se acaba usando el canal que pidieron, robandolo si hace falta [SUSTITUYE: la nota anterior solo contaba el segundo camino]
+	jr L_D04D		;d03c
+L_D03E:
+	pop de			;d03e   ; Tira el canal pedido y se queda con el libre que encontro
+	jr L_D04D		;d03f
 
 ; ----------------------------------------------------------------------
 ; ############################################################
@@ -5206,6 +5228,7 @@ SND_SET_CANAL:		; Asigna al canal A los datos de sonido que apunta DE
 	call SND_MUL		;d046   ; HL = 0xD53E + A*46 -> estructura del canal A
 	ld de,0d53eh		;d049
 	add hl,de			;d04c
+L_D04D:
 	push hl			;d04d   ; Cola comun de 0xD015 y 0xD041: borra los 46 bytes de la estructura y siembra en ella el puntero de melodia, dos copias [SUSTITUYE]
 	xor a			;d04e
 	ld b,02eh		;d04f

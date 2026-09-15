@@ -51,7 +51,7 @@ C 0x8034 Colores -> tercio 1
 C 0x8040 Colores -> tercio 2
 C 0x804C Colores -> tercio 3
 L 0x805E INIT_PANTALLA    Color de borde, sprites y encender pantalla
-C 0x8061 Borde negro
+C 0x8061 Fondo negro: es el valor normal de todas las pantallas
 C 0x8066 Patrones de sprites -> VRAM 0x3800
 C 0x8072 Ya esta todo en VRAM: se puede encender la pantalla
 L 0x8076 INIT_PRINCIPAL   Continuacion del arranque: prepara el menu
@@ -1145,21 +1145,19 @@ C 0x8a9c Borra el proyectil de la pantalla restaurando el tile que tapaba
 C 0x8aa5 Y devuelve el proyectil al deposito
 C 0x8ab1 C*32: 32 casillas por fila
 C 0x8ac5 Tabla de nombres de la pantalla
-C 0x8ace Numero de pantalla global (0..28)
-C 0x8ad2 Cada mapa ocupa 512 bytes (32x16 casillas), asi que el indice se multiplica por 2 en la parte alta
-C 0x8ad6 Los mapas empiezan en 0x9000, FUERA de la zona de datos de 0x4000-0x8000
-C 0x8ada Copia de trabajo desde la que se lee todo el terreno
+C 0x8ace A = numero de pantalla global (0..28)
+C 0x8ad2 DE = pantalla * 512 (SLA D con E=0 multiplica por 512): cada mapa ocupa 32x16 casillas
+C 0x8ad6 Base de la tabla de mapas, que empieza en 0x9000, FUERA de la zona de datos de 0x4000-0x8000
+C 0x8ada Buffer del mapa en RAM: la copia de trabajo desde la que se lee todo el terreno
 C 0x8add 512 bytes = 32 columnas x 16 filas
 C 0x8ae9 CPIR: busca el tile por todo el mapa
 C 0x8aeb Deshace el contador de CPIR para sacar el desplazamiento del tile
 C 0x8af6 Casilla vacia
 C 0x8aff Filas 0..15 de la tabla de nombres; de la 16 a la 23 esta el marcador
-C 0x8b77 Carga el mapa nº 28: la pantalla de final de juego
+C 0x8b77 Carga el mapa nº 28, la pantalla de final de juego, como el de cualquier otra pantalla
 C 0x8e0a Origen de lo que queda de la pantalla vieja: el buffer de RAM, `paso` columnas adentro
 C 0x8e35 Longitud de lo que sobrevive de la fila vieja: 0x21 menos el paso
 C 0x8e5e 0x9200 = 0x9000 + 512: el mapa de la pantalla SIGUIENTE, la que esta entrando
-C 0xd017 Del numero de canal solo se usan los 7 bits bajos
-C 0xd031 Ocupado: recorre los tres canales buscando uno con el puntero a cero
 C 0xd072 Numero del canal que se esta procesando; lo leen el mezclador, la transposicion y los comandos de frase
 C 0xd07e Silencia el canal antes de montar el evento nuevo
 C 0xd09d HL = 0xD5DC + canal: la transposicion de este canal
@@ -1169,7 +1167,7 @@ C 0xd0c7 Guarda el puntero de lectura y arranca la cuenta atras de la nota
 C 0xd0ee Envolvente de VOLUMEN: dos fases, IY va recorriendo ix+0 e ix+1
 C 0xd120 Agotadas las dos fases, si el bit 0 de +2D esta puesto la envolvente se repite
 C 0xd12f Envolvente de TONO: tres fases, IY recorre ix+0, ix+1 e ix+2
-C 0xd14a Incremento negativo: se resta en lugar de sumarse
+C 0xd14a Con el paso en negativo hay que restar en vez de sumar
 C 0xd15f El desplazamiento de tono se queda en 12 bits, que es lo que admite el PSG
 C 0xd18b Agotadas las tres fases, si el bit 1 de +2D esta puesto la envolvente se repite
 C 0xd195 Volumen final = volumen base + lo que lleve la envolvente, recortado a 4 bits
@@ -1257,11 +1255,6 @@ B 0x8ACE Aqui se ve la aritmetica: D = pantalla, SLA D y E=0 dejan
 B 0x8ACE DE = pantalla*512, se suma a 0x9000 y se copian 512 bytes al
 B 0x8ACE buffer 0x7D80.
 L 0x8ACE CARGA_MAPA       Copia el mapa de la pantalla actual al buffer de 0x7D80
-C 0x8ACE A = numero de pantalla
-C 0x8AD2 DE = pantalla * 512 (SLA D con E=0 multiplica por 512)
-C 0x8AD6 Base de la tabla de mapas
-C 0x8ADA Buffer del mapa en RAM
-C 0x8ADD 512 bytes = 32 columnas x 16 filas
 
 B 0x8B09 ############################################################
 B 0x8B09 FIN DE PANTALLA: ¿toca cambiar de nivel?
@@ -1305,7 +1298,6 @@ B 0x8B6D texto "ALELUYA, OH FRAY ARNULFO...", y se queda en un bucle
 B 0x8B6D infinito: el juego no vuelve al menu.
 L 0x8B6D FINAL_JUEGO      Pantalla de victoria y bucle final
 C 0x8B6D Avanza a la pantalla 28 (la de victoria)
-C 0x8B77 Carga su mapa como el de cualquier otra pantalla
 
 B 0x8B80 ############################################################
 B 0x8B80 EL CASTIGO POR HACER TRAMPAS
@@ -1320,7 +1312,13 @@ B 0x8B80 para el que se termina el juego haciendo trampas.
 B 0x8B80
 B 0x8B80 Pero NINGUNA instruccion del binario escribe jamas en 0x8F1E,
 B 0x8B80 asi que en el juego original no salta nunca. Topo lo dejo
-B 0x8B80 armado para que saltara si alguien pokeaba ese byte.
+B 0x8B80 asi que en el juego original no salta nunca. Y no es que
+B 0x8B80 lo dejaran asi a proposito: el arranque inicializa quince
+B 0x8B80 variables seguidas y se salta justo esta, la UNICA que el
+B 0x8B80 juego lee y nunca pone a cero. Vale 0 porque el relleno de la
+B 0x8B80 cinta deja un cero ahi (solo tres de los 160 bytes de
+B 0x8B80 0x8F00-0x8FA0 lo son). Con otro valor, el castigo saltaria
+B 0x8B80 siempre.
 L 0x8B80 CASTIGO_TRAMPAS  Afea la pantalla final si se detecto trampa
 C 0x8B85 Limpia: final normal
 C 0x8B88 El texto del reproche
@@ -1340,7 +1338,6 @@ C 0x8B9A El juego acaba aqui: no se vuelve al menu
 # Por eso el nivel acuatico se ve con el agua verde de fondo aunque los tiles
 # sean los mismos. Lo detecto el usuario al mirar los mapas renderizados: salian
 # casi todos en negro porque el renderizador trataba el color 0 como negro.
-C 0x8061 Fondo negro: es el valor normal de todas las pantallas
 C 0x8B5A Fondo VERDE: aqui empieza el agua del nivel 4
 
 # =============================================================================
@@ -1358,7 +1355,6 @@ C 0x8B5A Fondo VERDE: aqui empieza el agua del nivel 4
 
 D 0x856E 0x856F ret_huerfano_1  Un RET (0xC9) que no se alcanza por ningun camino: la rutina de antes ya cierra con el RET de 0x856D. Ningun acceso en una partida completa.
 D 0x8A36 0x8A37 ret_huerfano_2  Otro RET inalcanzable, entre la rutina que acaba en 0x8A33 y la que empieza en 0x8A37. Ningun acceso en una partida completa.
-D 0xD015 0xD041 muerto_D015     44 bytes entre el manejador de interrupcion y la rutina de asignar melodia, sin un solo acceso en una partida completa.
 
 
 # =============================================================================
@@ -1631,9 +1627,6 @@ B 0xca00 0xCC6C-0xCCCA = 0x8C59-0x8CB7) y ya no lleva la plantilla de
 B 0xca00 disparos de 0x8CB8, lo que encaja con una version anterior del
 B 0xca00 programa (?)
 # --- 0xD015-0xD041: la entrada muerta del reproductor ---------------------
-# OJO INTEGRACION: 0xD015-0xD041 esta declarado hoy como rango de DATOS
-# (D 0xD015 0xD041 muerto_D015). Para que estas C se vean hay que sembrar
-# 0xD015 en game.entries y quitar esa D; si no, dejad fuera este sub-bloque.
 B 0xD015 ############################################################
 B 0xD015 ENTRADA MUERTA DE LA LIBRERIA DE SONIDO
 B 0xD015 ############################################################
@@ -1741,7 +1734,6 @@ D 0xddc7 0xde01 ram_sin_iniciar_cola  58 bytes del mismo patron degradado que 0x
 # Consecuencia: si el relleno hubiera dejado otro valor, el castigo saltaria
 # SIEMPRE y todo el que se pasara el juego veria el reproche sin haber hecho
 # trampa. No es astucia, es un olvido que salio bien.
-C 0x8F1E Bandera del castigo por trampas. El arranque NUNCA la inicializa: vale 0 solo porque el relleno de la cinta dejo un 0 justo aqui (3 de 160 bytes de esta zona son cero)
 
 # =============================================================================
 # SEGUNDA PASADA (reproductor 0xD0D9-0xD452): comentario de linea
@@ -1765,7 +1757,6 @@ C 0xD101 Un escalon menos
 C 0xD105 Suma el paso (+1B) al desplazamiento de volumen acumulado (+2A), que 0xD198 anade al volumen base
 C 0xD10E Y recarga desde +20 los ticks que hay entre escalon y escalon
 C 0xD117 Fase agotada: IY salta al byte de al lado, que es la fase siguiente
-C 0xD14A Con el paso en negativo hay que restar en vez de sumar
 C 0xD14D Complemento a dos del paso
 C 0xD153 Resta de 16 bits sobre el desplazamiento de tono (+2B/+2C)
 C 0xD166 Paso positivo: la misma suma, sin dar la vuelta al signo

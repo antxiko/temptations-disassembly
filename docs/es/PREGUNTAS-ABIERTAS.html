@@ -1,0 +1,69 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preguntas abiertas — Temptations (1988)</title>
+<style>
+:root{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;--linea:#23262e;
+  --rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+@media (prefers-color-scheme:light){:root{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;
+  --panel:#f7f6f2;--linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}}
+:root[data-theme="dark"]{--tinta:#cfd0d4;--suave:#83868f;--fondo:#000;--panel:#0c0e13;
+  --linea:#23262e;--rojo:#ff897d;--cyan:#65dbef;--verde:#3eb849;--oro:#ded087}
+:root[data-theme="light"]{--tinta:#191a1e;--suave:#5a5d66;--fondo:#e9e7e1;--panel:#f7f6f2;
+  --linea:#d0cdc5;--rojo:#b23f34;--cyan:#1c6b7c;--verde:#2b7734;--oro:#8a7420}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);padding:0 1.25rem 6rem;
+  font:15px/1.75 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.w{max-width:78ch;margin:0 auto}
+a{color:var(--cyan)}
+img{max-width:100%;height:auto;display:block;image-rendering:pixelated;margin:1.5rem 0}
+h1,h2,h3,h4{font-weight:400;text-wrap:balance;line-height:1.35}
+h1{font-size:1.6rem;margin:2.5rem 0 .5rem}
+h2{font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase;margin:3rem 0 1rem;
+  border-left:3px solid var(--rojo);padding-left:.9rem}
+h3{font-size:1.1rem;color:var(--rojo);margin:2rem 0 .6rem}
+h4{font-size:.95rem;color:var(--oro);margin:1.5rem 0 .4rem}
+hr{border:0;border-top:1px solid var(--linea);margin:2.5rem 0}
+blockquote{margin:1.25rem 0;padding:.6rem 0 .6rem 1.1rem;border-left:2px solid var(--oro);
+  color:var(--suave)}
+pre{background:var(--panel);border-left:2px solid var(--verde);padding:1rem 1.1rem;
+  overflow-x:auto;font-size:13px;line-height:1.6;margin:1.25rem 0}
+code{color:var(--oro);font-size:.94em}
+pre code{color:var(--tinta)}
+table{border-collapse:collapse;width:100%;margin:1.25rem 0;font-size:13px;display:block;
+  overflow-x:auto}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--linea)}
+th{color:var(--suave);font-weight:400;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+nav.top{display:flex;flex-wrap:wrap;gap:1.25rem;padding:1.5rem 0;margin-bottom:1rem;
+  border-bottom:1px solid var(--linea);font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase}
+nav.top a{color:var(--suave);text-decoration:none}
+nav.top a:hover{color:var(--tinta)}
+footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
+  color:var(--suave);font-size:12px}
+</style>
+<div class="w"><nav class="top"><a href="index.html">Portada</a><a href="COMO-EMPEZAR.html">Empezar</a><a href="EL-JUEGO.html">El juego</a><a href="LA-CINTA.html">La cinta</a><a href="EL-CODIGO.html">El código</a><a href="HALLAZGOS.html">Hallazgos</a><a href="BUGS.html">Bugs</a><a href="PREGUNTAS-ABIERTAS.html" style=color:var(--tinta)>Preguntas abiertas</a><a href="HERRAMIENTAS.html">Herramientas</a><a href="../pantallas.html">Pantallas</a><a href="../OPEN-QUESTIONS.html" style="margin-left:auto;color:var(--oro)">English</a></nav>
+<h1>Preguntas abiertas</h1>
+<p>Los 40.449 bytes están asignados a un rango con nombre y el listado vuelve a dar la cinta byte a byte. Eso no quiere decir que se sepa todo. Lo que el propio listado da como suposición lo marca con <code>(?)</code>, y esto es lo que queda así.</p>
+<h2>Dos rangos que el listado aún llama «sin identificar»</h2>
+<p><code>grafdesc</code>, en 0x5800–0x5CC0 (1.216 bytes), lleva por descripción <em>«datos gráficos sin identificar todavía»</em>, y los tramos de <code>datos_juego</code> que quedan en 0x5FC0–0x79C0 y 0x7F80–0x8000 dicen <em>«mapas de pantallas, tablas»</em> con la misma duda. Parte de lo que hay dentro sí se conoce —<code>make sanity</code> sabe que en 0x5FC0 empieza la plantilla del marcador que se vuelca a la VRAM—, pero el listado no lo ha partido todavía en bloques con nombre. Mientras no se haga, esos bytes tienen sitio pero no explicación.</p>
+<h2>¿Mata también el choque entre dos enemigos?</h2>
+<p>La colisión no se calcula: el juego mira el bit 5 de STATFL (0xF3E7), el flag de colisión de sprites que deja el VDP. El jugador ocupa los planos 0 y 1 y los enemigos del 6 al 13, y por eso muere de un solo impacto. Lo que no está comprobado es que dos enemigos que se solapan entre sí no enciendan también ese bit y maten al jugador sin tocarlo.</p>
+<h2>¿Es un modo de vuelo?</h2>
+<p>0x8469 pone a 1 la variable 0x8F11, y mientras valga 1, 0x812E llama a 0x857A, que lee el joystick para mover al jugador arriba y abajo a voluntad. Se ha bautizado «modo VUELO» por lo que hace el código; no se ha visto en pantalla.</p>
+<h2>¿Escribe en el hueco equivocado?</h2>
+<p>En 0x885A, con IX ya apuntando a 0x8F34, <code>ld (ix+005h),000h</code> escribe en 0x8F39, que es la X del hueco 5 y no la del 4. Si es una errata del original o hay algo que se escapa, está sin decidir.</p>
+<h2>El efecto de sonido 6</h2>
+<p>Se le llama <em>OBJETO DESTRUIDO</em> porque lo dispara 0x89DD cuando el objetivo agota sus impactos, y dura 28 cuadros. El nombre sale de quién lo llama, no de oírlo. Tampoco está cerrado cuánto dura la nota del canal C que usa: con el contador a 2 dura uno o dos cuadros, según el acarreo que deje WRTPSG antes del <code>sbc</code> de 0xDC86.</p>
+<h2>La casilla (2,21) del proyectil</h2>
+<p>Al devolver un proyectil al depósito se aparca en la casilla (2,21), que 0x8AA9 traduce a la VRAM 0x1AA2: justo la primera casilla de la tira de munición del marcador. Como después se salta a 0x89FC, cada proyectil disponible repinta ahí su icono. Que ese sea el propósito, y no un aparcadero cualquiera, es interpretación.</p>
+<h2>¿Cuánta pila se pierde al quedarse sin vidas?</h2>
+<p>Abandonar la partida con CTRL+STOP pierde <b>6 bytes de pila</b> cada vez, contados instrucción a instrucción desde 0x832A. Por el camino de quedarse sin vidas pasa lo mismo —el <code>jp z</code> de 0x84CF sale de una cadena de CALL sin desapilar—, pero esos bytes no están contados. Y el colchón de 33 bytes que queda por encima de la pila es el que se ha <b>observado</b> en volcados, no un límite demostrado: no se sabe tras cuántas partidas se acabaría.</p>
+<h2>De dónde salen los huecos con patrón 00/FF</h2>
+<p>Varios huecos alternan 00 en dirección par y FF —o EF— en impar, y ningún formato de datos se comporta así. La hipótesis es que sean RAM dinámica sin inicializar de la máquina donde se montó la cinta —a favor: todos mueren justo en frontera de página—, pero con los bytes solos no se puede demostrar.</p>
+<h2>Restos de una versión anterior</h2>
+<p>El bloque muerto de 0xCA00 lleva dos copias seguidas de la rutina <code>HL+=A</code> y ya no tiene la plantilla de disparos de 0x8CB8; los siete bytes de <code>resto_epilogo_irq</code> repiten el final de la rutina de interrupción, como si el motor de efectos hubiera colgado antes de H.TIMI. Las dos cosas encajan con una versión anterior del programa, y ninguna se puede probar con los bytes.</p>
+<h2>El reproductor de sonido</h2>
+<p>El tempo se guarda como <code>3000/(tempo*16)</code>, y 3000 es 50×60: encaja con un tempo en negras por minuto a 50 Hz y dieciséis unidades por negra, pero es lectura. Las tablas de <code>datos_psg</code> (0xD5C8–0xD760) se dan como periodos de nota y envolventes sin haberlas despiezado. Y la entrada muerta de 0xD015 descarta el bit 7 del número de canal: para qué servía no se puede saber, porque nadie llama a esa rutina.</p>
+<footer><p><em>Temptations</em> es obra de Luis López Navarro y César Astudillo «Gominolas», publicada por Topo Soft en 1988. Todos los derechos sobre el juego siguen siendo de sus titulares. Este trabajo es de preservación, estudio y documentación.</p></footer></div>

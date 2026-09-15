@@ -61,12 +61,14 @@ footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--linea);
 NAV_EN = [("index.html", "Home"), ("GETTING-STARTED.html", "Start"),
           ("THE-GAME.html", "The game"), ("THE-TAPE.html", "The tape"),
           ("THE-CODE.html", "The code"), ("FINDINGS.html", "Findings"),
-          ("BUGS.html", "Bugs"), ("TOOLS.html", "Tools"),
+          ("BUGS.html", "Bugs"), ("OPEN-QUESTIONS.html", "Open questions"),
+          ("TOOLS.html", "Tools"),
           ("pantallas.html", "Screens")]
 NAV_ES = [("index.html", "Portada"), ("COMO-EMPEZAR.html", "Empezar"),
           ("EL-JUEGO.html", "El juego"), ("LA-CINTA.html", "La cinta"),
           ("EL-CODIGO.html", "El código"), ("HALLAZGOS.html", "Hallazgos"),
-          ("BUGS.html", "Bugs"), ("HERRAMIENTAS.html", "Herramientas"),
+          ("BUGS.html", "Bugs"), ("PREGUNTAS-ABIERTAS.html", "Preguntas abiertas"),
+          ("HERRAMIENTAS.html", "Herramientas"),
           ("../pantallas.html", "Pantallas")]
 
 # Cada documento tiene su pareja en el otro idioma, para el selector.
@@ -77,6 +79,7 @@ PAREJA = {
     "THE-TAPE.html": "LA-CINTA.html",   "LA-CINTA.html": "THE-TAPE.html",
     "THE-CODE.html": "EL-CODIGO.html",  "EL-CODIGO.html": "THE-CODE.html",
     "FINDINGS.html": "HALLAZGOS.html",  "HALLAZGOS.html": "FINDINGS.html",
+    "OPEN-QUESTIONS.html": "PREGUNTAS-ABIERTAS.html", "PREGUNTAS-ABIERTAS.html": "OPEN-QUESTIONS.html",
     "BUGS.html": "BUGS.html",
     "TOOLS.html": "HERRAMIENTAS.html",  "HERRAMIENTAS.html": "TOOLS.html",
 }
